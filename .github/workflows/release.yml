@@ -5,12 +5,12 @@ on:
     branches:
       - main
 
-
-
 jobs:
   Android:
     name: Android
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Check out git repository
         uses: actions/checkout@v4
