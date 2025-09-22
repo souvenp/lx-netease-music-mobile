@@ -1,0 +1,3951 @@
+该路径名称: java
+
+====================
+文件名: com/lxnetease/music/mobile/MainActivity.java
+--------------------
+下面是完整代码:
+
+package com.lxnetease.music.mobile;
+
+import com.reactnativenavigation.NavigationActivity;
+import com.facebook.react.ReactActivityDelegate;
+import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint;
+import com.facebook.react.defaults.DefaultReactActivityDelegate;
+
+public class MainActivity extends NavigationActivity {
+
+
+
+
+}
+
+
+====================
+文件名: com/lxnetease/music/mobile/MainApplication.java
+--------------------
+下面是完整代码:
+
+package com.lxnetease.music.mobile;
+
+import com.facebook.react.PackageList;
+import com.facebook.react.flipper.ReactNativeFlipper;
+import com.reactnativenavigation.NavigationApplication;
+import com.facebook.react.ReactNativeHost;
+import com.facebook.react.ReactPackage;
+import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint;
+import com.reactnativenavigation.react.NavigationReactNativeHost;
+import java.util.List;
+
+import com.lxnetease.music.mobile.cache.CachePackage;
+import com.lxnetease.music.mobile.crypto.CryptoPackage;
+import com.lxnetease.music.mobile.lyric.LyricPackage;
+import com.lxnetease.music.mobile.userApi.UserApiPackage;
+import com.lxnetease.music.mobile.utils.UtilsPackage;
+
+public class MainApplication extends NavigationApplication {
+
+  private final ReactNativeHost mReactNativeHost =
+      new NavigationReactNativeHost(this) {
+        @Override
+        public boolean getUseDeveloperSupport() {
+          return BuildConfig.DEBUG;
+        }
+
+        @Override
+        protected List<ReactPackage> getPackages() {
+          @SuppressWarnings("UnnecessaryLocalVariable")
+          List<ReactPackage> packages = new PackageList(this).getPackages();
+          // Packages that cannot be autolinked yet can be added manually here, for example:
+          // packages.add(new MyReactNativePackage());
+          packages.add(new CachePackage());
+          packages.add(new LyricPackage());
+          packages.add(new UtilsPackage());
+          packages.add(new CryptoPackage());
+          packages.add(new UserApiPackage());
+          return packages;
+        }
+
+        @Override
+        protected String getJSMainModuleName() {
+          return "index";
+        }
+
+        @Override
+        protected boolean isNewArchEnabled() {
+          return BuildConfig.IS_NEW_ARCHITECTURE_ENABLED;
+        }
+
+        @Override
+        protected Boolean isHermesEnabled() {
+          return BuildConfig.IS_HERMES_ENABLED;
+        }
+      };
+
+  @Override
+  public ReactNativeHost getReactNativeHost() {
+    return mReactNativeHost;
+  }
+
+  @Override
+  public void onCreate() {
+    super.onCreate();
+
+    if (BuildConfig.IS_NEW_ARCHITECTURE_ENABLED) {
+      // If you opted-in for the New Architecture, we load the native entry point for this app.
+      DefaultNewArchitectureEntryPoint.load();
+    }
+    ReactNativeFlipper.initializeFlipper(this, getReactNativeHost().getReactInstanceManager());
+  }
+}
+
+
+====================
+文件名: com/lxnetease/music/mobile/cache/CacheClearAsyncTask.java
+--------------------
+下面是完整代码:
+
+package com.lxnetease.music.mobile.cache;
+
+import android.os.AsyncTask;
+
+import com.facebook.react.bridge.Promise;
+
+// https://github.com/midas-gufei/react-native-clear-app-cache/tree/master/android/src/main/java/com/learnta/clear
+public class CacheClearAsyncTask extends AsyncTask<Integer,Integer,String> {
+  public CacheModule cacheModule = null;
+  public Promise promise;
+  public CacheClearAsyncTask(CacheModule clearCacheModule, Promise promise) {
+    super();
+    this.cacheModule = clearCacheModule;
+    this.promise = promise;
+  }
+
+  @Override
+  protected void onPreExecute() {
+    super.onPreExecute();
+  }
+
+  @Override
+  protected void onPostExecute(String s) {
+    super.onPostExecute(s);
+    promise.resolve(null);
+  }
+
+  @Override
+  protected String doInBackground(Integer... params) {
+    cacheModule.clearCache();
+    return null;
+  }
+}
+
+
+====================
+文件名: com/lxnetease/music/mobile/cache/CacheModule.java
+--------------------
+下面是完整代码:
+
+package com.lxnetease.music.mobile.cache;
+
+import com.facebook.react.bridge.Promise;
+import com.facebook.react.bridge.ReactApplicationContext;
+import com.facebook.react.bridge.ReactContextBaseJavaModule;
+import com.facebook.react.bridge.ReactMethod;
+
+import java.io.File;
+
+import static com.lxnetease.music.mobile.cache.Utils.clearCacheFolder;
+import static com.lxnetease.music.mobile.cache.Utils.getDirSize;
+import static com.lxnetease.music.mobile.cache.Utils.isMethodsCompat;
+
+// https://github.com/midas-gufei/react-native-clear-app-cache/tree/master/android/src/main/java/com/learnta/clear
+public class CacheModule extends ReactContextBaseJavaModule {
+  private final CacheModule cacheModule;
+
+  CacheModule(ReactApplicationContext reactContext) {
+    super(reactContext);
+    this.cacheModule = this;
+  }
+
+  @Override
+  public String getName() {
+    return "CacheModule";
+  }
+
+
+  @ReactMethod
+  public void getAppCacheSize(Promise promise) {
+    // 计算缓存大小
+    long fileSize = 0;
+    // File filesDir = getReactApplicationContext().getFilesDir();// /data/data/package_name/files
+    File cacheDir = getReactApplicationContext().getCacheDir();// /data/data/package_name/cache
+    // fileSize += getDirSize(filesDir);
+    fileSize += getDirSize(cacheDir);
+    // 2.2版本才有将应用缓存转移到sd卡的功能
+    if (isMethodsCompat(android.os.Build.VERSION_CODES.FROYO)) {
+      File externalCacheDir = Utils.getExternalCacheDir(getReactApplicationContext());//"<sdcard>/Android/data/<package_name>/cache/"
+      fileSize += getDirSize(externalCacheDir);
+    }
+
+    promise.resolve(String.valueOf(fileSize));
+  }
+
+  //清除缓存
+  @ReactMethod
+  public void clearAppCache(Promise promise) {
+    CacheClearAsyncTask asyncTask = new CacheClearAsyncTask(cacheModule, promise);
+    asyncTask.execute(10);
+  }
+
+  /**
+   * 清除app缓存
+   */
+  public void clearCache() {
+
+    getReactApplicationContext().deleteDatabase("webview.db");
+    getReactApplicationContext().deleteDatabase("webview.db-shm");
+    getReactApplicationContext().deleteDatabase("webview.db-wal");
+    getReactApplicationContext().deleteDatabase("webviewCache.db");
+    getReactApplicationContext().deleteDatabase("webviewCache.db-shm");
+    getReactApplicationContext().deleteDatabase("webviewCache.db-wal");
+    //清除数据缓存
+    // clearCacheFolder(getReactApplicationContext().getFilesDir(), System.currentTimeMillis());
+    clearCacheFolder(getReactApplicationContext().getCacheDir(), System.currentTimeMillis());
+    //2.2版本才有将应用缓存转移到sd卡的功能
+    if (isMethodsCompat(android.os.Build.VERSION_CODES.FROYO)) {
+      clearCacheFolder(Utils.getExternalCacheDir(getReactApplicationContext()), System.currentTimeMillis());
+    }
+
+  }
+
+}
+
+
+====================
+文件名: com/lxnetease/music/mobile/cache/CachePackage.java
+--------------------
+下面是完整代码:
+
+package com.lxnetease.music.mobile.cache;
+
+import com.facebook.react.ReactPackage;
+import com.facebook.react.bridge.NativeModule;
+import com.facebook.react.bridge.ReactApplicationContext;
+import com.facebook.react.uimanager.ViewManager;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+public class CachePackage implements ReactPackage {
+
+  @Override
+  public List<ViewManager> createViewManagers(ReactApplicationContext reactContext) {
+    return Collections.emptyList();
+  }
+
+  @Override
+  public List<NativeModule> createNativeModules(ReactApplicationContext reactContext) {
+    return Arrays.<NativeModule>asList(new CacheModule(reactContext));
+  }
+
+}
+
+
+====================
+文件名: com/lxnetease/music/mobile/cache/Utils.java
+--------------------
+下面是完整代码:
+
+package com.lxnetease.music.mobile.cache;
+
+import android.content.Context;
+
+import java.io.File;
+
+// https://github.com/midas-gufei/react-native-clear-app-cache/tree/master/android/src/main/java/com/learnta/clear
+public class Utils {
+  /**
+   * 获取目录文件大小
+   *
+   * @param dir
+   * @return
+   */
+  static public long getDirSize(File dir) {
+    if (dir == null || !dir.isDirectory()) return 0;
+    long dirSize = 0;
+    File[] files = dir.listFiles();
+    if (files == null) return dirSize;
+    for (File file : files) {
+      if (file.isFile()) {
+        dirSize += file.length();
+      } else if (file.isDirectory()) {
+        dirSize += file.length();
+        dirSize += getDirSize(file); // 递归调用继续统计
+      }
+    }
+    return dirSize;
+  }
+
+  /**
+   * 判断当前版本是否兼容目标版本的方法
+   *
+   * @param VersionCode
+   * @return
+   */
+  static public boolean isMethodsCompat(int VersionCode) {
+    int currentVersion = android.os.Build.VERSION.SDK_INT;
+    return currentVersion >= VersionCode;
+  }
+
+  static public File getExternalCacheDir(Context context) {
+
+    // return context.getExternalCacheDir(); API level 8
+
+    // e.g. "<sdcard>/Android/data/<package_name>/cache/"
+
+    return context.getExternalCacheDir();
+  }
+
+  /**
+   * 清除缓存目录
+   * 目录
+   * 当前系统时间
+   */
+  static public int clearCacheFolder(File dir, long curTime) {
+    int deletedFiles = 0;
+    if (dir == null || !dir.isDirectory()) return deletedFiles;
+    File[] files = dir.listFiles();
+    if (files == null) return deletedFiles;
+    try {
+      for (File child : files) {
+        if (child.isDirectory()) {
+          deletedFiles += clearCacheFolder(child, curTime);
+        }
+        if (child.lastModified() < curTime) {
+          if (child.delete()) {
+            deletedFiles++;
+          }
+        }
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return deletedFiles;
+  }
+}
+
+
+====================
+文件名: com/lxnetease/music/mobile/crypto/AES.java
+--------------------
+下面是完整代码:
+
+package com.lxnetease.music.mobile.crypto;
+
+import android.util.Base64;
+
+import java.nio.charset.StandardCharsets;
+
+import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+
+public class AES {
+  private static final String AES_MODE_CBC_PKCS7Padding = "AES/CBC/PKCS7Padding";
+  private static final String AES_MODE_ECB_NoPadding = "AES/ECB/NoPadding";
+
+  private static byte[] decodeBase64(String data) {
+    return Base64.decode(data, Base64.DEFAULT);
+  }
+
+  private static String encodeBase64(byte[] data) {
+    return new String(Base64.encode(data, Base64.NO_WRAP), StandardCharsets.UTF_8);
+  }
+
+  public static String encrypt(byte[] data, byte[] key, byte[] iv, String mode) {
+    String encryptedBase64 = "";
+    try {
+      Cipher cipher = Cipher.getInstance(mode);
+      SecretKeySpec secretKeySpec = new SecretKeySpec(key, "AES");
+      byte[] finalIvs = new byte[16];
+      int len = Math.min(iv.length, 16);
+      System.arraycopy(iv, 0, finalIvs, 0, len);
+      IvParameterSpec ivps = new IvParameterSpec(finalIvs);
+      cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec, ivps);
+      encryptedBase64 = encodeBase64(cipher.doFinal(data));
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
+    return encryptedBase64;
+  }
+
+  public static String encrypt(byte[] data, byte[] key, String mode) {
+    String encryptedBase64 = "";
+    try {
+      Cipher cipher = Cipher.getInstance(mode);
+      SecretKeySpec secretKeySpec = new SecretKeySpec(key, "AES");
+      cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec);
+      encryptedBase64 = encodeBase64(cipher.doFinal(data));
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
+    return encryptedBase64;
+  }
+
+  public static String encrypt(String data, String key, String iv, String mode) {
+    return "".equals(iv) ? encrypt(decodeBase64(data), decodeBase64(key), mode)
+      : encrypt(decodeBase64(data), decodeBase64(key), decodeBase64(iv), mode);
+  }
+
+
+  public static String decrypt(byte[] data, byte[] key, byte[] iv, String mode) {
+    String decryptedString = "";
+    try {
+      Cipher cipher = Cipher.getInstance(mode);
+      SecretKeySpec secretKeySpec = new SecretKeySpec(key, "AES");
+      byte[] finalIvs = new byte[16];
+      int len = Math.min(iv.length, 16);
+      System.arraycopy(iv, 0, finalIvs, 0, len);
+      IvParameterSpec ivps = new IvParameterSpec(finalIvs);
+      cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, ivps);
+      decryptedString = new String(cipher.doFinal(data), StandardCharsets.UTF_8);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
+    return decryptedString;
+  }
+
+  public static String decrypt(byte[] data, byte[] key, String mode) {
+    String decryptedString = "";
+    try {
+      Cipher cipher = Cipher.getInstance(mode);
+      SecretKeySpec secretKeySpec = new SecretKeySpec(key, "AES");
+      cipher.init(Cipher.DECRYPT_MODE, secretKeySpec);
+      decryptedString = new String(cipher.doFinal(data), StandardCharsets.UTF_8);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
+    return decryptedString;
+  }
+
+  public static String decrypt(String data, String key, String iv, String mode) {
+    return "".equals(iv) ? decrypt(decodeBase64(data), decodeBase64(key), mode)
+      : decrypt(decodeBase64(data), decodeBase64(key), decodeBase64(iv), mode);
+  }
+
+}
+
+
+====================
+文件名: com/lxnetease/music/mobile/crypto/CryptoModule.java
+--------------------
+下面是完整代码:
+
+package com.lxnetease.music.mobile.crypto;
+
+import android.util.Base64;
+
+import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.Promise;
+import com.facebook.react.bridge.ReactApplicationContext;
+import com.facebook.react.bridge.ReactContextBaseJavaModule;
+import com.facebook.react.bridge.ReactMethod;
+import com.facebook.react.bridge.WritableMap;
+
+import java.security.Key;
+import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.KeySpec;
+import java.security.spec.PKCS8EncodedKeySpec;
+
+public class CryptoModule extends ReactContextBaseJavaModule {
+  private final ReactApplicationContext reactContext;
+
+  CryptoModule(ReactApplicationContext reactContext) {
+    super(reactContext);
+    this.reactContext = reactContext;
+  }
+
+  @Override
+  public String getName() {
+    return "CryptoModule";
+  }
+
+  @ReactMethod
+  public void generateRsaKey(Promise promise) {
+    KeyPair kp = RSA.getKeyPair();
+    String publicKeyBytesBase64 = new String(Base64.encode(kp.getPublic().getEncoded(), Base64.DEFAULT));
+
+    KeyFactory keyFac;
+    try {
+      keyFac = KeyFactory.getInstance("RSA");
+    } catch (NoSuchAlgorithmException e) {
+      promise.reject("-1", e.toString());
+      return;
+    }
+    KeySpec keySpec = new PKCS8EncodedKeySpec(kp.getPrivate().getEncoded());
+    Key key;
+    try {
+      key = keyFac.generatePrivate(keySpec);
+    } catch (InvalidKeySpecException e) {
+      promise.reject("-1", e.toString());
+      return;
+    }
+    String privateKeyBytesBase64 = new String(Base64.encode(key.getEncoded(), Base64.DEFAULT));
+    WritableMap params = Arguments.createMap();
+    params.putString("publicKey", publicKeyBytesBase64);
+    params.putString("privateKey", privateKeyBytesBase64);
+    promise.resolve(params);
+  }
+
+  @ReactMethod
+  public void rsaEncrypt(String text, String key, String padding, Promise promise) {
+    promise.resolve(RSA.encryptRSAToString(text, key, padding));
+    //    TaskRunner taskRunner = new TaskRunner();
+    //    try {
+    //      taskRunner.executeAsync(new GzipModule.UnGzip(source, target, force), (String errMessage) -> {
+    //        if ("".equals(errMessage)) {
+    //          promise.resolve(null);
+    //        } else promise.reject("-2", errMessage);
+    //      });
+    //    } catch (RuntimeException err) {
+    //      promise.reject("-2", err.getMessage());
+    //    }
+  }
+
+  @ReactMethod
+  public void rsaDecrypt(String text, String key, String padding, Promise promise) {
+    promise.resolve(RSA.decryptRSAToString(text, key, padding));
+    //    TaskRunner taskRunner = new TaskRunner();
+    //    try {
+    //      taskRunner.executeAsync(new GzipModule.UnGzip(source, target, force), (String errMessage) -> {
+    //        if ("".equals(errMessage)) {
+    //          promise.resolve(null);
+    //        } else promise.reject("-2", errMessage);
+    //      });
+    //    } catch (RuntimeException err) {
+    //      promise.reject("-2", err.getMessage());
+    //    }
+  }
+
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  public String rsaEncryptSync(String text, String key, String padding) {
+    return RSA.encryptRSAToString(text, key, padding);
+  }
+
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  public String rsaDecryptSync(String text, String key, String padding) {
+    return RSA.decryptRSAToString(text, key, padding);
+  }
+
+  @ReactMethod
+  public void aesEncrypt(String text, String key, String iv, String mode, Promise promise) {
+    promise.resolve(AES.encrypt(text, key, iv, mode));
+    //    TaskRunner taskRunner = new TaskRunner();
+    //    try {
+    //      taskRunner.executeAsync(new GzipModule.UnGzip(source, target, force), (String errMessage) -> {
+    //        if ("".equals(errMessage)) {
+    //          promise.resolve(null);
+    //        } else promise.reject("-2", errMessage);
+    //      });
+    //    } catch (RuntimeException err) {
+    //      promise.reject("-2", err.getMessage());
+    //    }
+  }
+
+  @ReactMethod
+  public void aesDecrypt(String text, String key, String iv, String mode, Promise promise) {
+    promise.resolve(AES.decrypt(text, key, iv, mode));
+    //    TaskRunner taskRunner = new TaskRunner();
+    //    try {
+    //      taskRunner.executeAsync(new GzipModule.UnGzip(source, target, force), (String errMessage) -> {
+    //        if ("".equals(errMessage)) {
+    //          promise.resolve(null);
+    //        } else promise.reject("-2", errMessage);
+    //      });
+    //    } catch (RuntimeException err) {
+    //      promise.reject("-2", err.getMessage());
+    //    }
+  }
+
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  public String aesEncryptSync(String text, String key, String iv, String mode) {
+    return AES.encrypt(text, key, iv, mode);
+  }
+
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  public String aesDecryptSync(String text, String key, String iv, String mode) {
+    return AES.decrypt(text, key, iv, mode);
+  }
+
+}
+
+
+
+====================
+文件名: com/lxnetease/music/mobile/crypto/CryptoPackage.java
+--------------------
+下面是完整代码:
+
+package com.lxnetease.music.mobile.crypto;
+
+import com.facebook.react.ReactPackage;
+import com.facebook.react.bridge.NativeModule;
+import com.facebook.react.bridge.ReactApplicationContext;
+import com.facebook.react.uimanager.ViewManager;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+public class CryptoPackage implements ReactPackage {
+
+  @Override
+  public List<ViewManager> createViewManagers(ReactApplicationContext reactContext) {
+    return Collections.emptyList();
+  }
+
+  @Override
+  public List<NativeModule> createNativeModules(ReactApplicationContext reactContext) {
+    return Arrays.<NativeModule>asList(new CryptoModule(reactContext));
+  }
+}
+
+
+====================
+文件名: com/lxnetease/music/mobile/crypto/RSA.java
+--------------------
+下面是完整代码:
+
+package com.lxnetease.music.mobile.crypto;
+
+import android.util.Base64;
+
+import java.security.Key;
+import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.spec.KeySpec;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
+
+import javax.crypto.Cipher;
+
+public class RSA {
+  static final String PADDING_OAEPWithSHA1AndMGF1Padding = "RSA/ECB/OAEPWithSHA1AndMGF1Padding";
+  static final String PADDING_NoPadding = "RSA/ECB/NoPadding";
+
+  // https://stackoverflow.com/a/40978042
+//  public void testEncryptData(String dataToEncrypt) throws NoSuchAlgorithmException, InvalidKeySpecException {
+//    // generate a new public/private key pair to test with (note. you should only do this once and keep them!)
+//    KeyPair kp = getKeyPair();
+//
+//    PublicKey publicKey = kp.getPublic();
+//    byte[] publicKeyBytes = publicKey.getEncoded();
+//    String publicKeyBytesBase64 = new String(Base64.encode(publicKeyBytes, Base64.DEFAULT));
+//    Log.d("RSATest", "publicKeyBytesBase64: " + publicKeyBytesBase64);
+//
+//    PrivateKey privateKey = kp.getPrivate();
+//    KeyFactory keyFac = KeyFactory.getInstance("RSA");
+//    KeySpec keySpec = new PKCS8EncodedKeySpec(privateKey.getEncoded());
+//    Key key = keyFac.generatePrivate(keySpec);
+//
+//    StringBuilder sb = new StringBuilder();
+//    sb.append("-----BEGIN PRIVATE KEY-----");
+//    sb.append(new String(Base64.encode(key.getEncoded(), Base64.DEFAULT)));
+//    sb.append("-----END PRIVATE KEY-----");
+//    Log.d("RSATest", "privateKeyBytesBase64: " + sb);
+//
+//    //    return new String(Base64.encode(sb.toString().getBytes()));
+//
+//    byte[] privateKeyBytes = privateKey.getEncoded();
+//    String privateKeyBytesBase64 = new String(Base64.encode(privateKeyBytes, Base64.DEFAULT));
+//    Log.d("RSATest", "privateKeyBytesBase64: " + privateKeyBytesBase64);
+//
+//    // test encryption
+//    String encrypted = encryptRSAToString(dataToEncrypt, publicKeyBytesBase64);
+//
+//    Log.d("RSATest", "encrypted: " + encrypted);
+//
+//    // test decryption
+//    String decrypted = decryptRSAToString(encrypted, privateKeyBytesBase64);
+//
+//    Log.d("RSATest", "decrypted: " + decrypted);
+//  }
+
+  public static KeyPair getKeyPair() {
+    KeyPair kp = null;
+    try {
+      KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
+      kpg.initialize(2048);
+      kp = kpg.generateKeyPair();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
+    return kp;
+  }
+
+   public static String encryptRSAToString(String decryptedBase64, String publicKey, String padding) {
+    String encryptedBase64 = "";
+    try {
+      KeyFactory keyFac = KeyFactory.getInstance("RSA");
+      KeySpec keySpec = new X509EncodedKeySpec(Base64.decode(publicKey.trim().getBytes(), Base64.DEFAULT));
+      Key key = keyFac.generatePublic(keySpec);
+
+      // get an RSA cipher object and print the provider
+      final Cipher cipher = Cipher.getInstance(padding);
+      // encrypt the plain text using the public key
+      cipher.init(Cipher.ENCRYPT_MODE, key);
+
+      byte[] encryptedBytes = cipher.doFinal(Base64.decode(decryptedBase64, Base64.DEFAULT));
+      encryptedBase64 = new String(Base64.encode(encryptedBytes, Base64.NO_WRAP));
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
+    return encryptedBase64;
+  }
+
+  public static String decryptRSAToString(String encryptedBase64, String privateKey, String padding) {
+
+    String decryptedString = "";
+    try {
+      KeyFactory keyFac = KeyFactory.getInstance("RSA");
+      KeySpec keySpec = new PKCS8EncodedKeySpec(Base64.decode(privateKey.trim().getBytes(), Base64.DEFAULT));
+      Key key = keyFac.generatePrivate(keySpec);
+
+      // get an RSA cipher object and print the provider
+      final Cipher cipher = Cipher.getInstance(padding);
+      // encrypt the plain text using the public key
+      cipher.init(Cipher.DECRYPT_MODE, key);
+
+      byte[] encryptedBytes = Base64.decode(encryptedBase64, Base64.DEFAULT);
+      byte[] decryptedBytes = cipher.doFinal(encryptedBytes);
+      decryptedString = new String(decryptedBytes);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
+    return decryptedString;
+  }
+}
+
+
+====================
+文件名: com/lxnetease/music/mobile/lyric/Lyric.java
+--------------------
+下面是完整代码:
+
+package com.lxnetease.music.mobile.lyric;
+
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.Bundle;
+import android.util.Log;
+
+import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.Promise;
+import com.facebook.react.bridge.ReactApplicationContext;
+import com.facebook.react.bridge.WritableMap;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Objects;
+
+public class Lyric extends LyricPlayer {
+  LyricView lyricView = null;
+  LyricEvent lyricEvent = null;
+  ReactApplicationContext reactAppContext;
+
+  boolean isRunPlayer = false;
+  // String lastText = "LX-N Music ^-^";
+  int lastLine = 0;
+  List lines = new ArrayList();
+  boolean isShowTranslation;
+  boolean isShowRoma;
+  boolean isShowLyricView = false;
+  boolean isSendLyricTextEvent = false;
+  boolean isScreenOff = false;
+  String lyricText = "";
+  String translationText = "";
+  String romaLyricText = "";
+
+  Lyric(ReactApplicationContext reactContext, boolean isShowTranslation, boolean isShowRoma, float playbackRate) {
+    this.reactAppContext = reactContext;
+    this.isShowTranslation = isShowTranslation;
+    this.isShowRoma = isShowRoma;
+    this.playbackRate = playbackRate;
+    registerScreenBroadcastReceiver();
+    // checkA2DPConnection(reactContext);
+  }
+
+  private void registerScreenBroadcastReceiver() {
+    final IntentFilter theFilter = new IntentFilter();
+    /** System Defined Broadcast */
+    theFilter.addAction(Intent.ACTION_SCREEN_ON);
+    theFilter.addAction(Intent.ACTION_SCREEN_OFF);
+
+    BroadcastReceiver screenOnOffReceiver = new BroadcastReceiver() {
+      @Override
+      public void onReceive(Context context, Intent intent) {
+        String strAction = intent.getAction();
+
+        switch (Objects.requireNonNull(strAction)) {
+          case Intent.ACTION_SCREEN_OFF:
+            Log.d("Lyric", "ACTION_SCREEN_OFF");
+            handleScreenOff();
+            break;
+          case Intent.ACTION_SCREEN_ON:
+            Log.d("Lyric", "ACTION_SCREEN_ON");
+            handleScreenOn();
+            break;
+        }
+      }
+    };
+
+    reactAppContext.registerReceiver(screenOnOffReceiver, theFilter);
+  }
+
+  // private void checkA2DPConnection(Context context) {
+  //   BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+
+  //   if (bluetoothAdapter != null && bluetoothAdapter.isEnabled()) {
+  //     bluetoothAdapter.getProfileProxy(context, new BluetoothProfile.ServiceListener() {
+  //       @Override
+  //       public void onServiceConnected(int profile, BluetoothProfile proxy) {
+  //         if (profile == BluetoothProfile.A2DP) {
+  //           List<BluetoothDevice> connectedDevices = proxy.getConnectedDevices();
+  //           if (!connectedDevices.isEmpty()) {
+  //             System.out.println("已连接的 A2DP 媒体设备：");
+  //             for (BluetoothDevice device : connectedDevices) {
+  //               System.out.println("设备名称: " + "地址: " + device.getAddress());
+  //             }
+  //           } else {
+  //             System.out.println("没有连接的 A2DP 媒体设备");
+  //           }
+  //         }
+  //         bluetoothAdapter.closeProfileProxy(profile, proxy);
+  //       }
+
+  //       @Override
+  //       public void onServiceDisconnected(int profile) {
+  //         // 服务断开时的处理
+  //         System.out.println("蓝牙服务断开时的处理");
+  //       }
+  //     }, BluetoothProfile.A2DP);
+  //   } else {
+  //     System.out.println("蓝牙未开启或设备不支持蓝牙");
+  //   }
+  // }
+
+  private boolean isDisableAutoPause() {
+    return !isRunPlayer || isSendLyricTextEvent;
+  }
+  private void handleScreenOff() {
+    isScreenOff = true;
+    if (isDisableAutoPause()) return;
+    setTempPause(true);
+  }
+
+  private void handleScreenOn() {
+    isScreenOff = false;
+    if (isDisableAutoPause()) return;
+    if (lyricView == null) lyricView = new LyricView(reactAppContext, lyricEvent);
+    lyricView.runOnUiThread(() -> {
+      handleGetCurrentLyric(lastLine);
+      setTempPause(false);
+    });
+  }
+
+  private void pausePlayer() {
+    if (!isRunPlayer || isShowLyricView || isSendLyricTextEvent) return;
+    isRunPlayer = false;
+    this.pause();
+  }
+
+  private void setCurrentLyric(String lyric, ArrayList<String> extendedLyrics) {
+    if (isShowLyricView && !isScreenOff && lyricView != null) {
+      lyricView.setLyric(lyric, extendedLyrics);
+    }
+    if (isSendLyricTextEvent) {
+      WritableMap params = Arguments.createMap();
+      params.putString("text", lyric);
+      params.putArray("extendedLyrics", Arguments.makeNativeArray(extendedLyrics));
+      lyricEvent.sendEvent(lyricEvent.LYRIC_Line_PLAY, params);
+    }
+  }
+  private void handleGetCurrentLyric(int lineNum) {
+    lastLine = lineNum;
+    if (lineNum >= 0 && lineNum < lines.size()) {
+      HashMap line = (HashMap) lines.get(lineNum);
+      if (line != null) {
+        setCurrentLyric((String) line.get("text"), (ArrayList<String>) line.get("extendedLyrics"));
+        return;
+      }
+    }
+    setCurrentLyric("", new ArrayList<>(0));
+  }
+
+  public void setSendLyricTextEvent(boolean isSend) {
+    if (isSendLyricTextEvent == isSend) return;
+    isSendLyricTextEvent = isSend;
+    if (isSend) {
+      if (lyricEvent == null) lyricEvent = new LyricEvent(reactAppContext);
+      isRunPlayer = true;
+    } else {
+      pausePlayer();
+    }
+  }
+
+  public void showDesktopLyric(Bundle options, Promise promise) {
+    if (isShowLyricView) return;
+    if (lyricEvent == null) lyricEvent = new LyricEvent(reactAppContext);
+    isShowLyricView = true;
+    if (lyricView == null) lyricView = new LyricView(reactAppContext, lyricEvent);
+    try {
+      lyricView.showLyricView(options);
+    } catch (Exception e) {
+      promise.reject(e);
+      Log.e("Lyric", e.getMessage());
+      return;
+    }
+    isRunPlayer = true;
+    promise.resolve(null);
+  }
+
+  public void hideDesktopLyric() {
+    if (!isShowLyricView) return;
+    isShowLyricView = false;
+    pausePlayer();
+    if (lyricView != null) {
+      lyricView.destroy();
+      lyricView = null;
+    }
+  }
+
+  private void refreshLyric() {
+    if (!isRunPlayer) return;
+    ArrayList<String> extendedLyrics = new ArrayList<>(2);
+    if (isShowTranslation && !"".equals(translationText)) extendedLyrics.add(translationText);
+    if (isShowRoma && !"".equals(romaLyricText)) extendedLyrics.add(romaLyricText);
+    super.setLyric(lyricText, extendedLyrics);
+  }
+
+  public void setLyric(String lyric, String translation, String romaLyric) {
+    lyricText = lyric;
+    translationText = translation;
+    romaLyricText = romaLyric;
+    refreshLyric();
+  }
+
+  @Override
+  public void onSetLyric(List lines) {
+    this.lines = lines;
+    handleGetCurrentLyric(-1);
+    // for (int i = 0; i < lines.size(); i++) {
+    //   HashMap line = (HashMap) lines.get(i);
+    //   Log.d("Lyric", "onSetLyric: " +(String) line.get("text") + " " + line.get("extendedLyrics"));
+    // }
+  }
+
+  @Override
+  public void onPlay(int lineNum) {
+    handleGetCurrentLyric(lineNum);
+    // Log.d("Lyric", lineNum + " " + text + " " + (String) line.get("translation"));
+  }
+
+  public void pauseLyric() {
+    pause();
+    if (!isRunPlayer) return;
+    handleGetCurrentLyric(-1);
+  }
+
+  public void lockLyric() {
+    if (lyricView == null) return;
+    lyricView.lockView();
+  }
+
+  public void unlockLyric() {
+    if (lyricView == null) return;
+    lyricView.unlockView();
+  }
+
+  public void setMaxLineNum(int maxLineNum) {
+    if (lyricView == null) return;
+    lyricView.setMaxLineNum(maxLineNum);
+  }
+
+  public void setWidth(int width) {
+    if (lyricView == null) return;
+    lyricView.setWidth(width);
+  }
+
+  public void setSingleLine(boolean singleLine) {
+    if (lyricView == null) return;
+    lyricView.setSingleLine(singleLine);
+  }
+
+  public void setShowToggleAnima(boolean showToggleAnima) {
+    if (lyricView == null) return;
+    lyricView.setShowToggleAnima(showToggleAnima);
+  }
+
+  public void toggleTranslation(boolean isShowTranslation) {
+    this.isShowTranslation = isShowTranslation;
+    refreshLyric();
+  }
+
+  public void toggleRoma(boolean isShowRoma) {
+    this.isShowRoma = isShowRoma;
+    refreshLyric();
+  }
+
+  public void setPlayedColor(String unplayColor, String playedColor, String shadowColor) {
+    if (lyricView == null) return;
+    lyricView.setColor(unplayColor, playedColor, shadowColor);
+  }
+
+  public void setAlpha(float alpha) {
+    if (lyricView == null) return;
+    lyricView.setAlpha(alpha);
+  }
+
+  public void setTextSize(float size) {
+    if (lyricView == null) return;
+    lyricView.setTextSize(size);
+  }
+
+  public void setLyricTextPosition(String positionX, String positionY) {
+    if (lyricView == null) return;
+    lyricView.setLyricTextPosition(positionX, positionY);
+  }
+}
+
+
+====================
+文件名: com/lxnetease/music/mobile/lyric/LyricEvent.java
+--------------------
+下面是完整代码:
+
+package com.lxnetease.music.mobile.lyric;
+
+import androidx.annotation.Nullable;
+
+import com.facebook.react.bridge.ReactApplicationContext;
+import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.modules.core.DeviceEventManagerModule;
+
+public class LyricEvent {
+  final String SET_VIEW_POSITION = "set-position";
+  final String LYRIC_Line_PLAY = "lyric-line-play";
+
+  private final ReactApplicationContext reactContext;
+  LyricEvent(ReactApplicationContext reactContext) { this.reactContext = reactContext; }
+
+  public void sendEvent(String eventName, @Nullable WritableMap params) {
+    // Log.d("Lyric", "senEvent: " + eventName);
+    reactContext
+      .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+      .emit(eventName, params);
+  }
+}
+
+
+====================
+文件名: com/lxnetease/music/mobile/lyric/LyricModule.java
+--------------------
+下面是完整代码:
+
+package com.lxnetease.music.mobile.lyric;
+
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Build;
+import android.provider.Settings;
+import android.util.Log;
+
+import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.Promise;
+import com.facebook.react.bridge.ReactApplicationContext;
+import com.facebook.react.bridge.ReactContextBaseJavaModule;
+import com.facebook.react.bridge.ReactMethod;
+import com.facebook.react.bridge.ReadableMap;
+
+public class LyricModule extends ReactContextBaseJavaModule {
+  private final ReactApplicationContext reactContext;
+  Lyric lyric;
+  // final Map<String, Object> constants = new HashMap<>();
+
+  boolean isShowTranslation = false;
+  boolean isShowRoma = false;
+  float playbackRate = 1;
+
+  private int listenerCount = 0;
+
+  LyricModule(ReactApplicationContext reactContext) {
+    super(reactContext);
+    this.reactContext = reactContext;
+
+    // constants.put("THEME_GREEN", "#07c556");
+    // constants.put("THEME_YELLOW", "#fffa12");
+    // constants.put("THEME_BLUE", "#19b5fe");
+    // constants.put("THEME_RED", "#ff1222");
+    // constants.put("THEME_PINK", "#f1828d");
+    // constants.put("THEME_PURPLE", "#c851d4");
+    // constants.put("THEME_ORANGE", "#fffa12");
+    // constants.put("THEME_GREY", "#bdc3c7");
+  }
+
+  @Override
+  public String getName() {
+    return "LyricModule";
+  }
+
+//  @Override
+//  public Map<String, Object> getConstants() {
+//    return constants;
+//  }
+
+  @ReactMethod
+  public void addListener(String eventName) {
+    if (listenerCount == 0) {
+      // Set up any upstream listeners or background tasks as necessary
+    }
+
+    listenerCount += 1;
+  }
+
+  @ReactMethod
+  public void removeListeners(Integer count) {
+    listenerCount -= count;
+    if (listenerCount == 0) {
+      // Remove upstream listeners, stop unnecessary background tasks
+    }
+  }
+
+  @ReactMethod
+  public void showDesktopLyric(ReadableMap data, Promise promise) {
+    if (lyric == null) lyric = new Lyric(reactContext, isShowTranslation, isShowRoma, playbackRate);
+    lyric.showDesktopLyric(Arguments.toBundle(data), promise);
+  }
+
+  @ReactMethod
+  public void hideDesktopLyric(Promise promise) {
+    if (lyric != null) lyric.hideDesktopLyric();
+    promise.resolve(null);
+  }
+
+  @ReactMethod
+  public void setSendLyricTextEvent(boolean isSend, Promise promise) {
+    if (lyric == null) lyric = new Lyric(reactContext, isShowTranslation, isShowRoma, playbackRate);
+    lyric.setSendLyricTextEvent(isSend);
+    promise.resolve(null);
+  }
+
+
+  @ReactMethod
+  public void setLyric(String lyric, String translation, String romaLyric, Promise promise) {
+    // Log.d("Lyric", "set lyric: " + lyric);
+    // Log.d("Lyric", "set lyric translation: " + translation);
+    if (lyric != null) this.lyric.setLyric(lyric, translation, romaLyric);
+    promise.resolve(null);
+  }
+
+  @ReactMethod
+  public void setPlaybackRate(float playbackRate, Promise promise) {
+    this.playbackRate = playbackRate;
+    if (lyric != null) lyric.setPlaybackRate(playbackRate);
+    promise.resolve(null);
+  }
+
+  @ReactMethod
+  public void toggleTranslation(boolean isShowTranslation, Promise promise) {
+    this.isShowTranslation = isShowTranslation;
+    if (lyric != null) lyric.toggleTranslation(isShowTranslation);
+    promise.resolve(null);
+  }
+
+  @ReactMethod
+  public void toggleRoma(boolean isShowRoma, Promise promise) {
+    this.isShowRoma = isShowRoma;
+    if (lyric != null) lyric.toggleRoma(isShowRoma);
+    promise.resolve(null);
+  }
+
+  @ReactMethod
+  public void play(int time, Promise promise) {
+    Log.d("Lyric", "play lyric: " + time);
+    if (lyric != null) lyric.play(time);
+    promise.resolve(null);
+  }
+
+  @ReactMethod
+  public void pause(Promise promise) {
+    Log.d("Lyric", "play pause");
+    if (lyric != null) lyric.pauseLyric();
+    promise.resolve(null);
+  }
+
+  @ReactMethod
+  public void toggleLock(boolean isLock, Promise promise) {
+    if (lyric != null) {
+      if (isLock) {
+        lyric.lockLyric();
+      } else {
+        lyric.unlockLyric();
+      }
+    }
+    promise.resolve(null);
+  }
+
+  @ReactMethod
+  public void setColor(String unplayColor, String playedColor, String shadowColor, Promise promise) {
+    if (lyric != null) lyric.setPlayedColor(unplayColor, playedColor, shadowColor);
+    promise.resolve(null);
+  }
+
+  @ReactMethod
+  public void setAlpha(float alpha, Promise promise) {
+    if (lyric != null) lyric.setAlpha(alpha);
+    promise.resolve(null);
+  }
+
+  @ReactMethod
+  public void setTextSize(float size, Promise promise) {
+    if (lyric != null) lyric.setTextSize(size);
+    promise.resolve(null);
+  }
+
+  @ReactMethod
+  public void setMaxLineNum(int maxLineNum, Promise promise) {
+    if (lyric != null) lyric.setMaxLineNum(maxLineNum);
+    promise.resolve(null);
+  }
+
+  @ReactMethod
+  public void setSingleLine(boolean singleLine, Promise promise) {
+    if (lyric != null) lyric.setSingleLine(singleLine);
+    promise.resolve(null);
+  }
+
+  @ReactMethod
+  public void setShowToggleAnima(boolean showToggleAnima, Promise promise) {
+    if (lyric != null) lyric.setShowToggleAnima(showToggleAnima);
+    promise.resolve(null);
+  }
+
+  @ReactMethod
+  public void setWidth(int width, Promise promise) {
+    if (lyric != null) lyric.setWidth(width);
+    promise.resolve(null);
+  }
+
+  @ReactMethod
+  public void setLyricTextPosition(String positionX, String positionY, Promise promise) {
+    if (lyric != null) lyric.setLyricTextPosition(positionX, positionY);
+    promise.resolve(null);
+  }
+
+  @ReactMethod
+  public void checkOverlayPermission(Promise promise) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(reactContext)) {
+      promise.reject(new Exception("Permission denied"));
+    }
+    promise.resolve(null);
+  }
+
+  @ReactMethod
+  public void openOverlayPermissionActivity(Promise promise) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(reactContext)) {
+      Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + reactContext.getApplicationContext().getPackageName()));
+      reactContext.startActivityForResult(intent, 1, null);
+    }
+    promise.resolve(null);
+  }
+
+}
+
+
+====================
+文件名: com/lxnetease/music/mobile/lyric/LyricPackage.java
+--------------------
+下面是完整代码:
+
+package com.lxnetease.music.mobile.lyric;
+
+import com.facebook.react.ReactPackage;
+import com.facebook.react.bridge.NativeModule;
+import com.facebook.react.bridge.ReactApplicationContext;
+import com.facebook.react.uimanager.ViewManager;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+public class LyricPackage implements ReactPackage {
+  @Override
+  public List<ViewManager> createViewManagers(ReactApplicationContext reactContext) {
+    return Collections.emptyList();
+  }
+
+  @Override
+  public List<NativeModule> createNativeModules(ReactApplicationContext reactContext) {
+    return Arrays.<NativeModule>asList(new LyricModule(reactContext));
+  }
+}
+
+
+====================
+文件名: com/lxnetease/music/mobile/lyric/LyricPlayer.java
+--------------------
+下面是完整代码:
+
+package com.lxnetease.music.mobile.lyric;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public class LyricPlayer {
+  final String timeFieldExp = "^(?:\\[[\\d:.]+])+";
+  final String timeExp = "\\d{1,3}(:\\d{1,3}){0,2}(?:\\.\\d{1,3})";
+//  HashMap tagRegMap;
+  Pattern timeFieldPattern;
+  Pattern timePattern;
+
+  String lyric = "";
+  ArrayList<String> extendedLyrics = new ArrayList<>();
+  List<HashMap> lines = new ArrayList<>();
+  HashMap tags = new HashMap();
+  boolean isPlay = false;
+  float playbackRate = 1;
+  int curLineNum = 0;
+  int maxLine = 0;
+  int offset = 150;
+  int performanceTime = 0;
+  int startPlayTime = 0;
+  // int delay = 0;
+  Object tid = null;
+  boolean tempPause = false;
+  boolean tempPaused = false;
+
+  LyricPlayer() {
+//    tagRegMap = new HashMap<String, String>();
+//    tagRegMap.put("title", "ti");
+//    tagRegMap.put("artist", "ar");
+//    tagRegMap.put("album", "al");
+//    tagRegMap.put("offset", "offset");
+//    tagRegMap.put("by", "by");
+//    tags = new HashMap();
+
+    timeFieldPattern = Pattern.compile(timeFieldExp);
+    timePattern = Pattern.compile(timeExp);
+  }
+
+  public void setTempPause(boolean isPaused) {
+    if (isPaused) {
+      tempPause = true;
+    } else {
+      tempPause = false;
+      if (tempPaused) {
+        tempPaused = false;
+        if (isPlay) refresh();
+      }
+    }
+  }
+
+//  @RequiresApi(api = Build.VERSION_CODES.N)
+//  private void initTag() {
+//    tagRegMap.forEach((tag, value) -> {
+//      Pattern pattern = Pattern.compile("\\[" + value + ":([^\\]]*)]", Pattern.CASE_INSENSITIVE);
+//      Matcher matcher = pattern.matcher(lyric);
+//
+//      tags.put(tag, matcher.group(1));
+//    });
+//  }
+
+  private void startTimeout(Runnable runnable, long delay) {
+    if (tid != null) Utils.clearTimeout(tid);
+    tid = Utils.setTimeout(runnable, delay);
+  }
+
+  private void stopTimeout() {
+    if (tid == null) return;
+    Utils.clearTimeout(tid);
+    tid = null;
+  }
+
+  private int getNow() {
+    return (int)(System.nanoTime() / 1000000);
+  }
+
+  private int getCurrentTime() {
+    return (int)((getNow() - this.performanceTime) * this.playbackRate) + startPlayTime;
+  }
+
+  private void initTag() {
+    tags = new HashMap();
+    Matcher matcher = Pattern.compile("\\[(ti|ar|al|offset|by):\\s*(\\S+(?:\\s+\\S+)*)\\s*]").matcher(this.lyric);
+    while (matcher.find()) {
+      String key = matcher.group(1);
+      if (key == null) continue;
+      String val = matcher.group(2);
+      if (val == null) val = "";
+      tags.put(key, val);
+    }
+
+    String offsetStr = (String) tags.get("offset");
+    if (offsetStr == null || offsetStr.equals("")) {
+      tags.put("offset", 0);
+    } else {
+      int offset;
+      try {
+        offset = Integer.parseInt(offsetStr);
+      } catch (Exception err) {
+        offset = 0;
+      }
+      tags.put("offset", offset);
+    }
+  }
+
+
+  final String t_rxp_1 = "^0+(\\d+)";
+  final String t_rxp_2 = ":0+(\\d+)";
+  final String t_rxp_3 = "\\.0+(\\d+)";
+  private String formatTimeLabel(String label) {
+    return label.replaceAll(t_rxp_1, "$1")
+      .replaceAll(t_rxp_2, ":$1")
+      .replaceAll(t_rxp_3, ".$1");
+  }
+
+  private void parseExtendedLyric(HashMap linesMap, String extendedLyric) {
+    String[] extendedLyricLines = extendedLyric.split("\r\n|\n|\r");
+    for (String translationLine : extendedLyricLines) {
+      String line = translationLine.trim();
+      Matcher timeFieldResult = timeFieldPattern.matcher(line);
+      if (timeFieldResult.find()) {
+        String timeField = timeFieldResult.group();
+        String text = line.replaceAll(timeFieldExp, "").trim();
+        if (text.length() > 0) {
+          Matcher timeMatchResult = timePattern.matcher(timeField);
+          while (timeMatchResult.find()) {
+            String timeStr = timeMatchResult.group();
+            timeStr = formatTimeLabel(timeStr);
+            HashMap targetLine = (HashMap) linesMap.get(timeStr);
+            if (targetLine != null) ((ArrayList<String>) targetLine.get("extendedLyrics")).add(text);
+          }
+        }
+      }
+    }
+  }
+
+  private void initLines() {
+    String[] linesStr = lyric.split("\r\n|\n|\r");
+    lines = new ArrayList<>();
+
+    HashMap linesMap = new HashMap<String, HashMap>();
+    HashMap timeMap = new HashMap<String, Integer>();
+
+    for (String lineStr : linesStr) {
+      String line = lineStr.trim();
+      Matcher timeFieldResult = timeFieldPattern.matcher(line);
+      if (timeFieldResult.find()) {
+        String timeField = timeFieldResult.group();
+        String text = line.replaceAll(timeFieldExp, "").trim();
+        if (text.length() > 0) {
+          Matcher timeMatchResult = timePattern.matcher(timeField);
+          while (timeMatchResult.find()) {
+            String timeStr = formatTimeLabel(timeMatchResult.group());
+            if (linesMap.containsKey(timeStr)) {
+              ((ArrayList<String>) ((HashMap) linesMap.get(timeStr)).get("extendedLyrics")).add(text);
+              continue;
+            }
+            String[] timeArr = timeStr.split(":");
+            String hours;
+            String minutes;
+            String seconds;
+            String milliseconds = "0";
+            switch (timeArr.length) {
+              case 3:
+                hours = timeArr[0];
+                minutes = timeArr[1];
+                seconds = timeArr[2];
+                break;
+              case 2:
+                hours = "0";
+                minutes = timeArr[0];
+                seconds = timeArr[1];
+                break;
+              case 1:
+                hours = "0";
+                minutes = "0";
+                seconds = timeArr[0];
+                break;
+              default:
+                continue;
+            }
+            if (seconds.contains(".")) {
+              timeArr = seconds.split("\\.");
+              seconds = timeArr[0];
+              if (timeArr.length > 1) milliseconds = timeArr[1];
+            }
+            HashMap<String, Object> lineInfo = new HashMap<>();
+            int time = Integer.parseInt(hours) * 60 * 60 * 1000
+              + Integer.parseInt(minutes) * 60 * 1000
+              + Integer.parseInt(seconds) * 1000
+              + Integer.parseInt(milliseconds);
+            lineInfo.put("time", time);
+            lineInfo.put("text", text);
+            lineInfo.put("extendedLyrics", new ArrayList<String>(extendedLyrics.size()));
+            timeMap.put(timeStr, time);
+            linesMap.put(timeStr, lineInfo);
+          }
+        }
+      }
+    }
+
+    for (String extendedLyric : extendedLyrics) {
+      parseExtendedLyric(linesMap, extendedLyric);
+    }
+
+    Set<Entry<String, Integer>> set = timeMap.entrySet();
+    List<Entry<String, Integer>> list = new ArrayList<Entry<String, Integer>>(set);
+    Collections.sort(list, new Comparator<Entry<String, Integer>>() {
+      public int compare(Map.Entry<String, Integer> o1,
+                         Map.Entry<String, Integer> o2) {
+        return o1.getValue().compareTo(o2.getValue());
+      }
+    });
+
+    // lines = new ArrayList<HashMap>(list.size());
+    for (Entry<String, Integer> entry : list) {
+      lines.add((HashMap) linesMap.get(entry.getKey()));
+    }
+
+    this.maxLine = lines.size() - 1;
+  }
+
+  private void  init() {
+    if (lyric == null) lyric = "";
+    if (extendedLyrics == null) extendedLyrics = new ArrayList<>();
+    initTag();
+    initLines();
+    onSetLyric(lines);
+  }
+
+  public void pause() {
+    if (!isPlay) return;
+    isPlay = false;
+    tempPaused = false;
+    stopTimeout();
+    if (curLineNum == maxLine) return;
+    int curLineNum = this.findCurLineNum(getCurrentTime());
+    if (this.curLineNum != curLineNum) {
+      this.curLineNum = curLineNum;
+      this.onPlay(curLineNum);
+    }
+  }
+
+  public void play(int curTime) {
+    if (this.lines.size() == 0) return;
+    pause();
+    isPlay = true;
+
+    Object tagOffset = tags.get("offset");
+    if (tagOffset == null) tagOffset = 0;
+    performanceTime = getNow() - (int) tagOffset - offset;
+    startPlayTime = curTime;
+
+    curLineNum = findCurLineNum(getCurrentTime()) - 1;
+
+    refresh();
+  }
+
+  private int findCurLineNum(int curTime, int startIndex) {
+    // Log.d("Lyric", "findCurLineNum: " + startIndex);
+    if (curTime <= 0) return 0;
+    int length = lines.size();
+    for (int index = startIndex; index < length; index++) {
+      if (curTime < (int) ((HashMap)lines.get(index)).get("time")) return index == 0 ? 0 : index - 1;
+    }
+    return length - 1;
+  }
+
+  private int findCurLineNum(int curTime) {
+    return findCurLineNum(curTime, 0);
+  }
+
+  private void handleMaxLine() {
+    this.onPlay(this.curLineNum);
+    this.pause();
+  }
+
+  private void refresh() {
+    if (tempPaused) tempPaused = false;
+
+    curLineNum++;
+    // Log.d("Lyric", "refresh: " + curLineNum);
+
+    if (curLineNum >= maxLine) {
+      handleMaxLine();
+      return;
+    }
+    HashMap curLine = lines.get(curLineNum);
+
+    int currentTime = getCurrentTime();
+    int driftTime = currentTime - (int)curLine.get("time");
+    // Log.d("Lyric", "driftTime: " + driftTime + "  time: " + curLine.get("time") + "  currentTime: " + currentTime);
+
+    if (driftTime >= 0 || curLineNum == 0) {
+      HashMap nextLine = lines.get(curLineNum + 1);
+      int delay = (int)(((int)nextLine.get("time") - (int)curLine.get("time") - driftTime) / this.playbackRate);
+      // Log.d("Lyric", "delay: " + delay + "  driftTime: " + driftTime);
+      if (delay > 0) {
+        if (isPlay) {
+          startTimeout(() -> {
+            if (tempPause) {
+              tempPaused = true;
+              return;
+            }
+            if (!isPlay) return;
+            refresh();
+          }, delay);
+        }
+        onPlay(curLineNum);
+      } else {
+        int newCurLineNum = this.findCurLineNum(currentTime, curLineNum + 1);
+        if (newCurLineNum > curLineNum) curLineNum = newCurLineNum - 1;
+        // Log.d("Lyric", "refresh--: " + curLineNum + "  newCurLineNum: " + newCurLineNum);
+        refresh();
+      }
+      return;
+    }
+
+    curLineNum = this.findCurLineNum(currentTime, curLineNum) - 1;
+    refresh();
+  }
+
+  public void setLyric(String lyric, ArrayList<String> extendedLyrics) {
+    if (isPlay) pause();
+    this.lyric = lyric;
+    this.extendedLyrics = extendedLyrics;
+    init();
+  }
+
+  public void setPlaybackRate(float playbackRate) {
+    this.playbackRate = playbackRate;
+    if (this.lines.size() == 0) return;
+    if (!this.isPlay) return;
+    this.play(this.getCurrentTime());
+  }
+
+  public void onPlay(int lineNum) {}
+
+  public void onSetLyric(List lines) {}
+
+}
+
+
+====================
+文件名: com/lxnetease/music/mobile/lyric/LyricSwitchView.java
+--------------------
+下面是完整代码:
+
+package com.lxnetease.music.mobile.lyric;
+
+import android.annotation.SuppressLint;
+import android.content.Context;
+import android.graphics.Color;
+import android.graphics.Typeface;
+import android.text.TextPaint;
+import android.text.TextUtils;
+import android.view.View;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.animation.AnimationSet;
+import android.view.animation.TranslateAnimation;
+import android.widget.TextSwitcher;
+import android.widget.TextView;
+
+import androidx.annotation.Nullable;
+
+import java.util.ArrayList;
+
+// https://github.com/Block-Network/StatusBarLyric/blob/main/app/src/main/java/statusbar/lyric/view/LyricSwitchView.kt
+@SuppressLint({"ViewConstructor"})
+public final class LyricSwitchView extends TextSwitcher {
+  private final TextView textView;
+  private final TextView textView2;
+  private final ArrayList<TextView> viewArray;
+  // private final boolean isSingleLine;
+  private boolean isShowAnima;
+
+  private boolean isSingleLine;
+
+  public LyricSwitchView(Context context, boolean isSingleLine, boolean isShowAnima) {
+    super(context);
+    // this.isSingleLine = isSingleLine;
+    this.isShowAnima = isShowAnima;
+    this.isSingleLine = isSingleLine;
+
+    if (isSingleLine) {
+      viewArray = new ArrayList<>(2);
+      textView = new LyricTextView(context);
+      textView2 = new LyricTextView(context);
+      viewArray.add(textView);
+      viewArray.add(textView2);
+//      for (TextView v : viewArray) {
+//        v.setShadowLayer(0.1f, 0, 0, Color.BLACK);
+//      }
+    } else {
+      viewArray = new ArrayList<>(2);
+      textView = new TextView(context);
+      textView2 = new TextView(context);
+      viewArray.add(textView);
+      viewArray.add(textView2);
+      for (TextView v : viewArray) {
+//        v.setShadowLayer(0.2f, 0, 0, Color.BLACK);
+        v.setEllipsize(TextUtils.TruncateAt.END);
+      }
+    }
+    setAnima();
+    this.addView(textView);
+    this.addView(textView2);
+  }
+
+  @Nullable
+  public Animation inAnim(String str, float height) {
+    AnimationSet animationSet = new AnimationSet(true);
+    if (str == null) return null;
+
+    TranslateAnimation translateAnimation;
+    switch (str) {
+      case "top":
+        translateAnimation = new TranslateAnimation(0.0F, 0.0F, height, 0.0F);
+        break;
+      case "bottom":
+        translateAnimation = new TranslateAnimation(0.0F, 0.0F, -height, 0.0F);
+        break;
+      case "left":
+        translateAnimation = new TranslateAnimation(100.0F, 0.0F, 0.0F, 0.0F);
+        break;
+      case "right":
+        translateAnimation = new TranslateAnimation(-100.0F, 0.0F, 0.0F, 0.0F);
+        break;
+      default: return null;
+    }
+
+    translateAnimation.setDuration(300L);
+    AlphaAnimation alphaAnimation = new AlphaAnimation(0.0F, 1.0F);
+    alphaAnimation.setDuration(300L);
+    animationSet.addAnimation(translateAnimation);
+    animationSet.addAnimation(alphaAnimation);
+    return animationSet;
+  }
+
+  @Nullable
+  public Animation outAnim(String str, float height) {
+    AnimationSet animationSet = new AnimationSet(true);
+    if (str == null) return null;
+
+    TranslateAnimation translateAnimation;
+    switch (str) {
+      case "top":
+        translateAnimation = new TranslateAnimation(0.0F, 0.0F, 0.0F, -height);
+        break;
+      case "bottom":
+        translateAnimation = new TranslateAnimation(0.0F, 0.0F, 0.0F, height);
+        break;
+      case "left":
+        translateAnimation = new TranslateAnimation(0.0F, -100.0F, 0.0F, 0.0F);
+        break;
+      case "right":
+        translateAnimation = new TranslateAnimation(0.0F, 100.0F, 0.0F, 0.0F);
+        break;
+      default: return null;
+    }
+    translateAnimation.setDuration(300L);
+    AlphaAnimation alphaAnimation = new AlphaAnimation(1.0F, 0.0F);
+    alphaAnimation.setDuration(300L);
+    animationSet.addAnimation(translateAnimation);
+    animationSet.addAnimation(alphaAnimation);
+    return animationSet;
+  }
+
+  private void setAnima() {
+    if (textView == null) return;
+    if (isShowAnima) {
+      float size = textView.getTextSize();
+      setInAnimation(inAnim("top", size));
+      setOutAnimation(outAnim("top", size));
+    } else {
+      setInAnimation(null);
+      setOutAnimation(null);
+    }
+  }
+
+  public void setShowAnima(boolean showAnima) {
+    isShowAnima = showAnima;
+    setAnima();
+  }
+
+  public CharSequence getText() {
+    View currentView = this.getCurrentView();
+    return currentView == null ? "" : ((TextView)currentView).getText();
+  }
+
+  public TextPaint getPaint() {
+    TextView v = (TextView)this.getCurrentView();
+    if (v == null) return null;
+    return v.getPaint();
+  }
+
+  public void setWidth(int i) {
+    for (TextView v : viewArray) v.setWidth(i);
+  }
+
+  public void setTextColor(int i) {
+    for (TextView v : viewArray) v.setTextColor(i);
+  }
+
+  public void setShadowColor(int i) {
+    // float radius;
+    // if (isSingleLine) {
+    //   radius = 1.2f;
+    // } else {
+    //   radius = 2f;
+    // }
+    // https://stackoverflow.com/a/28367917
+    for (TextView v : viewArray) v.setShadowLayer(1.6f, 1.5f, 1.3f, i);
+  }
+
+  public void setSourceText(CharSequence str) {
+    for (TextView v : viewArray) v.setText(str);
+  }
+
+  public void setLetterSpacings(float letterSpacing) {
+    for (TextView v : viewArray) v.setLetterSpacing(letterSpacing);
+  }
+
+  public void setHeight(int i) {
+    for (TextView v : viewArray) v.setHeight(i);
+  }
+
+  public void setTypeface(Typeface typeface) {
+    for (TextView v : viewArray) v.setTypeface(typeface);
+  }
+
+  public void setSingleLine(boolean bool) {
+    for (TextView v : viewArray) v.setSingleLine(bool);
+  }
+
+  public void setMaxLines(int i) {
+    for (TextView v : viewArray) v.setMaxLines(i);
+  }
+
+  public void setTextSize(float f) {
+    for (TextView v : viewArray) v.setTextSize(f);
+    setAnima();
+  }
+
+  public void setGravity(int i) {
+    for (TextView v : viewArray) v.setGravity(i);
+  }
+
+}
+
+
+====================
+文件名: com/lxnetease/music/mobile/lyric/LyricTextView.java
+--------------------
+下面是完整代码:
+
+package com.lxnetease.music.mobile.lyric;
+
+import android.annotation.SuppressLint;
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.util.Log;
+import android.view.Gravity;
+import android.widget.TextView;
+
+// https://github.com/Block-Network/StatusBarLyric/blob/main/app/src/main/java/statusbar/lyric/view/LyricTextView.kt
+@SuppressLint("AppCompatCustomView")
+public class LyricTextView extends TextView {
+  private boolean isStop = true;
+  private float textLength = 0F;
+  private float viewWidth = 0F;
+  private float viewHeight = 0F;
+  private final float SPEED_LIMIT = 0.135F;
+  private float speed;
+  private float xx = 0F;
+  private int gravityVertical = Gravity.TOP;
+  private int gravityHorizontal = Gravity.CENTER;
+  private float y = 0F;
+  private String text = null;
+  private final Paint mPaint;
+  private final Runnable mStartScrollRunnable;
+  private final Runnable invalidateRunnable;
+  public static final int startScrollDelay = 1500;
+  public static final int invalidateDelay = 10;
+
+  public LyricTextView(Context context) {
+    super(context);
+    mStartScrollRunnable = LyricTextView.this::startScroll;
+    invalidateRunnable = LyricTextView.this::invalidate;
+    mPaint = getPaint();
+    speed = SPEED_LIMIT * getTextSize();
+  }
+
+  private void init() {
+    xx = 0.0F;
+    textLength = getTextLength();
+    // viewWidth = (float) getWidth();
+  }
+
+  @Override
+  protected void onDetachedFromWindow() {
+    removeCallbacks(mStartScrollRunnable);
+    super.onDetachedFromWindow();
+  }
+
+  @Override
+  protected void onTextChanged(CharSequence text, int start, int lengthBefore, int lengthAfter) {
+    super.onTextChanged(text, start, lengthBefore, lengthAfter);
+    stopScroll();
+    this.text = text.toString();
+    init();
+    postInvalidate();
+    postDelayed(mStartScrollRunnable, startScrollDelay);
+  }
+
+  @Override
+  public void setTextColor(int color) {
+    if (mPaint != null) mPaint.setColor(color);
+    postInvalidate();
+  }
+
+  @Override
+  public void setShadowLayer(float radius, float dx, float dy, int shadowColor) {
+    if (mPaint != null) mPaint.setShadowLayer(radius, dx, dy, shadowColor);
+    post(mStartScrollRunnable);
+  }
+
+  @Override
+  public void setTextSize(float size) {
+    super.setTextSize(size);
+    speed = SPEED_LIMIT * size;
+    if (text == null) return;
+    post(mStartScrollRunnable);
+  }
+
+  @Override
+  public void setWidth(int pixels) {
+    super.setWidth(pixels);
+    viewWidth = pixels;
+    if (text == null) return;
+    post(mStartScrollRunnable);
+  }
+
+  @Override
+  public void setHeight(int pixels) {
+    super.setHeight(pixels);
+    viewHeight = pixels;
+    y = getDrawY();
+    if (text == null) return;
+    post(mStartScrollRunnable);
+  }
+
+  @Override
+  public void setGravity(int gravity) {
+    if ((gravity & Gravity.RELATIVE_HORIZONTAL_GRAVITY_MASK) == 0) {
+      gravity |= Gravity.START;
+    }
+    if ((gravity & Gravity.VERTICAL_GRAVITY_MASK) == 0) {
+      gravity |= Gravity.TOP;
+    }
+
+    gravityVertical = gravity & Gravity.VERTICAL_GRAVITY_MASK;
+    gravityHorizontal = gravity & Gravity.RELATIVE_HORIZONTAL_GRAVITY_MASK;
+
+    y = getDrawY();
+    // Log.d("Lyric", "gravityVertical: " + gravityVertical + " gravityHorizontal: " + gravityHorizontal);
+
+    if (text == null) return;
+    post(mStartScrollRunnable);
+  }
+
+  @Override
+  protected void onDraw(Canvas canvas) {
+    float mSpeed = speed;
+    if (text != null) {
+      Log.d("Lyric", "getHeight: " + getHeight() + " y: " + y);
+      canvas.drawText(text, getDrawX(), y, mPaint);
+      if (getText().length() >= 20) {
+        mSpeed += mSpeed;
+      }
+    }
+
+    if (!isStop) {
+      if (viewWidth - xx + mSpeed >= textLength) {
+        xx = viewWidth - textLength - 2;
+        stopScroll();
+      } else {
+        xx -= mSpeed;
+      }
+
+      invalidateAfter();
+    }
+
+  }
+
+  private void invalidateAfter() {
+    removeCallbacks(invalidateRunnable);
+    postDelayed(invalidateRunnable, invalidateDelay);
+  }
+
+  private void startScroll() {
+    init();
+    isStop = false;
+    postInvalidate();
+  }
+
+  private void stopScroll() {
+    isStop = true;
+    removeCallbacks(mStartScrollRunnable);
+    postInvalidate();
+  }
+
+  private float getTextLength() {
+    return mPaint == null ? 0.0F : mPaint.measureText(text);
+  }
+
+  private float getDrawY() {
+    Paint.FontMetrics fontMetrics = mPaint.getFontMetrics();
+    float top = fontMetrics.top;
+    float bottom = fontMetrics.bottom;
+    float ascent = fontMetrics.ascent;
+    // float descent = fontMetrics.descent;
+
+    float y;
+
+    // float y = Math.abs(mPaint.ascent() + mPaint.descent()) / 2;
+    switch (gravityVertical) {
+      case Gravity.CENTER_VERTICAL:
+        y = viewHeight / 2F + (bottom - top) / 2 - bottom;
+        break;
+      case Gravity.BOTTOM:
+        y = viewHeight - bottom;
+        break;
+      default:
+        y = -ascent;
+        break;
+    }
+    return y;
+  }
+
+  private float getDrawX() {
+    float x;
+    if (textLength < viewWidth) {
+      switch (gravityHorizontal) {
+        case Gravity.CENTER_HORIZONTAL:
+          x = (viewWidth - textLength) / 2;
+          break;
+        case Gravity.END:
+          x = viewWidth - textLength;
+          break;
+        default:
+          x = 0;
+          break;
+      }
+      isStop = true;
+    } else {
+      x = xx;
+    }
+    return x;
+  }
+
+  // public void setSpeed(float speed) {
+  //  this.speed = speed;
+  // }
+
+}
+
+
+====================
+文件名: com/lxnetease/music/mobile/lyric/LyricView.java
+--------------------
+下面是完整代码:
+
+package com.lxnetease.music.mobile.lyric;
+
+import android.app.Activity;
+import android.content.Context;
+import android.graphics.Color;
+import android.graphics.PixelFormat;
+import android.graphics.Point;
+import android.hardware.SensorManager;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.Handler;
+import android.util.DisplayMetrics;
+import android.util.Log;
+import android.view.Display;
+import android.view.Gravity;
+import android.view.MotionEvent;
+import android.view.OrientationEventListener;
+import android.view.View;
+import android.view.WindowManager;
+
+import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.ReactApplicationContext;
+import com.facebook.react.bridge.WritableMap;
+
+import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import com.lxnetease.music.mobile.R;
+
+public class LyricView extends Activity implements View.OnTouchListener {
+  LyricSwitchView textView = null;
+  WindowManager windowManager = null;
+  WindowManager.LayoutParams layoutParams = null;
+  final private ReactApplicationContext reactContext;
+  final private LyricEvent lyricEvent;
+
+  // private int winWidth = 0;
+
+  private float lastX; //上一次位置的X.Y坐标
+  private float lastY;
+  private float nowX;  //当前移动位置的X.Y坐标
+  private float nowY;
+  private float tranX; //悬浮窗移动位置的相对值
+  private float tranY;
+  private float prevViewPercentageX = 0;
+  private float prevViewPercentageY = 0;
+  private float widthPercentage = 1f;
+
+  private float preY = 0;
+  // private static boolean isVibrated = false;
+
+  private boolean isLock = false;
+  private boolean isSingleLine = false;
+  private boolean isShowToggleAnima = false;
+  private String unplayColor = "rgba(255, 255, 255, 1)";
+  private String playedColor = "rgba(7, 197, 86, 1)";
+  private String shadowColor = "rgba(0, 0, 0, 0.15)";
+  // private String lastText = "LX-N Music ^-^";
+  private String textX = "LEFT";
+  private String textY = "TOP";
+  private float alpha = 1f;
+  private float textSize = 18f;
+  private int maxWidth = 0;
+  private int maxHeight = 0;
+
+  private int maxLineNum = 5;
+  // private float lineHeight = 1;
+  private String currentLyric = "LX-N Music ^-^";
+  private ArrayList<String> currentExtendedLyrics = new ArrayList<>();
+
+  private int mLastRotation;
+  private OrientationEventListener orientationEventListener = null;
+
+  final Handler fixViewPositionHandler;
+  final Runnable fixViewPositionRunnable = this::updateViewPosition;
+
+  LyricView(ReactApplicationContext reactContext, LyricEvent lyricEvent) {
+    this.reactContext = reactContext;
+    this.lyricEvent = lyricEvent;
+    fixViewPositionHandler = new Handler();
+  }
+
+  private void listenOrientationEvent() {
+    if (orientationEventListener == null) {
+      orientationEventListener = new OrientationEventListener(reactContext, SensorManager.SENSOR_DELAY_NORMAL) {
+        @Override
+        public void onOrientationChanged(int orientation) {
+          Display display = windowManager.getDefaultDisplay();
+          int rotation = display.getRotation();
+          if(rotation != mLastRotation){
+            //rotation changed
+            // if (rotation == Surface.ROTATION_90){} // check rotations here
+            // if (rotation == Surface.ROTATION_270){} //
+            // Log.d("Lyric", "rotation: " + rotation);
+            fixViewPositionHandler.postDelayed(fixViewPositionRunnable, 300);
+          }
+          mLastRotation = rotation;
+        }
+      };
+    }
+    // Log.d("Lyric", "orientationEventListener: " + orientationEventListener.canDetectOrientation());
+    if (orientationEventListener.canDetectOrientation()) {
+      orientationEventListener.enable();
+    }
+  }
+  private void removeOrientationEvent() {
+    if (orientationEventListener == null) return;
+    orientationEventListener.disable();
+    // orientationEventListener = null;
+  }
+
+  private int getLayoutParamsFlags() {
+    int flag = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
+      WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
+      WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
+      WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
+
+    if (isLock) {
+      flag = flag | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
+    }
+
+    return flag;
+  }
+
+  /**
+   * update screen width and height
+   * @return has updated
+   */
+  private boolean updateWH() {
+    Display display = windowManager.getDefaultDisplay();
+    Point size = new Point();
+    display.getRealSize(size);
+    if (maxWidth == size.x && maxHeight == size.y) return false;
+    maxWidth = size.x;
+    maxHeight = size.y;
+    return true;
+  }
+
+  private void setLayoutParamsHeight() {
+    if (textView == null) return;
+    int height = textView.getPaint().getFontMetricsInt(null) * maxLineNum;
+    if (height > maxHeight - 100) height = maxHeight - 100;
+    layoutParams.height = height;
+    textView.setHeight(height);
+  }
+
+  private void fixViewPosition() {
+    int maxX = maxWidth - layoutParams.width;
+    int x = (int)(maxWidth * prevViewPercentageX);
+    if (x < 0) x = 0;
+    else if (x > maxX) x = maxX;
+    if (layoutParams.x != x) layoutParams.x = x;
+
+    setLayoutParamsHeight();
+
+    int maxY = maxHeight - layoutParams.height;
+    int y = (int)(maxHeight * prevViewPercentageY);
+    if (y < 0) y = 0;
+    else if (y > maxY) y = maxY;
+    if (layoutParams.y != y) layoutParams.y = y;
+  }
+
+  private void updateViewPosition() {
+    if (!updateWH()) return;
+
+    int width = (int)(maxWidth * widthPercentage);
+    if (layoutParams.width != width) {
+      layoutParams.width = width;
+      if (textView != null) textView.setWidth(width);
+    }
+
+    fixViewPosition();
+    // Log.d("Lyric", "widthPercentage: " + widthPercentage + "  prevViewPercentageX: " + prevViewPercentageX);
+    // Log.d("Lyric", "prevViewPercentageY: " + prevViewPercentageY + "  layoutParams.x: " + layoutParams.x);
+    // Log.d("Lyric", "layoutParams.y: " + layoutParams.y + "  layoutParams.width: " + layoutParams.width);
+
+    windowManager.updateViewLayout(textView, layoutParams);
+  }
+
+  public void sendPositionEvent(float x, float y) {
+    WritableMap params = Arguments.createMap();
+    params.putDouble("x", x);
+    params.putDouble("y", y);
+    lyricEvent.sendEvent(lyricEvent.SET_VIEW_POSITION, params);
+  }
+
+//  public void permission(){
+//    if (Build.VERSION.SDK_INT >= 23) {
+//      if(!Settings.canDrawOverlays(this)) {
+//        Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
+//        startActivity(intent);
+//        return;
+//      } else {
+//        //Android6.0以上
+//        if (mFloatView!=null && mFloatView.isShow()==false) {
+//          mFloatView.show();
+//        }
+//      }
+//    } else {
+//      //Android6.0以下，不用动态声明权限
+//      if (mFloatView!=null && mFloatView.isShow()==false) {
+//        mFloatView.show();
+//      }
+//    }
+//  }
+// boolean isLock, String themeColor, float alpha, int lyricViewX, int lyricViewY, String textX, String textY
+  public void showLyricView(Bundle options) {
+    isLock = options.getBoolean("isLock", isLock);
+    isSingleLine = options.getBoolean("isSingleLine", isSingleLine);
+    isShowToggleAnima = options.getBoolean("isShowToggleAnima", isShowToggleAnima);
+    unplayColor = options.getString("unplayColor", unplayColor);
+    playedColor = options.getString("playedColor", playedColor);
+    shadowColor = options.getString("shadowColor", shadowColor);
+    prevViewPercentageX = (float) options.getDouble("lyricViewX", 0f) / 100f;
+    prevViewPercentageY = (float) options.getDouble("lyricViewY", 0f) / 100f;
+    textX = options.getString("textX", textX);
+    textY = options.getString("textY", textY);
+    alpha = (float) options.getDouble("alpha", alpha);
+    textSize = (float) options.getDouble("textSize", textSize);
+    widthPercentage = (float) options.getDouble("width", 100) / 100f;
+    maxLineNum = (int) options.getDouble("maxLineNum", maxLineNum);
+    handleShowLyric();
+    listenOrientationEvent();
+  }
+  public void showLyricView() {
+    try {
+      handleShowLyric();
+    } catch (Exception e) {
+      Log.e("Lyric", e.getMessage());
+      return;
+    }
+    listenOrientationEvent();
+  }
+  public static int parseColor(String input) {
+    if (input.startsWith("#")) return Color.parseColor(input);
+    Pattern c = Pattern.compile("rgba? *\\( *(\\d+), *(\\d+), *(\\d+)(?:, *([\\d.]+))? *\\)");
+    Matcher m = c.matcher(input);
+    if (m.matches()) {
+      int red = Integer.parseInt(m.group(1));
+      int green = Integer.parseInt(m.group(2));
+      int blue = Integer.parseInt(m.group(3));
+      float a = 1;
+      if (m.group(4) != null) a = Float.parseFloat(m.group(4));
+      return Color.argb((int) (a * 255), red, green, blue);
+    }
+    return Color.parseColor("#000000");
+  }
+
+  private void createTextView() {
+    textView = new LyricSwitchView(reactContext, isSingleLine, isShowToggleAnima);
+    textView.setText("");
+    textView.setText(currentLyric);
+
+    textView.setTextColor(parseColor(playedColor));
+    textView.setShadowColor(parseColor(shadowColor));
+    textView.setAlpha(alpha);
+    textView.setTextSize(textSize);
+    // Log.d("Lyric", "alpha: " + alpha + " text size: " + textSize);
+
+    //监听 OnTouch 事件 为了实现"移动歌词"功能
+    textView.setOnTouchListener(this);
+
+    int textPositionX;
+    int textPositionY;
+    switch (textX) {
+      case "CENTER":
+        textPositionX = Gravity.CENTER;
+        break;
+      case "RIGHT":
+        textPositionX = Gravity.END;
+        break;
+      case "Left":
+      default:
+        textPositionX = Gravity.START;
+        break;
+    }
+    switch (textY) {
+      case "CENTER":
+        textPositionY = Gravity.CENTER;
+        break;
+      case "BOTTOM":
+        textPositionY = Gravity.BOTTOM;
+        break;
+      case "TOP":
+      default:
+        textPositionY = Gravity.TOP;
+        break;
+    }
+    textView.setGravity(textPositionX | textPositionY);
+
+    if (!isSingleLine) {
+      textView.setMaxLines(maxLineNum);
+    }
+  }
+  private void handleShowLyric() {
+    if (windowManager == null) {
+      windowManager = (WindowManager) reactContext.getSystemService(Context.WINDOW_SERVICE);
+      //设置TextView的属性
+      layoutParams = new WindowManager.LayoutParams();
+
+      DisplayMetrics outMetrics = new DisplayMetrics();
+      windowManager.getDefaultDisplay().getMetrics(outMetrics);
+      // winWidth = (int)(outMetrics.widthPixels * 0.92);
+    }
+
+    // 注意，悬浮窗只有一个，而当打开应用的时候才会产生悬浮窗，所以要判断悬浮窗是否已经存在，
+    if (textView != null) {
+      windowManager.removeView(textView);
+    }
+
+    // 使用Application context
+    // 创建UI控件，避免Activity销毁导致上下文出现问题,因为现在的悬浮窗是系统级别的，不依赖与Activity存在
+    //创建自定义的TextView
+    createTextView();
+
+    // layoutParams.type = WindowManager.LayoutParams.TYPE_SYSTEM_ALERT | WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY;
+    // layoutParams.type = WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY;
+    layoutParams.type = Build.VERSION.SDK_INT < Build.VERSION_CODES.O ?
+      WindowManager.LayoutParams.TYPE_SYSTEM_ALERT :
+      WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
+
+    // layoutParams.flags = isLock
+    //  ? WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+    //  : WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL;
+    layoutParams.flags = getLayoutParamsFlags();
+    if (isLock) {
+      textView.setBackgroundColor(Color.TRANSPARENT);
+
+      // 修复 Android 12 的穿透点击问题
+      if (Build.VERSION.SDK_INT > Build.VERSION_CODES.R) {
+        layoutParams.alpha = 0.8f;
+      }
+    } else {
+      textView.setBackgroundResource(R.drawable.rounded_corner);
+
+      if (Build.VERSION.SDK_INT > Build.VERSION_CODES.R) {
+        layoutParams.alpha = 1.0f;
+      }
+    }
+
+    // TYPE_SYSTEM_ALERT  系统提示,它总是出现在应用程序窗口之上
+    // TYPE_SYSTEM_OVERLAY   系统顶层窗口。显示在其他一切内容之上。此窗口不能获得输入焦点，否则影响锁屏
+    // FLAG_NOT_FOCUSABLE 悬浮窗口较小时，后面的应用图标由不可长按变为可长按,不设置这个flag的话，home页的划屏会有问题
+    // FLAG_NOT_TOUCH_MODAL不阻塞事件传递到后面的窗口
+    layoutParams.gravity = Gravity.TOP | Gravity.START;  //显示在屏幕上中部
+
+    updateWH();
+
+    //悬浮窗的宽高
+    // layoutParams.width = WindowManager.LayoutParams.WRAP_CONTENT;
+    // layoutParams.height = WindowManager.LayoutParams.WRAP_CONTENT;
+    // layoutParams.width= DisplayUtil.dp2px(mContext,55);
+    // layoutParams.height= DisplayUtil.dp2px(mContext,55);
+    layoutParams.width = (int)(maxWidth * widthPercentage);
+    textView.setWidth(layoutParams.width);
+    setLayoutParamsHeight();
+
+    //显示位置与指定位置的相对位置差
+    layoutParams.x = (int)(maxWidth * prevViewPercentageX);
+    layoutParams.y = (int)(maxHeight * prevViewPercentageY);
+
+    fixViewPosition();
+
+    //设置透明
+    layoutParams.format = PixelFormat.TRANSPARENT;
+
+    //添加到window中
+    windowManager.addView(textView, layoutParams);
+  }
+
+  public void setLyric(String text, ArrayList<String> extendedLyrics) {
+    if (text.equals("") && text.equals(currentLyric) && extendedLyrics.size() == 0) return;
+    currentLyric = text;
+    currentExtendedLyrics = extendedLyrics;
+    if (textView == null) return;
+    if (extendedLyrics.size() > 0 && maxLineNum > 1 && !isSingleLine) {
+      int num = maxLineNum - 1;
+      StringBuilder textBuilder = new StringBuilder(text);
+      for (String lrc : extendedLyrics) {
+        textBuilder.append("\n").append(lrc);
+        if (--num < 1) break;
+      }
+      text = textBuilder.toString();
+    }
+    if (textView == null) return;
+    textView.setText(text);
+  }
+
+  public void setMaxLineNum(int maxLineNum) {
+    this.maxLineNum = maxLineNum;
+    if (textView == null) return;
+    if (!isSingleLine) textView.setMaxLines(maxLineNum);
+    setLayoutParamsHeight();
+
+    int maxY = maxHeight - layoutParams.height;
+    int y = layoutParams.y;
+    if (y < 0) y = 0;
+    else if (y > maxY) y = maxY;
+    if (layoutParams.y != y) layoutParams.y = y;
+
+    windowManager.updateViewLayout(textView, layoutParams);
+  }
+
+  public void setWidth(int width) {
+    if (textView == null) return;
+    widthPercentage = width / 100f;
+    layoutParams.width = (int)(maxWidth * widthPercentage);
+    textView.setWidth(layoutParams.width);
+
+    int maxX = maxWidth - layoutParams.width;
+    int x = layoutParams.x;
+    if (x < 0) x = 0;
+    else if (x > maxX) x = maxX;
+    if (layoutParams.x != x) layoutParams.x = x;
+
+    windowManager.updateViewLayout(textView, layoutParams);
+  }
+
+  @Override
+  public boolean onTouch(View v, MotionEvent event) {
+    int maxX = maxWidth - layoutParams.width;
+    int maxY = maxHeight - layoutParams.height;
+
+    switch (event.getAction()){
+      case MotionEvent.ACTION_DOWN:
+        // 获取按下时的X，Y坐标
+        lastX = event.getRawX();
+        lastY = event.getRawY();
+
+        preY = lastY;
+        break;
+      case MotionEvent.ACTION_MOVE:
+        // 获取移动时的X，Y坐标
+        nowX = event.getRawX();
+        nowY = event.getRawY();
+        if (preY == 0){
+          preY = nowY;
+        }
+        // 计算XY坐标偏移量
+        tranX = nowX - lastX;
+        tranY = nowY - lastY;
+
+        int x = layoutParams.x + (int)tranX;
+        if (x < 0) x = 0;
+        else if (x > maxX) x = maxX;
+        int y = layoutParams.y + (int)tranY;
+        if (y < 0) y = 0;
+        else if (y > maxY) y = maxY;
+
+        // 移动悬浮窗
+        layoutParams.x = x;
+        layoutParams.y = y;
+        //更新悬浮窗位置
+        windowManager.updateViewLayout(textView, layoutParams);
+        //记录当前坐标作为下一次计算的上一次移动的位置坐标
+        lastX = nowX;
+        lastY = nowY;
+        break;
+      case MotionEvent.ACTION_UP:
+        // float dy = nowY - preY;
+        // Log.d("Lyric","dy: " + dy);
+        // if (isVibrated){
+        //   if (dy > 10){
+        //     //down
+        //     actions(AppHolder.actions[3]);
+        //   }else if (dy<-10){
+        //     //up
+        //     actions(AppHolder.actions[4]);
+        //   }else {
+        //     //longClick
+        //     actions(AppHolder.actions[2]);
+        //   }
+        //   isVibrated =false;
+        // }
+        //根据移动的位置来判断
+        // dy = 0;
+        tranY = 0;
+        float percentageX = (float)layoutParams.x / (float) maxWidth * 100f;
+        float percentageY = (float)layoutParams.y / (float) maxHeight * 100f;
+        if (percentageX != prevViewPercentageX || percentageY != prevViewPercentageY) {
+          prevViewPercentageX = percentageX / 100f;
+          prevViewPercentageY = percentageY / 100f;
+          sendPositionEvent(percentageX, percentageY);
+        }
+        break;
+    }
+    return true;
+  }
+
+  public void lockView() {
+    isLock = true;
+    if (windowManager == null || textView == null) return;
+    layoutParams.flags = getLayoutParamsFlags();
+
+    if (Build.VERSION.SDK_INT > Build.VERSION_CODES.R) {
+      layoutParams.alpha = 0.8f;
+    }
+    textView.setBackgroundColor(Color.TRANSPARENT);
+    windowManager.updateViewLayout(textView, layoutParams);
+  }
+
+  public void unlockView() {
+    isLock = false;
+    if (windowManager == null || textView == null) return;
+    layoutParams.flags = getLayoutParamsFlags();
+
+    if (Build.VERSION.SDK_INT > Build.VERSION_CODES.R) {
+      layoutParams.alpha = 1.0f;
+    }
+    textView.setBackgroundResource(R.drawable.rounded_corner);
+    windowManager.updateViewLayout(textView, layoutParams);
+  }
+
+  public void setColor(String unplayColor, String playedColor, String shadowColor) {
+    this.unplayColor = unplayColor;
+    this.playedColor = playedColor;
+    this.shadowColor = shadowColor;
+    if (textView == null) return;
+    textView.setTextColor(parseColor(playedColor));
+    textView.setShadowColor(parseColor(shadowColor));
+    // windowManager.updateViewLayout(textView, layoutParams);
+  }
+
+  public void setLyricTextPosition(String textX, String textY) {
+    this.textX = textX;
+    this.textY = textY;
+    if (windowManager == null || textView == null) return;
+    int textPositionX;
+    int textPositionY;
+    // Log.d("Lyric", "textX: " + textX + "  textY: " + textY);
+    switch (textX) {
+      case "CENTER":
+        textPositionX = Gravity.CENTER_HORIZONTAL;
+        break;
+      case "RIGHT":
+        textPositionX = Gravity.END;
+        break;
+      case "LEFT":
+      default:
+        textPositionX = Gravity.START;
+        break;
+    }
+    switch (textY) {
+      case "CENTER":
+        textPositionY = Gravity.CENTER_VERTICAL;
+        break;
+      case "BOTTOM":
+        textPositionY = Gravity.BOTTOM;
+        break;
+      case "TOP":
+      default:
+        textPositionY = Gravity.TOP;
+        break;
+    }
+    textView.setGravity(textPositionX | textPositionY);
+    windowManager.updateViewLayout(textView, layoutParams);
+  }
+
+  public void setAlpha(float alpha) {
+    this.alpha = alpha;
+    if (textView == null) return;
+    textView.setAlpha(alpha);
+  }
+
+  public void setSingleLine(boolean isSingleLine) {
+    this.isSingleLine = isSingleLine;
+    if (textView == null) return;
+    windowManager.removeView(textView);
+    createTextView();
+    textView.setWidth(layoutParams.width);
+    textView.setHeight(layoutParams.height);
+    windowManager.addView(textView, layoutParams);
+
+    if (isLock) lockView();
+    else unlockView();
+
+    setLyric(currentLyric, currentExtendedLyrics);
+  }
+
+  public void setShowToggleAnima(boolean showToggleAnima) {
+    isShowToggleAnima = showToggleAnima;
+    if (textView == null) return;
+    textView.setShowAnima(showToggleAnima);
+  }
+
+  public void setTextSize(float size) {
+    this.textSize = size;
+    if (windowManager == null || textView == null) return;
+    textView.setTextSize(size);
+    setLayoutParamsHeight();
+    windowManager.updateViewLayout(textView, layoutParams);
+  }
+
+  public void destroyView() {
+    if (textView == null || windowManager == null) return;
+    windowManager.removeView(textView);
+    textView = null;
+    removeOrientationEvent();
+  }
+
+  public void destroy() {
+    destroyView();
+    windowManager = null;
+    layoutParams = null;
+  }
+}
+
+
+====================
+文件名: com/lxnetease/music/mobile/lyric/Utils.java
+--------------------
+下面是完整代码:
+
+package com.lxnetease.music.mobile.lyric;
+
+import android.os.Handler;
+
+public class Utils {
+  // https://gist.github.com/mathew-kurian/2bd2b8b3a2f6438d6786
+  public static Object setTimeout(Runnable runnable, long delay) {
+    return new TimeoutEvent(runnable, delay);
+  }
+  public static void clearTimeout(Object timeoutEvent) {
+    if (timeoutEvent instanceof TimeoutEvent) {
+      ((TimeoutEvent) timeoutEvent).cancelTimeout();
+    }
+  }
+  private static class TimeoutEvent {
+    private static final Handler handler = new Handler();
+    private volatile Runnable runnable;
+
+    private TimeoutEvent(Runnable task, long delay) {
+      runnable = task;
+      handler.postDelayed(() -> {
+        if (runnable != null) {
+          runnable.run();
+        }
+      }, delay);
+    }
+
+    private void cancelTimeout() {
+      runnable = null;
+    }
+  }
+}
+
+
+====================
+文件名: com/lxnetease/music/mobile/userApi/Console.java
+--------------------
+下面是完整代码:
+
+package com.lxnetease.music.mobile.userApi;
+
+import android.os.Handler;
+import android.os.Message;
+import android.util.Log;
+
+import com.whl.quickjs.wrapper.QuickJSContext;
+
+public class Console implements QuickJSContext.Console {
+  private final Handler eventHandler;
+
+  Console(Handler eventHandler) {
+    this.eventHandler = eventHandler;
+  }
+
+  private void sendLog(String type, String log) {
+    Message message = this.eventHandler.obtainMessage();
+    message.what = HandlerWhat.LOG;
+    message.obj = new Object[]{type, log};
+    Log.d("UserApi Log", "[" + type + "]" + log);
+    this.eventHandler.sendMessage(message);
+  }
+
+  @Override
+  public void log(String info) {
+    sendLog("log", info);
+  }
+
+  @Override
+  public void info(String info) {
+    sendLog("info", info);
+  }
+
+  @Override
+  public void warn(String info) {
+    sendLog("warn", info);
+  }
+
+  @Override
+  public void error(String info) {
+    sendLog("error", info);
+  }
+}
+
+
+====================
+文件名: com/lxnetease/music/mobile/userApi/HandlerWhat.java
+--------------------
+下面是完整代码:
+
+package com.lxnetease.music.mobile.userApi;
+
+public class HandlerWhat {
+  public static final int ACTION = 1000;
+  public static final int INIT = 99;
+  public static final int INIT_FAILED = 500;
+  public static final int INIT_SUCCESS = 200;
+  public static final int DESTROY = 98;
+  public static final int LOG = 1001;
+}
+
+
+====================
+文件名: com/lxnetease/music/mobile/userApi/JavaScriptThread.java
+--------------------
+下面是完整代码:
+
+package com.lxnetease.music.mobile.userApi;
+
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.Message;
+import android.util.Log;
+
+import androidx.annotation.NonNull;
+
+import com.facebook.react.bridge.ReactApplicationContext;
+
+public class JavaScriptThread extends HandlerThread {
+  private Handler handler;
+  private QuickJS javaScriptExecutor;
+  private final ReactApplicationContext reactContext;
+  private final Bundle scriptInfo;
+
+  JavaScriptThread(ReactApplicationContext context, Bundle info) {
+    super("JavaScriptThread");
+    this.reactContext = context;
+    this.scriptInfo = info;
+  }
+
+  public void prepareHandler(final Handler mainHandler) {
+    start();
+    Log.d("UserApi [thread]", "running 2");
+    this.handler = new Handler(getLooper()) {
+      @Override
+      public void handleMessage(@NonNull Message message) {
+        if (javaScriptExecutor == null) {
+          javaScriptExecutor = new QuickJS(reactContext, mainHandler);
+          Log.d("UserApi [thread]", "javaScript executor created");
+          String result = javaScriptExecutor.loadScript(scriptInfo);
+          if ("".equals(result)) {
+            Log.d("UserApi [thread]", "script loaded");
+            mainHandler.sendEmptyMessage(HandlerWhat.INIT_SUCCESS);
+          } else {
+            Log.w("UserApi [thread]", "script load failed: " + result);
+            mainHandler.sendMessage(mainHandler.obtainMessage(HandlerWhat.INIT_FAILED, result));
+          }
+        }
+        switch (message.what) {
+          case HandlerWhat.INIT: break;
+          case HandlerWhat.ACTION: {
+            Object[] data = (Object[]) message.obj;
+            // Log.d("UserApi [handler]", "handler action: " + data[0]);
+            javaScriptExecutor.callJS((String) data[0], data[1]);
+            return;
+          }
+          case HandlerWhat.DESTROY:
+            javaScriptExecutor.destroy();
+            javaScriptExecutor = null;
+            break;
+          default:
+            Log.w("UserApi [handler]", "Unknown message what: " + message.what);
+            break;
+        }
+      }
+    };
+  }
+
+  public Handler getHandler() {
+    return this.handler;
+  }
+
+  public void stopThread() {
+    quit();
+  }
+}
+
+
+====================
+文件名: com/lxnetease/music/mobile/userApi/JsHandler.java
+--------------------
+下面是完整代码:
+
+package com.lxnetease.music.mobile.userApi;
+
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
+import android.util.Log;
+import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.WritableMap;
+
+import java.util.Objects;
+
+public class JsHandler extends Handler {
+  private final UtilsEvent utilsEvent;
+
+  JsHandler(Looper looper, UtilsEvent utilsEvent) {
+    super(looper);
+    this.utilsEvent = utilsEvent;
+  }
+
+  private void sendInitFailedEvent(String errorMessage) {
+    WritableMap params = Arguments.createMap();
+    params.putString("action", "init");
+    params.putString("errorMessage", errorMessage);
+    params.putString("data", "{ \"info\": null, \"status\": false, \"errorMessage\": \"Create JavaScript Env Failed\" }");
+    this.utilsEvent.sendEvent(utilsEvent.API_ACTION, params);
+    sendLogEvent(new Object[]{"error", errorMessage});
+  }
+
+  private void sendLogEvent(Object[] data) {
+    WritableMap params = Arguments.createMap();
+    params.putString("action", "log");
+    params.putString("type", (String) data[0]);
+    params.putString("log", (String) data[1]);
+    this.utilsEvent.sendEvent(utilsEvent.API_ACTION, params);
+  }
+
+  private void sendActionEvent(String action, String data) {
+    WritableMap params = Arguments.createMap();
+    params.putString("action", action);
+    params.putString("data", data);
+    this.utilsEvent.sendEvent(utilsEvent.API_ACTION, params);
+  }
+
+  @Override
+  public void handleMessage(Message msg) {
+    switch (msg.what) {
+      case HandlerWhat.INIT_SUCCESS: break;
+      case HandlerWhat.INIT_FAILED:
+        sendInitFailedEvent((String) msg.obj);
+        break;
+      case HandlerWhat.ACTION:
+        Object[] action = (Object[]) msg.obj;
+        sendActionEvent((String) action[0], (String) action[1]);
+        // Log.d("UserApi [api call]", "action: " + action[0]);
+        break;
+      case HandlerWhat.LOG:
+        sendLogEvent((Object[]) msg.obj);
+        break;
+      default:
+        Log.w("UserApi [api call]", "Unknown message what: " + msg.what);
+        break;
+    }
+  }
+}
+
+
+====================
+文件名: com/lxnetease/music/mobile/userApi/QuickJS.java
+--------------------
+下面是完整代码:
+
+package com.lxnetease.music.mobile.userApi;
+
+import android.os.Build;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.util.Base64;
+import android.util.Log;
+import com.lxnetease.music.mobile.crypto.AES;
+import com.lxnetease.music.mobile.crypto.RSA;
+import com.facebook.react.bridge.ReactApplicationContext;
+
+import com.whl.quickjs.android.QuickJSLoader;
+import com.whl.quickjs.wrapper.QuickJSContext;
+import java.io.InputStream;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.UUID;
+
+public class QuickJS {
+  private final Handler eventHandler;
+  private String key;
+  private final ReactApplicationContext reactContext;
+  private boolean isInited = false;
+  private QuickJSContext jsContext = null;
+  final Handler timeoutHandler = new Handler();
+  private boolean inited = false;
+
+  public QuickJS(ReactApplicationContext context, Handler eventHandler) {
+    this.reactContext = context;
+    this.eventHandler = eventHandler;
+  }
+
+  private void init() {
+    if (this.isInited) return;
+    QuickJSLoader.init();
+    this.key = UUID.randomUUID().toString();
+    this.isInited = true;
+  }
+
+  private String getPreloadScript() {
+    try {
+      InputStream inputStream = this.reactContext.getAssets().open("script/user-api-preload.js");
+      byte[] buffer = new byte[inputStream.available()];
+      inputStream.read(buffer);
+      inputStream.close();
+      return new String(buffer, StandardCharsets.UTF_8);
+    } catch (Exception e) {
+      return null;
+    }
+  }
+
+  private void createEnvObj(QuickJSContext jsContext) {
+    jsContext.getGlobalObject().setProperty("__lx_native_call__", args -> {
+      if (this.key.equals(args[0])) {
+        callNative((String) args[1], (String) args[2]);
+        return null;
+      }
+      return null;
+    });
+    jsContext.getGlobalObject().setProperty("__lx_native_call__utils_str2b64", args -> {
+      try {
+        return new String(Base64.encode(((String) args[0]).getBytes(StandardCharsets.UTF_8), Base64.NO_WRAP));
+      } catch (Exception e) {
+        Log.e("UserApi [utils]", "utils_str2b64 error: " + e.getMessage());
+        return "";
+      }
+    });
+    jsContext.getGlobalObject().setProperty("__lx_native_call__utils_b642buf", args -> {
+      try {
+        byte[] byteArray = Base64.decode(((String) args[0]).getBytes(StandardCharsets.UTF_8), Base64.NO_WRAP);
+        StringBuilder jsonArrayString = new StringBuilder("[");
+        for (int i = 0; i < byteArray.length; i++) {
+          jsonArrayString.append((int) byteArray[i]);
+          if (i < byteArray.length - 1) {
+            jsonArrayString.append(",");
+          }
+        }
+        jsonArrayString.append("]");
+        return jsonArrayString.toString();
+      } catch (Exception e) {
+        Log.e("UserApi [utils]", "utils_b642buf error: " + e.getMessage());
+        return "";
+      }
+    });
+    jsContext.getGlobalObject().setProperty("__lx_native_call__utils_str2md5", args -> {
+      try {
+        // Log.d("UserApi [script call]", "utils_str2md5: " + args[0]);
+        String str;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+          str = URLDecoder.decode((String) args[0], StandardCharsets.UTF_8);
+        } else {
+          str = URLDecoder.decode((String) args[0], "UTF-8");
+        }
+        // Log.d("UserApi [script call]", "utils_str2md5: " + str);
+        MessageDigest md = MessageDigest.getInstance("MD5");
+        byte[] md5Bytes = md.digest(str.getBytes(StandardCharsets.UTF_8));
+        StringBuilder md5String = new StringBuilder();
+        for (byte b : md5Bytes) {
+          md5String.append(String.format("%02x", b));
+        }
+        return md5String.toString();
+      } catch (Exception e) {
+        Log.e("UserApi [utils]", "utils_str2md5 error: " + e.getMessage());
+        return "";
+      }
+    });
+    jsContext.getGlobalObject().setProperty("__lx_native_call__utils_aes_encrypt", args -> {
+      try {
+        return AES.encrypt((String) args[0], (String) args[1], (String) args[2], (String) args[3]);
+      } catch (Exception e) {
+        Log.e("UserApi [utils]", "utils_aes_encrypt error: " + e.getMessage());
+        return "";
+      }
+    });
+    jsContext.getGlobalObject().setProperty("__lx_native_call__utils_rsa_encrypt", args -> {
+      try {
+        return RSA.encryptRSAToString((String) args[0], (String) args[1], (String) args[2]);
+      } catch (Exception e) {
+        Log.e("UserApi [utils]", "utils_rsa_encrypt error: " + e.getMessage());
+        return "";
+      }
+    });
+    jsContext.getGlobalObject().setProperty("__lx_native_call__set_timeout", args -> {
+      this.timeoutHandler.postDelayed(() -> {
+        callJS("__set_timeout__", args[0]);
+      }, (int) args[1]);
+      return null;
+    });
+  }
+
+  private boolean createJSEnv(String id, String name, String desc, String version, String author, String homepage, String rawScript) {
+    init();
+    QuickJSContext quickJSContext = this.jsContext;
+    if (quickJSContext != null) quickJSContext.destroy();
+    this.jsContext = QuickJSContext.create();
+    this.jsContext.setConsole(new Console(this.eventHandler));
+    String preloadScript = getPreloadScript();
+    if (preloadScript == null) return false;
+    createEnvObj(this.jsContext);
+    this.jsContext.evaluate(preloadScript);
+    this.jsContext.getGlobalObject().getJSFunction("lx_setup").call(this.key, id, name, desc, version, author, homepage, rawScript);
+    return true;
+  }
+
+  private void callNative(String action, String data) {
+    Message message = this.eventHandler.obtainMessage();
+    message.what = HandlerWhat.ACTION;
+    if ("init".equals(action)) {
+      if (inited) return;
+      inited = true;
+    }
+    message.obj = new Object[]{action, data};
+    Log.d("UserApi [script call]", "script call action: " + action + " data: " + data);
+    this.eventHandler.sendMessage(message);
+  }
+
+  public String loadScript(Bundle scriptInfo) {
+    Log.d("UserApi", "UserApi Thread id: " + Thread.currentThread().getId());
+    String script = scriptInfo.getString("script", "");
+    if (createJSEnv(scriptInfo.getString("id", ""),
+      scriptInfo.getString("name", "Unknown"),
+      scriptInfo.getString("description", ""),
+      scriptInfo.getString("version", ""),
+      scriptInfo.getString("author", ""),
+      scriptInfo.getString("homepage", ""),
+      script)) {
+      try {
+        this.jsContext.evaluate(script);
+        return "";
+      } catch (Exception e) {
+        Log.e("UserApi", "load script error: " + e.getMessage());
+        try {
+          callJS("__run_error__");
+        } catch (Exception ignored) {}
+        if (inited) return "";
+        inited = true;
+        return e.getMessage();
+      }
+    }
+    return "create JavaScript Env failed";
+  }
+
+  public Object callJS(String action) {
+    Object[] params = new Object[]{this.key, action};
+    return callJS(params);
+  }
+  public Object callJS(String action, Object... args) {
+    Object[] params = new Object[args.length + 2];
+    params[0] = this.key;
+    params[1] = action;
+    System.arraycopy(args, 0, params, 2, args.length);
+    return callJS(params);
+  }
+  public Object callJS(Object[] params) {
+    try {
+      return this.jsContext.getGlobalObject().getJSFunction("__lx_native__").call(params);
+    } catch (Exception e) {
+      Message message = eventHandler.obtainMessage();
+      message.what = HandlerWhat.LOG;
+      String msg = e.getMessage();
+      if (msg == null) return null;
+      if (msg.length() > 1024) msg = msg.substring(0, 1024) + "...";
+      message.obj = new Object[]{"error", "Call script error: " + msg};
+      eventHandler.sendMessage(message);
+      Log.e("UserApi", "Call script error: " + e.getMessage());
+      if (!this.inited) {
+        eventHandler.sendMessage(eventHandler.obtainMessage(HandlerWhat.INIT_FAILED, msg));
+        this.inited = true;
+      }
+      return null;
+    }
+  }
+
+  public void destroy () {
+    this.jsContext.destroy();
+    this.jsContext = null;
+  }
+}
+
+
+====================
+文件名: com/lxnetease/music/mobile/userApi/UserApiModule.java
+--------------------
+下面是完整代码:
+
+package com.lxnetease.music.mobile.userApi;
+
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.util.Log;
+import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.ReactApplicationContext;
+import com.facebook.react.bridge.ReactContextBaseJavaModule;
+import com.facebook.react.bridge.ReactMethod;
+import com.facebook.react.bridge.ReadableMap;
+import java.lang.Thread;
+
+public class UserApiModule extends ReactContextBaseJavaModule {
+  private JavaScriptThread javaScriptThread;
+  private final ReactApplicationContext reactContext;
+  private UtilsEvent utilsEvent;
+
+  private int listenerCount = 0;
+
+  UserApiModule(ReactApplicationContext reactContext) {
+    super(reactContext);
+    this.javaScriptThread = null;
+    this.utilsEvent = null;
+    this.reactContext = reactContext;
+  }
+
+  @Override
+  public String getName() {
+    return "UserApiModule";
+  }
+
+  @ReactMethod
+  public void addListener(String eventName) {
+    if (listenerCount == 0) {
+      // Set up any upstream listeners or background tasks as necessary
+    }
+
+    listenerCount += 1;
+  }
+
+  @ReactMethod
+  public void removeListeners(Integer count) {
+    listenerCount -= count;
+    if (listenerCount == 0) {
+      // Remove upstream listeners, stop unnecessary background tasks
+    }
+  }
+
+  @ReactMethod
+  public void loadScript(ReadableMap data) {
+    if (this.utilsEvent == null) this.utilsEvent = new UtilsEvent(this.reactContext);
+    if (this.javaScriptThread != null) destroy();
+    Bundle info = Arguments.toBundle(data);
+    this.javaScriptThread = new JavaScriptThread(this.reactContext, info);
+    this.javaScriptThread.prepareHandler(new JsHandler(this.reactContext.getMainLooper(), this.utilsEvent));
+    this.javaScriptThread.getHandler().sendEmptyMessage(HandlerWhat.INIT);
+    this.javaScriptThread.setUncaughtExceptionHandler((thread, ex) -> {
+      Handler jsHandler = javaScriptThread.getHandler();
+      Message message = jsHandler.obtainMessage();
+      message.what = HandlerWhat.LOG;
+      message.obj = new Object[]{"error", "Uncaught exception in JavaScriptThread: " + ex.getMessage()};
+      jsHandler.sendMessage(message);
+      Log.e("JavaScriptThread", "Uncaught exception in JavaScriptThread: " + ex.getMessage());
+    });
+    Log.d("UserApi", "Module Thread id: " + Thread.currentThread().getId());
+  }
+
+  @ReactMethod
+  public boolean sendAction(String action, String info) {
+    JavaScriptThread javaScriptThread = this.javaScriptThread;
+    if (javaScriptThread == null) return false;
+    Handler jsHandler = javaScriptThread.getHandler();
+    Message message = jsHandler.obtainMessage();
+    message.what = HandlerWhat.ACTION;
+    message.obj = new Object[]{action, info};
+    jsHandler.sendMessage(message);
+    return true;
+  }
+
+  @ReactMethod
+  public void destroy() {
+    JavaScriptThread javaScriptThread = this.javaScriptThread;
+    if (javaScriptThread == null) return;
+    javaScriptThread.getHandler().sendEmptyMessage(HandlerWhat.DESTROY);
+    javaScriptThread.stopThread();
+    this.javaScriptThread = null;
+  }
+}
+
+
+====================
+文件名: com/lxnetease/music/mobile/userApi/UserApiPackage.java
+--------------------
+下面是完整代码:
+
+package com.lxnetease.music.mobile.userApi;
+
+import com.facebook.react.ReactPackage;
+import com.facebook.react.bridge.NativeModule;
+import com.facebook.react.bridge.ReactApplicationContext;
+import com.facebook.react.uimanager.ViewManager;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+public class UserApiPackage implements ReactPackage {
+  @Override
+  public List<ViewManager> createViewManagers(ReactApplicationContext reactContext) {
+    return Collections.emptyList();
+  }
+
+  @Override
+  public List<NativeModule> createNativeModules(ReactApplicationContext reactContext) {
+    return Arrays.asList(new UserApiModule(reactContext));
+  }
+}
+
+
+====================
+文件名: com/lxnetease/music/mobile/userApi/UtilsEvent.java
+--------------------
+下面是完整代码:
+
+package com.lxnetease.music.mobile.userApi;
+
+import android.util.Log;
+
+import androidx.annotation.Nullable;
+
+import com.facebook.react.bridge.ReactApplicationContext;
+import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.modules.core.DeviceEventManagerModule;
+
+public class UtilsEvent {
+  final String API_ACTION = "api-action";
+  private final ReactApplicationContext reactContext;
+
+  UtilsEvent(ReactApplicationContext reactContext) {
+    this.reactContext = reactContext;
+  }
+
+  public void sendEvent(String eventName, @Nullable WritableMap params) {
+    reactContext
+      .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+      .emit(eventName, params);
+  }
+}
+
+
+====================
+文件名: com/lxnetease/music/mobile/utils/AsyncTask.java
+--------------------
+下面是完整代码:
+
+package com.lxnetease.music.mobile.utils;
+
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Log;
+
+import com.facebook.react.bridge.Promise;
+
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+public class AsyncTask {
+  // https://stackoverflow.com/a/58767934
+  private static class TaskRunner {
+    private final ExecutorService executor = Executors.newSingleThreadExecutor(); // change according to your requirements
+    private final Handler handler = new Handler(Looper.getMainLooper());
+
+    public interface Callback<Object> {
+      void onComplete(Object result);
+    }
+
+    public <Object> void executeAsync(Callable<Object> callable, Callback<Object> callback) {
+      executor.execute(() -> {
+        try {
+          Object result = callable.call();
+          handler.post(() -> callback.onComplete(result));
+        } catch (Exception e) {
+          handler.post(() -> callback.onComplete((Object) e));
+          Log.e("TaskRunner", "execute error: " + e.getMessage());
+        }
+      });
+    }
+    public void shutdown() {
+      executor.shutdown();
+    }
+  }
+
+  public static void runTask(Callable<Object> callable, Promise promise) {
+    TaskRunner taskRunner = new TaskRunner();
+    try {
+      taskRunner.executeAsync(callable, (Object result) -> {
+        taskRunner.shutdown();
+        if (result instanceof Exception) {
+          promise.reject("-1", ((Exception) result).getMessage());
+        } else promise.resolve(result);
+      });
+    } catch (Exception err) {
+      promise.reject("-1", err.getMessage());
+    }
+  }
+}
+
+
+====================
+文件名: com/lxnetease/music/mobile/utils/BatteryOptimizationUtil.java
+--------------------
+下面是完整代码:
+
+package com.lxnetease.music.mobile.utils;
+
+import static android.content.Context.POWER_SERVICE;
+
+import android.annotation.SuppressLint;
+import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Build;
+import android.os.PowerManager;
+import android.provider.Settings;
+
+public class BatteryOptimizationUtil {
+  public static boolean isIgnoringBatteryOptimization(Context context, String packageName) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      PowerManager powerManager = (PowerManager) context.getSystemService(POWER_SERVICE);
+      return powerManager.isIgnoringBatteryOptimizations(packageName);
+    } else {
+      return true;
+    }
+  }
+
+  public static boolean requestIgnoreBatteryOptimization(Context context, String packageName) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      @SuppressLint("BatteryLife") Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+      intent.setData(Uri.parse("package:" + packageName));
+      try {
+        context.startActivity(intent);
+        return true;
+      } catch (Exception ignored) {}
+      try {
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        context.startActivity(intent);
+        return true;
+      } catch (Exception ignored) {}
+      return false;
+    }
+    return true;
+  }
+}
+
+
+====================
+文件名: com/lxnetease/music/mobile/utils/Utils.java
+--------------------
+下面是完整代码:
+
+package com.lxnetease.music.mobile.utils;
+
+
+import android.content.Context;
+import android.os.storage.StorageManager;
+
+import com.facebook.react.bridge.Promise;
+import com.facebook.react.bridge.ReactApplicationContext;
+import com.facebook.react.bridge.ReactMethod;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.lang.reflect.Array;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Objects;
+import java.util.concurrent.Callable;
+
+public class Utils {
+//  public static boolean deletePath(File dir) {
+//    if (dir.isDirectory()) {
+//      String[] children = dir.list();
+//      for (int i=0; i< children.length; i++) {
+//        boolean success = deletePath(new File(dir, children[i]));
+//        if (!success) {
+//          return false;
+//        }
+//      }
+//    }
+//
+//    // The directory is now empty so delete it
+//    return dir.delete();
+//  }
+}
+
+
+====================
+文件名: com/lxnetease/music/mobile/utils/UtilsEvent.java
+--------------------
+下面是完整代码:
+
+package com.lxnetease.music.mobile.utils;
+
+import android.util.Log;
+
+import androidx.annotation.Nullable;
+
+import com.facebook.react.bridge.ReactApplicationContext;
+import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.modules.core.DeviceEventManagerModule;
+
+public class UtilsEvent {
+  final String SCREEN_STATE = "screen-state";
+  final String SCREEN_SIZE_CHANGED = "screen-size-changed";
+
+  private final ReactApplicationContext reactContext;
+  UtilsEvent(ReactApplicationContext reactContext) { this.reactContext = reactContext; }
+
+  public void sendEvent(String eventName, @Nullable WritableMap params) {
+    reactContext
+      .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+      .emit(eventName, params);
+  }
+}
+
+
+====================
+文件名: com/lxnetease/music/mobile/utils/UtilsModule.java
+--------------------
+下面是完整代码:
+
+package com.lxnetease.music.mobile.utils;
+
+import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.graphics.Rect;
+import android.net.Uri;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
+import android.os.Build;
+import android.util.Log;
+import android.view.View;
+import android.view.ViewTreeObserver;
+import android.view.Window;
+import android.view.WindowManager;
+
+import androidx.core.app.LocaleManagerCompat;
+import androidx.core.app.NotificationManagerCompat;
+import androidx.core.content.FileProvider;
+import androidx.core.os.LocaleListCompat;
+
+import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.Promise;
+import com.facebook.react.bridge.ReactApplicationContext;
+import com.facebook.react.bridge.ReactContextBaseJavaModule;
+import com.facebook.react.bridge.ReactMethod;
+import com.facebook.react.bridge.UiThreadUtil;
+import com.facebook.react.bridge.WritableArray;
+import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.bridge.WritableNativeArray;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+
+public class UtilsModule extends ReactContextBaseJavaModule {
+  private final ReactApplicationContext reactContext;
+
+  private int listenerCount = 0;
+
+  UtilsEvent utilsEvent;
+
+  UtilsModule(ReactApplicationContext reactContext) {
+    super(reactContext);
+    this.reactContext = reactContext;
+    utilsEvent = new UtilsEvent(reactContext);
+    registerScreenBroadcastReceiver();
+  }
+
+  @Override
+  public String getName() {
+    return "UtilsModule";
+  }
+
+  @ReactMethod
+  public void addListener(String eventName) {
+    if (listenerCount == 0) {
+      // Set up any upstream listeners or background tasks as necessary
+    }
+
+    listenerCount += 1;
+  }
+
+  @ReactMethod
+  public void removeListeners(Integer count) {
+    listenerCount -= count;
+    if (listenerCount == 0) {
+      // Remove upstream listeners, stop unnecessary background tasks
+    }
+  }
+
+  private void registerScreenBroadcastReceiver() {
+    final IntentFilter theFilter = new IntentFilter();
+    /** System Defined Broadcast */
+    theFilter.addAction(Intent.ACTION_SCREEN_ON);
+    theFilter.addAction(Intent.ACTION_SCREEN_OFF);
+
+    BroadcastReceiver screenOnOffReceiver = new BroadcastReceiver() {
+      @Override
+      public void onReceive(Context context, Intent intent) {
+        String strAction = intent.getAction();
+
+        WritableMap params = Arguments.createMap();
+
+        switch (Objects.requireNonNull(strAction)) {
+          case Intent.ACTION_SCREEN_OFF:
+
+            params.putString("state", "OFF");
+            utilsEvent.sendEvent(utilsEvent.SCREEN_STATE, params);
+            break;
+          case Intent.ACTION_SCREEN_ON:
+            params.putString("state", "ON");
+            utilsEvent.sendEvent(utilsEvent.SCREEN_STATE, params);
+            break;
+        }
+      }
+    };
+
+    reactContext.registerReceiver(screenOnOffReceiver, theFilter);
+  }
+
+  @ReactMethod
+  public void exitApp() {
+    // https://github.com/wumke/react-native-exit-app/blob/master/android/src/main/java/com/github/wumke/RNExitApp/RNExitAppModule.java
+    // android.os.Process.killProcess(android.os.Process.myPid());
+
+    // https://stackoverflow.com/questions/6330200/how-to-quit-android-application-programmatically
+    Activity currentActivity = reactContext.getCurrentActivity();
+    Log.d("Utils", "Exit app...");
+    if (currentActivity == null) {
+      Log.d("Utils", "killProcess");
+      android.os.Process.killProcess(android.os.Process.myPid());
+    } else {
+      currentActivity.finishAndRemoveTask();
+      System.exit(0);
+    }
+  }
+
+  @ReactMethod
+  public void getSupportedAbis(Promise promise) {
+    // https://github.com/react-native-device-info/react-native-device-info/blob/ff8f672cb08fa39a887567d6e23e2f08778e8340/android/src/main/java/com/learnium/RNDeviceInfo/RNDeviceModule.java#L877
+    WritableArray array = new WritableNativeArray();
+    for (String abi : Build.SUPPORTED_ABIS) {
+      array.pushString(abi);
+    }
+    promise.resolve(array);
+  }
+
+  @ReactMethod
+  public void installApk(String filePath, String fileProviderAuthority, Promise promise) {
+    // https://github.com/mikehardy/react-native-update-apk/blob/master/android/src/main/java/net/mikehardy/rnupdateapk/RNUpdateAPK.java
+    File file = new File(filePath);
+    if (!file.exists()) {
+      Log.e("Utils", "installApk: file doe snot exist '" + filePath + "'");
+      // FIXME this should take a promise and fail it
+      promise.reject("Utils", "installApk: file doe snot exist '" + filePath + "'");
+      return;
+    }
+
+    if (Build.VERSION.SDK_INT >= 24) {
+      // API24 and up has a package installer that can handle FileProvider content:// URIs
+      Uri contentUri;
+      try {
+        contentUri = FileProvider.getUriForFile(getReactApplicationContext(), fileProviderAuthority, file);
+      } catch (Exception e) {
+        // FIXME should be a Promise.reject really
+        Log.e("Utils", "installApk exception with authority name '" + fileProviderAuthority + "'", e);
+        promise.reject("Utils", "installApk exception with authority name '" + fileProviderAuthority + "'");
+        return;
+        // throw e;
+      }
+      Intent installApp = new Intent(Intent.ACTION_INSTALL_PACKAGE);
+      installApp.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+      installApp.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+      installApp.setData(contentUri);
+      installApp.putExtra(Intent.EXTRA_INSTALLER_PACKAGE_NAME, reactContext.getApplicationInfo().packageName);
+      reactContext.startActivity(installApp);
+      promise.resolve(null);
+    } else {
+      // Old APIs do not handle content:// URIs, so use an old file:// style
+      String cmd = "chmod 777 " + file;
+      try {
+        Runtime.getRuntime().exec(cmd);
+      } catch (Exception e) {
+        // e.printStackTrace();
+        Log.e("Utils", "installApk exception : " + e.getMessage(), e);
+        promise.reject("Utils", e.getMessage());
+      }
+      Intent intent = new Intent(Intent.ACTION_VIEW);
+      intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+      intent.setDataAndType(Uri.parse("file://" + file), "application/vnd.android.package-archive");
+      reactContext.startActivity(intent);
+      promise.resolve(null);
+    }
+  }
+
+  @ReactMethod
+  public void screenkeepAwake() {
+    // https://github.com/corbt/react-native-keep-awake/blob/master/android/src/main/java/com/corbt/keepawake/KCKeepAwake.java
+    final Activity activity = getCurrentActivity();
+
+    if (activity != null) {
+      activity.runOnUiThread(() -> {
+        activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+      });
+    }
+  }
+
+  @ReactMethod
+  public void screenUnkeepAwake() {
+    // https://github.com/corbt/react-native-keep-awake/blob/master/android/src/main/java/com/corbt/keepawake/KCKeepAwake.java
+    final Activity activity = getCurrentActivity();
+
+    if (activity != null) {
+      activity.runOnUiThread(() -> {
+        activity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+      });
+    }
+  }
+
+  /**
+   Gets the device's WiFi interface IP address
+   @return device's WiFi IP if connected to WiFi, else '0.0.0.0'
+   */
+  @ReactMethod
+  public void getWIFIIPV4Address(final Promise promise) throws Exception {
+    // https://github.com/pusherman/react-native-network-info/blob/master/android/src/main/java/com/pusherman/networkinfo/RNNetworkInfo.java
+    WifiManager wifi = (WifiManager) reactContext.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+    new Thread(new Runnable() {
+      public void run() {
+        try {
+          WifiInfo info = wifi.getConnectionInfo();
+          int ipAddress = info.getIpAddress();
+          @SuppressLint("DefaultLocale") String stringip = String.format("%d.%d.%d.%d", (ipAddress & 0xff), (ipAddress >> 8 & 0xff),
+            (ipAddress >> 16 & 0xff), (ipAddress >> 24 & 0xff));
+          promise.resolve(stringip);
+        }catch (Exception e) {
+          promise.resolve(null);
+        }
+      }
+    }).start();
+  }
+
+  // https://stackoverflow.com/a/26117646
+  @ReactMethod
+  public void getDeviceName(final Promise promise) {
+    String manufacturer = Build.MANUFACTURER;
+    String model = Build.MODEL;
+    if (model.startsWith(manufacturer)) {
+      promise.resolve(capitalize(model));
+    } else {
+      promise.resolve(capitalize(manufacturer) + " " + model);
+    }
+  }
+  private String capitalize(String s) {
+    if (s == null || s.length() == 0) {
+      return "";
+    }
+    char first = s.charAt(0);
+    if (Character.isUpperCase(first)) {
+      return s;
+    } else {
+      return Character.toUpperCase(first) + s.substring(1);
+    }
+  }
+
+  // https://stackoverflow.com/a/57769424
+  @ReactMethod
+  public void isNotificationsEnabled(final Promise promise) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      NotificationManager manager = (NotificationManager) reactContext.getSystemService(Context.NOTIFICATION_SERVICE);
+      if (!manager.areNotificationsEnabled()) {
+        promise.resolve(false);
+        return;
+      }
+      List<NotificationChannel> channels = manager.getNotificationChannels();
+      for (NotificationChannel channel : channels) {
+        if (channel.getImportance() == NotificationManager.IMPORTANCE_NONE) {
+          promise.resolve(false);
+          return;
+        }
+      }
+      promise.resolve(true);
+    } else {
+      promise.resolve(NotificationManagerCompat.from(reactContext).areNotificationsEnabled());
+    }
+  }
+
+  // https://blog.51cto.com/u_15298568/3121162
+  @ReactMethod
+  public void openNotificationPermissionActivity(Promise promise) {
+    Intent intent = new Intent();
+    String packageName = reactContext.getApplicationContext().getPackageName();
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) { // 8.0及以上
+      intent.setAction("android.settings.APP_NOTIFICATION_SETTINGS");
+      intent.putExtra("android.provider.extra.APP_PACKAGE", packageName);
+    } else { // android 5.0-7.0
+      intent.setAction("android.settings.APP_NOTIFICATION_SETTINGS");
+      intent.putExtra("app_package", packageName);
+      intent.putExtra("app_uid", reactContext.getApplicationContext().getApplicationInfo().uid);
+    }
+    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+    try {
+      reactContext.startActivity(intent);
+      promise.resolve(true);
+    } catch (Exception ignore) {
+      promise.resolve(false);
+    }
+  }
+
+  @ReactMethod
+  public void shareText(String shareTitle, String title, String text) {
+    Intent shareIntent = new Intent(Intent.ACTION_SEND);
+    shareIntent.setType("text/plain");
+    shareIntent.putExtra(Intent.EXTRA_TEXT,text);
+    shareIntent.putExtra(Intent.EXTRA_SUBJECT, title);
+    Objects.requireNonNull(reactContext.getCurrentActivity()).startActivity(Intent.createChooser(shareIntent, shareTitle));
+  }
+
+  // https://stackoverflow.com/questions/73463341/in-per-app-language-how-to-get-app-locale-in-api-33-if-system-locale-is-diffe
+  @ReactMethod
+  public void getSystemLocales(Promise promise) {
+    Locale locale = null;
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      LocaleListCompat list = LocaleManagerCompat.getSystemLocales(reactContext);
+      if (list.size() > 0) {
+        locale = list.get(0);
+
+      } else promise.resolve(null);
+    } else {
+      locale = Locale.getDefault();
+    }
+    if (locale == null) {
+      promise.resolve("");
+    } else {
+      promise.resolve(locale.toString());
+    }
+  }
+
+  // https://github.com/Anthonyzou/react-native-full-screen/blob/master/android/src/main/java/com/rn/full/screen/FullScreen.java
+  //  @ReactMethod
+  //  public void onFullScreen() {
+  //    UiThreadUtil.runOnUiThread(() -> {
+  //      Activity currentActivity = reactContext.getCurrentActivity();
+  //      if (currentActivity == null) return;
+  //      currentActivity.getWindow().getDecorView().setSystemUiVisibility(
+  //        View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+  //          | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+  //          | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+  //          | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION // hide nav bar
+  //          | View.SYSTEM_UI_FLAG_FULLSCREEN // hide status bar
+  //          | View.SYSTEM_UI_FLAG_IMMERSIVE
+  //      );
+  //    });
+  //  }
+  //  @ReactMethod
+  //  public void offFullScreen() {
+  //    UiThreadUtil.runOnUiThread(() -> {
+  //      Activity currentActivity = reactContext.getCurrentActivity();
+  //      if (currentActivity == null) return;
+  //      currentActivity.getWindow().getDecorView().setSystemUiVisibility(
+  //        View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+  //          | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+  //          | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+  //      );
+  //    });
+  //  }
+
+  @ReactMethod
+  public void getWindowSize(Promise promise) {
+    WritableMap params = Arguments.createMap();
+
+    Activity currentActivity = reactContext.getCurrentActivity();
+    if (currentActivity == null) {
+      params.putInt("width", 0);
+      params.putInt("height", 0);
+      promise.resolve(params);
+      return;
+    }
+    // 获取当前应用可用区域大小
+    Window window = currentActivity.getWindow();
+    Rect rect = new Rect();
+    window.getDecorView().getWindowVisibleDisplayFrame(rect);
+    // View decorView = window.getDecorView();
+    // int width = decorView.getMeasuredWidth();
+    // int height = decorView.getMeasuredHeight();
+    params.putInt("width", rect.width());
+    params.putInt("height", rect.height());
+    promise.resolve(params);
+  }
+
+  @ReactMethod
+  public void isIgnoringBatteryOptimization(Promise promise) {
+    promise.resolve(BatteryOptimizationUtil.isIgnoringBatteryOptimization(reactContext.getApplicationContext(), reactContext.getPackageName()));
+  }
+
+  @ReactMethod
+  public void requestIgnoreBatteryOptimization(Promise promise) {
+    promise.resolve(BatteryOptimizationUtil.requestIgnoreBatteryOptimization(reactContext.getApplicationContext(), reactContext.getPackageName()));
+  }
+}
+
+
+
+====================
+文件名: com/lxnetease/music/mobile/utils/UtilsPackage.java
+--------------------
+下面是完整代码:
+
+package com.lxnetease.music.mobile.utils;
+
+import com.facebook.react.ReactPackage;
+import com.facebook.react.bridge.NativeModule;
+import com.facebook.react.bridge.ReactApplicationContext;
+import com.facebook.react.uimanager.ViewManager;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+public class UtilsPackage implements ReactPackage {
+
+  @Override
+  public List<ViewManager> createViewManagers(ReactApplicationContext reactContext) {
+    return Collections.emptyList();
+  }
+
+  @Override
+  public List<NativeModule> createNativeModules(ReactApplicationContext reactContext) {
+    return Arrays.<NativeModule>asList(new UtilsModule(reactContext));
+  }
+}
+
+

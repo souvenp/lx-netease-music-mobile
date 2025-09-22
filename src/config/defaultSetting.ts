@@ -1,0 +1,94 @@
+const defaultSetting: LX.AppSetting = {
+  version: '2.0',
+  'common.isAutoTheme': false,
+  'common.langId': null,
+  'common.apiSource': '',
+  'common.sourceNameType': 'alias',
+  'common.shareType': 'system',
+  'common.isAgreePact': true,
+  'common.autoHidePlayBar': true,
+  'common.drawerLayoutPosition': 'left',
+  'common.homePageScroll': true,
+  'common.showBackBtn': false,
+  'common.showExitBtn': false,
+  'common.useSystemFileSelector': true,
+  'common.wy_cookie': '',
+  'common.alwaysKeepStatusbarHeight': false,
+
+  'player.startupAutoPlay': false,
+  'player.startupPushPlayDetailScreen': false,
+  'player.togglePlayMethod': 'listLoop',
+  'player.playQuality': '320k',
+  'player.isSavePlayTime': false,
+  'player.volume': 1,
+  'player.playbackRate': 1,
+  'player.cacheSize': '1024',
+  'player.timeoutExit': '',
+  'player.timeoutExitPlayed': true,
+  'player.isAutoCleanPlayedList': false,
+  'player.isHandleAudioFocus': true,
+  'player.isEnableAudioOffload': true,
+  'player.isShowLyricTranslation': true,
+  'player.isShowLyricRoma': false,
+  'player.isShowNotificationImage': true,
+  'player.isS2t': true,
+  'player.isShowBluetoothLyric': false,
+
+  'playDetail.style.align': 'center',
+  'playDetail.vertical.style.lrcFontSize': 200,
+  'playDetail.horizontal.style.lrcFontSize': 220,
+  'playDetail.isShowLyricProgressSetting': false,
+
+  'desktopLyric.enable': false,
+  'desktopLyric.isLock': false,
+  'desktopLyric.width': 100,
+  'desktopLyric.maxLineNum': 5,
+  'desktopLyric.isSingleLine': false,
+  'desktopLyric.showToggleAnima': true,
+  'desktopLyric.position.x': 0,
+  'desktopLyric.position.y': 0,
+  'desktopLyric.textPosition.x': 'left',
+  'desktopLyric.textPosition.y': 'top',
+  'desktopLyric.style.fontSize': 180,
+  'desktopLyric.style.opacity': 100,
+  'desktopLyric.style.lyricUnplayColor': 'rgba(255, 255, 255, 1)',
+  'desktopLyric.style.lyricPlayedColor': 'rgba(7, 197, 86, 1)',
+  'desktopLyric.style.lyricShadowColor': 'rgba(0, 0, 0, 0.6)',
+
+  'search.isShowHotSearch': false,
+  'search.isShowHistorySearch': true,
+
+  'list.isClickPlayList': false,
+  'list.isShowSource': true,
+  'list.isShowAlbumName': true,
+  'list.isShowInterval': false,
+  'list.isSaveScrollLocation': true,
+  'list.addMusicLocationType': 'top',
+
+  'download.enable': true,
+  'download.path': '',
+  'download.fileName': '歌名 - 歌手',
+  'download.writeLyric': true,
+  'download.writeRomaLyric': false,
+  'download.writeEmbedLyric': true,
+  'download.writeMetadata': true,
+  'download.writePicture': true,
+
+  'sync.enable': false,
+
+  'theme.id': 'green',
+  'theme.lightId': 'green',
+  'theme.darkId': 'black',
+  'theme.hideBgDark': false,
+  'theme.dynamicBg': true,
+  'theme.blur': 18,
+  'theme.fontShadow': false,
+}
+
+// 使用新年皮肤
+if (new Date().getMonth() < 2) {
+  defaultSetting['theme.id'] = 'happy_new_year'
+  defaultSetting['desktopLyric.style.lyricPlayedColor'] = 'rgba(255, 18, 34, 1)'
+}
+
+export default defaultSetting
