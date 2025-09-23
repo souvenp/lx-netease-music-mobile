@@ -9,7 +9,7 @@ import { sizeFormate } from '@/utils'
 import { useI18n } from '@/lang'
 import { useVersionDownloadProgressUpdated, useVersionInfo } from '@/store/version/hook'
 import Text from '@/components/common/Text'
-import { showModal } from '@/core/version'
+import { checkUpdate, showModal } from '@/core/version'
 
 const currentVer = process.versions.app
 export default memo(() => {
@@ -83,6 +83,7 @@ export default memo(() => {
         </View>
         <View style={styles.btn}>
           <Button onPress={handleOpenVersionModal}>{t('setting_version_show_ver_modal')}</Button>
+          <Button onPress={checkUpdate}>{t('version_btn_check_update')}</Button>
         </View>
       </SubTitle>
     </Section>

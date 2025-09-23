@@ -561,6 +561,7 @@
   "version_title_new": "🌟 New version found 🌟",
   "version_title_unknown": "❓ Failed to get the latest version information ❓",
   "version_title_update": "🚀 App update 🚀",
+  "version_btn_check_update": "Check for Updates",
   "128k": "128K",
   "320k": "320K",
   "flac": "FLAC",
