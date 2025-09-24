@@ -1,27 +1,59 @@
-import { memo } from 'react'
-import { View, TouchableOpacity } from 'react-native'
-import Image from '@/components/common/Image'
-import Text from '@/components/common/Text'
-import { useTheme } from '@/store/theme/hook'
-import { createStyle } from '@/utils/tools'
-import { dateFormat } from '@/utils/common'
-import { useStatusbarHeight } from '@/store/common/hook'
-import { Icon } from '@/components/common/Icon'
-import { navigations, pop } from '@/navigation'
-import commonState from '@/store/common/state'
+import { memo } from 'react';
+import { View, TouchableOpacity } from 'react-native';
+import Image from '@/components/common/Image';
+import Text from '@/components/common/Text';
+import { useTheme } from '@/store/theme/hook';
+import { createStyle, toast } from '@/utils/tools';
+import { dateFormat } from '@/utils/common';
+import { useStatusbarHeight } from '@/store/common/hook';
+import { Icon } from '@/components/common/Icon';
+import { navigations, pop } from '@/navigation';
+import commonState from '@/store/common/state';
+import { useIsWyAlbumSubscribed } from '@/store/user/hook';
+import wyApi from '@/utils/musicSdk/wy/user';
+import { addWySubscribedAlbum, removeWySubscribedAlbum } from '@/store/user/action';
+import { type SubscribedAlbumInfo } from '@/store/user/state';
+
 
 export default memo(({ albumInfo, componentId }) => {
-  const theme = useTheme()
-  const statusBarHeight = useStatusbarHeight()
+  const theme = useTheme();
+  const statusBarHeight = useStatusbarHeight();
+  const isSubscribed = useIsWyAlbumSubscribed(albumInfo.id);
 
   const handleArtistPress = (artist) => {
     // 避免重复进入同一个页面
     if (commonState.componentIds.ARTIST_DETAIL) {
-      pop(componentId)
+      pop(componentId);
     } else {
-      navigations.pushArtistDetailScreen(commonState.componentIds.home, { id: String(artist.id), name: artist.name })
+      navigations.pushArtistDetailScreen(commonState.componentIds.home, { id: String(artist.id), name: artist.name });
     }
-  }
+  };
+
+  const toggleSubscribe = () => {
+    if (!albumInfo.id) {
+      toast('正在加载专辑信息，请稍后...');
+      return;
+    }
+    const newSubState = !isSubscribed;
+    wyApi.subAlbum(String(albumInfo.id), newSubState).then(() => {
+      toast(newSubState ? '收藏成功' : '取消收藏成功');
+      if (newSubState) {
+        const albumInfoForStore: SubscribedAlbumInfo = {
+          id: albumInfo.id,
+          name: albumInfo.name,
+          picUrl: albumInfo.picUrl,
+          artists: albumInfo.artists,
+          publishTime: albumInfo.publishTime,
+          size: albumInfo.size,
+        };
+        addWySubscribedAlbum(albumInfoForStore);
+      } else {
+        removeWySubscribedAlbum(albumInfo.id);
+      }
+    }).catch(err => {
+      toast(`操作失败: ${err.message}`);
+    });
+  };
 
 
   const artists = albumInfo.artists?.map((artist, index) => (
@@ -50,6 +82,9 @@ export default memo(({ albumInfo, componentId }) => {
             {albumInfo.publishTime ? dateFormat(albumInfo.publishTime, 'Y.M.D') : ''} • {albumInfo.size || albumInfo.total} tracks
           </Text>
         </View>
+        <TouchableOpacity style={styles.followButton} onPress={toggleSubscribe}>
+          <Icon name={isSubscribed ? 'love-filled' : 'love'} color={isSubscribed ? theme['c-liked'] : '#fff'} size={18} />
+        </TouchableOpacity>
       </View>
     </View>
   )
@@ -92,4 +127,11 @@ const styles = createStyle({
   metaInfo: {
     marginTop: 8,
   },
-})
+  followButton: {
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    marginLeft: 10,
+  },
+});

@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import {memo, useMemo} from 'react'
 import { ScrollView, TouchableOpacity, View } from 'react-native'
 import { useI18n } from '@/lang'
 import { useNavActiveId, useStatusbarHeight } from '@/store/common/hook'
@@ -121,6 +121,7 @@ export default memo(() => {
   // console.log('render drawer nav')
   const showBackBtn = useSettingValue('common.showBackBtn')
   const showExitBtn = useSettingValue('common.showExitBtn')
+  const navStatus = useSettingValue('common.navStatus');
 
   const handlePress = (id: IdType) => {
     switch (id) {
@@ -142,12 +143,18 @@ export default memo(() => {
     setNavActiveId(id)
   }
 
+  const filteredNavMenus = useMemo(() => {
+    return NAV_MENUS.filter(
+      menu => menu.id === 'nav_search' || menu.id === 'nav_setting' || (navStatus[menu.id] ?? true)
+    );
+  }, [navStatus]);
+
   return (
     <View style={{ ...styles.container, backgroundColor: theme['c-content-background'] }}>
       <Header />
       <ScrollView style={styles.menus}>
         <View style={styles.list}>
-          {NAV_MENUS.map((menu) => (
+          {filteredNavMenus.map((menu) => ( // 使用过滤后的菜单
             <MenuItem key={menu.id} id={menu.id} icon={menu.icon} onPress={handlePress} />
           ))}
         </View>

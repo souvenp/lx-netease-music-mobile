@@ -181,6 +181,7 @@
   "play": "Play",
   "play_all": "Play all",
   "play_detail_setting_lrc_align": "Lyric Alignment",
+  "play_detail_setting_cover_spin": "Cover Spin Effect",
   "play_detail_setting_lrc_align_center": "Center",
   "play_detail_setting_lrc_align_left": "Left",
   "play_detail_setting_lrc_align_right": "Right",
@@ -561,6 +562,7 @@
   "version_title_new": "🌟 New version found 🌟",
   "version_title_unknown": "❓ Failed to get the latest version information ❓",
   "version_title_update": "🚀 App update 🚀",
+  "version_btn_check_update": "Check for Updates",
   "128k": "128K",
   "320k": "320K",
   "flac": "FLAC",
@@ -569,8 +571,10 @@
   "atmos_plus": "Atmos 2.0",
   "master": "Master",
   "nav_followed_artists": "Followed Artists",
+  "nav_subscribed_albums": "Subscribed Albums",
   "artist_detail": "Artist Detail",
   "album_detail": "Album Detail",
   "nav_my_playlist": "My Playlists",
-  "exit_app_tip_double_press": "Press back again to exit"
+  "exit_app_tip_double_press": "Press back again to exit",
+  "setting_basic_nav_menu": "Menu Display Settings"
 }

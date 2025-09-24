@@ -1,4 +1,4 @@
-import state, {FollowedArtistInfo} from './state'
+import state, {FollowedArtistInfo, SubscribedAlbumInfo} from './state'
 
 export const setWyLikedSongs = (ids: (string | number)[]) => {
   state.wy_liked_song_ids = new Set(ids.map(String))
@@ -39,3 +39,24 @@ export const removeWyFollowedArtist = (id: string | number) => {
   state.wy_followed_artists = newList
   global.state_event.wyFollowedListChanged()
 }
+
+export const setWySubscribedAlbums = (albums: SubscribedAlbumInfo[]) => {
+  state.wy_subscribed_albums = albums;
+  global.state_event.wySubscribedAlbumsChanged();
+};
+
+export const addWySubscribedAlbum = (album: SubscribedAlbumInfo) => {
+  if (state.wy_subscribed_albums.some(a => String(a.id) === String(album.id))) return;
+  state.wy_subscribed_albums = [album, ...state.wy_subscribed_albums];
+  global.state_event.wySubscribedAlbumsChanged();
+};
+
+export const removeWySubscribedAlbum = (id: string | number) => {
+  const strId = String(id);
+  const index = state.wy_subscribed_albums.findIndex(a => String(a.id) === strId);
+  if (index < 0) return;
+  const newList = [...state.wy_subscribed_albums];
+  newList.splice(index, 1);
+  state.wy_subscribed_albums = newList;
+  global.state_event.wySubscribedAlbumsChanged();
+};

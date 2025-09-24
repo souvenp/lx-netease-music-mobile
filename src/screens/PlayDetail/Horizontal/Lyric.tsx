@@ -5,7 +5,7 @@ import {
   type FlatListProps,
   type NativeSyntheticEvent,
   type NativeScrollEvent,
-  type LayoutChangeEvent,
+  type LayoutChangeEvent, TouchableOpacity,
 } from 'react-native'
 // import { useLayout } from '@/utils/hooks'
 import { type Line, useLrcPlay, useLrcSet } from '@/plugins/lyric'
@@ -29,9 +29,10 @@ interface LineProps {
   lineNum: number
   activeLine: number
   onLayout: (lineNum: number, height: number, width: number) => void
+  onPress: (index: number) => void;
 }
 const LrcLine = memo(
-  ({ line, lineNum, activeLine, onLayout }: LineProps) => {
+  ({ line, lineNum, activeLine, onLayout, onPress }: LineProps) => {
     const theme = useTheme()
     const lrcFontSize = useSettingValue('playDetail.horizontal.style.lrcFontSize')
     const textAlign = useSettingValue('playDetail.style.align')
@@ -42,17 +43,20 @@ const LrcLine = memo(
       const active = activeLine == lineNum
       return active
         ? ([theme['c-primary'], theme['c-primary-alpha-200'], 1] as const)
-        : ([theme['c-350'], theme['c-300'], 0.6] as const)
+        : ([theme['c-350'], theme['c-300'], 0.8] as const)
     }, [activeLine, lineNum, theme])
 
     const handleLayout = ({ nativeEvent }: LayoutChangeEvent) => {
       onLayout(lineNum, nativeEvent.layout.height, nativeEvent.layout.width)
     }
-
+    const handlePress = useCallback(() => {
+      onPress(lineNum);
+    }, [onPress, lineNum]);
     // textBreakStrategy="simple" 用于解决某些设备上字体被截断的问题
     // https://stackoverflow.com/a/72822360
     return (
-      <View style={styles.line} onLayout={handleLayout}>
+      <TouchableOpacity activeOpacity={0.7} onPress={handlePress}>
+         <View style={styles.line} onLayout={handleLayout}>
         <AnimatedColorText
           style={{
             ...styles.lineText,
@@ -85,13 +89,15 @@ const LrcLine = memo(
           )
         })}
       </View>
+      </TouchableOpacity>
     )
   },
   (prevProps, nextProps) => {
     return (
       prevProps.line === nextProps.line &&
       prevProps.activeLine != nextProps.lineNum &&
-      nextProps.activeLine != nextProps.lineNum
+      nextProps.activeLine != nextProps.lineNum &&
+      prevProps.onPress === nextProps.onPress
     )
   }
 )
@@ -284,9 +290,31 @@ export default () => {
     playLineRef.current?.setVisible(false)
     global.app_event.setProgress(time)
   }, [])
+  const handleLinePress = useCallback((index: number) => {
+    if (!isShowLyricProgressSetting) return;
+    // 清除可能存在的滚动暂停定时器
+    if (scrollTimoutRef.current) {
+      clearTimeout(scrollTimoutRef.current);
+      scrollTimoutRef.current = null;
+    }
+    if (scrollCancelRef.current) {
+      scrollCancelRef.current();
+      scrollCancelRef.current = null;
+    }
+    // 允许列表滚动
+    isPauseScrollRef.current = false;
+    // 跳转播放
+    const line = lyricLines[index];
+    if (line) {
+      global.app_event.setProgress(line.time / 1000);
+    }
+
+    // 滚动到点击的行
+    handleScrollToActive(index);
+  }, [isShowLyricProgressSetting, lyricLines]);
 
   const renderItem: FlatListType['renderItem'] = ({ item, index }) => {
-    return <LrcLine line={item} lineNum={index} activeLine={line} onLayout={handleLineLayout} />
+    return <LrcLine line={item} lineNum={index} activeLine={line} onLayout={handleLineLayout} onPress={handleLinePress} />; // 传入 onPress
   }
   const getkey: FlatListType['keyExtractor'] = (item, index) => `${index}${item.text}`
 

@@ -1,4 +1,5 @@
 import type { I18n } from '@/lang/i18n'
+import {NAV_ID_Type} from "@/config/constant.ts";
 
 declare global {
   namespace LX {
@@ -77,6 +78,9 @@ declare global {
        */
       'common.alwaysKeepStatusbarHeight': boolean
 
+
+      'common.navStatus': Partial<Record<NAV_ID_Type, boolean>>;
+
       /**
        * 主题id
        */
@@ -106,6 +110,10 @@ declare global {
        * 动态背景模糊度
        */
       'theme.blur': number
+
+      'theme.picOpacity': number
+
+      'theme.customBgPicPath': string
 
       /**
        * 字体阴影
@@ -207,6 +215,7 @@ declare global {
        */
       'playDetail.style.align': 'center' | 'left' | 'right'
 
+      'playDetail.isCoverSpin': boolean
       /**
        * 竖屏歌词字体大小
        */

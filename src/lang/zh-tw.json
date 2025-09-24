@@ -181,6 +181,7 @@
   "play": "播放",
   "play_all": "播放全部",
   "play_detail_setting_lrc_align": "歌詞對齊方式",
+  "play_detail_setting_cover_spin": "封面旋轉效果",
   "play_detail_setting_lrc_align_center": "置中",
   "play_detail_setting_lrc_align_left": "置左",
   "play_detail_setting_lrc_align_right": "置右",
@@ -534,6 +535,7 @@
   "version_title_new": "🌟 發現新版本 🌟",
   "version_title_unknown": "❓ 獲取最新版本資訊失敗 ❓",
   "version_title_update": "🚀 軟體更新 🚀",
+  "version_btn_check_update": "檢查更新",
   "128k": "128K",
   "320k": "320K",
   "flac": "FLAC",
@@ -542,6 +544,7 @@
   "atmos_plus": "臻品音質 2.0",
   "master": "臻品母帶",
   "nav_followed_artists": "關注的歌手",
+  "nav_subscribed_albums": "收藏的專輯",
   "artist_detail": "歌手詳情",
   "album_detail": "專輯詳情",
   "nav_my_playlist": "我的歌單",
@@ -551,5 +554,6 @@
   "setting_download_path_default": "預設路徑",
   "setting_download_path_set_success": "下載路徑設定成功",
   "setting_download_path_reset_success": "已恢復預設路徑",
-  "exit_app_tip_double_press": "再按一次離開應用"
+  "exit_app_tip_double_press": "再按一次離開應用",
+  "setting_basic_nav_menu": "菜單顯示設定"
 }

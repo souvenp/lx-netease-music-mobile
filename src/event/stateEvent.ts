@@ -24,6 +24,9 @@ export class StateEvent extends Event {
   wyFollowedListChanged() {
     this.emit('wyFollowedListChanged')
   }
+  wySubscribedAlbumsChanged() {
+    this.emit('wySubscribedAlbumsChanged');
+  }
   languageChanged(locale: I18n['locale']) {
     this.emit('languageChanged', locale)
   }

@@ -182,6 +182,7 @@
   "play": "播放",
   "play_all": "播放全部",
   "play_detail_setting_lrc_align": "歌词对齐方式",
+  "play_detail_setting_cover_spin": "封面旋转效果",
   "play_detail_setting_lrc_align_center": "居中",
   "play_detail_setting_lrc_align_left": "居左",
   "play_detail_setting_lrc_align_right": "居右",
@@ -564,6 +565,7 @@
   "version_title_new": "🌟 发现新版本 🌟",
   "version_title_unknown": "❓ 获取最新版本信息失败 ❓",
   "version_title_update": "🚀 软件更新 🚀",
+  "version_btn_check_update": "检查更新",
   "128k": "128K",
   "320k": "320K",
   "flac": "FLAC",
@@ -572,8 +574,10 @@
   "atmos_plus": "臻品音质 2.0",
   "master": "臻品母带",
   "nav_followed_artists": "关注的歌手",
+  "nav_subscribed_albums": "收藏的专辑",
   "artist_detail": "歌手详情",
   "album_detail": "专辑详情",
   "nav_my_playlist": "我的歌单",
-  "exit_app_tip_double_press": "再按一次退出应用"
+  "exit_app_tip_double_press": "再按一次退出应用",
+  "setting_basic_nav_menu": "菜单显示设置"
 }

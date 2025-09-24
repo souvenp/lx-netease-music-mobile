@@ -34,7 +34,7 @@ const mergeSetting = (
         const isPrimitive = checkPrimitiveType(targetValue)
         // if (checkPrimitiveType(value)) {
         if (
-          !isPrimitive ||
+          (!isPrimitive && key !== 'common.navStatus') ||
           targetValue == originSettingCopy[key] ||
           originSettingCopy[key] === undefined
         )
@@ -52,7 +52,7 @@ const mergeSetting = (
         const targetValue: any = targetSetting[key]
         const isPrimitive = checkPrimitiveType(targetValue)
         // if (checkPrimitiveType(value)) {
-        if (!isPrimitive || targetValue == originSettingCopy[key]) continue
+        if ((!isPrimitive && key !== 'common.navStatus') || targetValue == originSettingCopy[key]) continue
         updatedSettingKeys.push(key)
         updatedSetting[key] = targetValue
         // @ts-expect-error

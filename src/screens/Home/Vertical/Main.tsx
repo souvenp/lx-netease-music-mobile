@@ -16,6 +16,7 @@ import settingState from '@/store/setting/state'
 import DailyRec from '../Views/DailyRec'
 import MyPlaylist from '../Views/MyPlaylist'
 import FollowedArtists from '../Views/FollowedArtists'
+import SubscribedAlbums from '../Views/SubscribedAlbums';
 
 const hideKeys = ['list.isShowAlbumName', 'list.isShowInterval', 'theme.fontShadow'] as Readonly<
   Array<keyof LX.AppSetting>
@@ -272,6 +273,41 @@ const FollowedArtistsPage = () => {
   return visible ? component : null
 }
 
+const SubscribedAlbumsPage = () => {
+  const [visible, setVisible] = useState(commonState.navActiveId == 'nav_subscribed_albums');
+  const component = useMemo(() => <SubscribedAlbums />, []);
+  useEffect(() => {
+    let currentId: CommonState['navActiveId'] = commonState.navActiveId;
+    const handleNavIdUpdate = (id: CommonState['navActiveId']) => {
+      currentId = id;
+      if (id == 'nav_subscribed_albums') {
+        requestAnimationFrame(() => {
+          setVisible(true);
+        });
+      }
+    };
+    const handleHide = () => {
+      if (currentId != 'nav_setting') return;
+      setVisible(false);
+    };
+    const handleConfigUpdated = (keys: Array<keyof LX.AppSetting>) => {
+      if (keys.some((k) => hideKeys.includes(k))) handleHide()
+    }
+    global.state_event.on('navActiveIdUpdated', handleNavIdUpdate)
+    global.state_event.on('themeUpdated', handleHide)
+    global.state_event.on('languageChanged', handleHide)
+    global.state_event.on('configUpdated', handleConfigUpdated)
+
+    return () => {
+      global.state_event.off('navActiveIdUpdated', handleNavIdUpdate)
+      global.state_event.off('themeUpdated', handleHide)
+      global.state_event.off('languageChanged', handleHide)
+      global.state_event.on('configUpdated', handleConfigUpdated)
+    }
+  }, []);
+  return visible ? component : null;
+};
+
 const SettingPage = () => {
   const [visible, setVisible] = useState(commonState.navActiveId == 'nav_setting')
   const component = useMemo(() => <Setting />, [])
@@ -299,12 +335,13 @@ const viewMap = {
   nav_love: 3,
   nav_daily_rec: 4,
   nav_followed_artists: 5,
-  nav_my_playlist: 6,
-  nav_setting: 7,
+  nav_subscribed_albums: 6,
+  nav_my_playlist: 7,
+  nav_setting: 8,
 }
 const indexMap = ['nav_search', 'nav_songlist', 'nav_top',
-  'nav_love', 'nav_daily_rec',
-   'nav_followed_artists', 'nav_my_playlist', 'nav_setting'] as const
+  'nav_love', 'nav_daily_rec', 'nav_followed_artists',
+  'nav_subscribed_albums', 'nav_my_playlist', 'nav_setting'] as const;
 
 const Main = () => {
   const pagerViewRef = useRef<ComponentRef<typeof PagerView>>(null)
@@ -411,6 +448,9 @@ const Main = () => {
         </View>
         <View collapsable={false} key="nav_followed_artists" style={styles.pageStyle}>
           <FollowedArtistsPage />
+        </View>
+        <View collapsable={false} key="nav_subscribed_albums" style={styles.pageStyle}>
+          <SubscribedAlbumsPage />
         </View>
         <View collapsable={false} key="nav_my_playlist" style={styles.pageStyle}>
           <MyPlaylistPage />

@@ -19,6 +19,7 @@ import { useIsWyLiked } from '@/store/user/hook'
 import {
   handleShare,
   handleUpdateMusicInfo,
+  handleDownload,
 } from '@/screens/Home/Views/Mylist/MusicList/listAction'
 import ListMenu, { type ListMenuType, type Position, type SelectInfo } from '@/screens/Home/Views/Mylist/MusicList/ListMenu'
 import MusicAddModal, { type MusicAddModalType } from '@/components/MusicAddModal'
@@ -32,6 +33,7 @@ import {
   handleShowAlbumDetail,
   handleShowArtistDetail
 } from "@/components/OnlineList/listAction.ts";
+import MusicDownloadModal, { type MusicDownloadModalType } from '@/screens/Home/Views/Mylist/MusicList/MusicDownloadModal';
 
 export interface PlayerPlaylistType {
   show: () => void
@@ -128,6 +130,7 @@ export default forwardRef<PlayerPlaylistType, {}>((props, ref) => {
   const [playlist, setPlaylist] = useState<LX.Player.PlayMusic[]>([])
   const [shouldScroll, setShouldScroll] = useState(false)
   const selectedInfoRef = useRef<SelectInfo>()
+  const musicDownloadModalRef = useRef<MusicDownloadModalType>(null);
 
   const listMenuRef = useRef<ListMenuType>(null)
   const musicAddModalRef = useRef<MusicAddModalType>(null)
@@ -220,6 +223,10 @@ export default forwardRef<PlayerPlaylistType, {}>((props, ref) => {
     handleUpdateMusicInfo(selectedInfoRef.current.listId, selectedInfoRef.current.musicInfo as LX.Music.MusicInfoLocal, info)
   }, [])
 
+  const handleDownloadPress = useCallback((info: SelectInfo) => {
+    musicDownloadModalRef.current?.show(info.musicInfo)
+  }, []);
+
   const handleArtistDetail = useCallback((info: SelectInfo) => {
     popupRef.current?.setVisible(false) // 先关闭Popup
     requestAnimationFrame(() => { // 延迟到下一帧再执行导航
@@ -254,7 +261,7 @@ export default forwardRef<PlayerPlaylistType, {}>((props, ref) => {
           onRemove={() => {}}
           onDislikeMusic={info => handleDislikeMusic(info.musicInfo)}
           onCopyName={handleShare}
-          onDownload={() => {}}
+          onDownload={handleDownloadPress}
           onEditMetadata={info => {
             if (info.musicInfo.source != 'local') return
             selectedInfoRef.current = info
@@ -267,6 +274,7 @@ export default forwardRef<PlayerPlaylistType, {}>((props, ref) => {
         <MusicAddModal ref={musicAddModalRef} />
         <MetadataEditModal ref={metadataEditTypeRef} onUpdate={handleUpdateMetadata} />
         <MusicToggleModal ref={musicToggleModalRef} />
+        <MusicDownloadModal ref={musicDownloadModalRef} onDownloadInfo={(info) => { }} />
       </>
     )
     : null

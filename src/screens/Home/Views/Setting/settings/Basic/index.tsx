@@ -18,6 +18,7 @@ import IsShowExitBtn from './IsShowExitBtn'
 import DrawerLayoutPosition from './DrawerLayoutPosition'
 import { useI18n } from '@/lang/i18n'
 import WyCookie from './WyCookie'
+import NavMenu from "@/screens/Home/Views/Setting/settings/Basic/NavMenu.tsx";
 
 export default memo(() => {
   const t = useI18n()
@@ -34,6 +35,7 @@ export default memo(() => {
       <IsAlwaysKeepStatusbarHeight />
       <Theme />
       <DrawerLayoutPosition />
+      <NavMenu />
       <Language />
       <FontSize />
       <ShareType />

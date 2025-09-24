@@ -5,7 +5,7 @@ import {
   type FlatListProps,
   type LayoutChangeEvent,
   type NativeSyntheticEvent,
-  type NativeScrollEvent,
+  type NativeScrollEvent, TouchableOpacity,
 } from 'react-native'
 // import { useLayout } from '@/utils/hooks'
 import { type Line, useLrcPlay, useLrcSet } from '@/plugins/lyric'
@@ -17,7 +17,6 @@ import { AnimatedColorText } from '@/components/common/Text'
 import { setSpText } from '@/utils/pixelRatio'
 import playerState from '@/store/player/state'
 import { scrollTo } from '@/utils/scroll'
-import PlayLine, { type PlayLineType } from '../components/PlayLine'
 // import { screenkeepAwake } from '@/utils/nativeModules/utils'
 // import { log } from '@/utils/log'
 // import { toast } from '@/utils/tools'
@@ -67,9 +66,10 @@ interface LineProps {
   lineNum: number
   activeLine: number
   onLayout: (lineNum: number, height: number, width: number) => void
+  onPress: (index: number) => void;
 }
 const LrcLine = memo(
-  ({ line, lineNum, activeLine, onLayout }: LineProps) => {
+  ({ line, lineNum, activeLine, onLayout, onPress }: LineProps) => {
     const theme = useTheme()
     const lrcFontSize = useSettingValue('playDetail.vertical.style.lrcFontSize')
     const textAlign = useSettingValue('playDetail.style.align')
@@ -80,17 +80,22 @@ const LrcLine = memo(
       const active = activeLine == lineNum
       return active
         ? ([theme['c-primary'], theme['c-primary-alpha-200'], 1] as const)
-        : ([theme['c-350'], theme['c-300'], 0.6] as const)
+        : ([theme['c-350'], theme['c-300'], 0.8] as const)
     }, [activeLine, lineNum, theme])
 
     const handleLayout = ({ nativeEvent }: LayoutChangeEvent) => {
       onLayout(lineNum, nativeEvent.layout.height, nativeEvent.layout.width)
     }
 
+    const handlePress = useCallback(() => {
+      onPress(lineNum);
+    }, [onPress, lineNum]);
+
     // textBreakStrategy="simple" 用于解决某些设备上字体被截断的问题
     // https://stackoverflow.com/a/72822360
     return (
-      <View style={styles.line} onLayout={handleLayout}>
+      <TouchableOpacity activeOpacity={0.7} onPress={handlePress}>
+        <View style={styles.line} onLayout={handleLayout}>
         <AnimatedColorText
           style={{
             ...styles.lineText,
@@ -123,13 +128,15 @@ const LrcLine = memo(
           )
         })}
       </View>
+      </TouchableOpacity>
     )
   },
   (prevProps, nextProps) => {
     return (
       prevProps.line === nextProps.line &&
       prevProps.activeLine != nextProps.lineNum &&
-      nextProps.activeLine != nextProps.lineNum
+      nextProps.activeLine != nextProps.lineNum &&
+      prevProps.onPress === nextProps.onPress
     )
   }
 )
@@ -139,7 +146,6 @@ export default () => {
   const lyricLines = useLrcSet()
   const { line } = useLrcPlay()
   const flatListRef = useRef<FlatList>(null)
-  const playLineRef = useRef<PlayLineType>(null)
   const isPauseScrollRef = useRef(true)
   const scrollTimoutRef = useRef<NodeJS.Timeout | null>(null)
   const delayScrollTimeout = useRef<NodeJS.Timeout | null>(null)
@@ -204,13 +210,13 @@ export default () => {
 
   const handleScroll = ({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) => {
     scrollInfoRef.current = nativeEvent
-    if (isPauseScrollRef.current) {
-      playLineRef.current?.updateScrollInfo(nativeEvent)
-    }
+    // if (isPauseScrollRef.current) {
+    //   playLineRef.current?.updateScrollInfo(nativeEvent)
+    // }
   }
   const handleScrollBeginDrag = () => {
     isPauseScrollRef.current = true
-    playLineRef.current?.setVisible(true)
+    // playLineRef.current?.setVisible(true)
     if (delayScrollTimeout.current) {
       clearTimeout(delayScrollTimeout.current)
       delayScrollTimeout.current = null
@@ -229,7 +235,7 @@ export default () => {
     if (!isPauseScrollRef.current) return
     if (scrollTimoutRef.current) clearTimeout(scrollTimoutRef.current)
     scrollTimoutRef.current = setTimeout(() => {
-      playLineRef.current?.setVisible(false)
+      // playLineRef.current?.setVisible(false)
       scrollTimoutRef.current = null
       isPauseScrollRef.current = false
       if (!playerState.isPlay) return
@@ -261,7 +267,7 @@ export default () => {
       animated: false,
     })
     if (!lyricLines.length) return
-    playLineRef.current?.updateLyricLines(lyricLines)
+    // playLineRef.current?.updateLyricLines(lyricLines)
     requestAnimationFrame(() => {
       if (isFirstSetLrc.current) {
         isFirstSetLrc.current = false
@@ -295,12 +301,12 @@ export default () => {
     }, 600)
   }, [line])
 
-  useEffect(() => {
-    requestAnimationFrame(() => {
-      playLineRef.current?.updateLayoutInfo(listLayoutInfoRef.current)
-      playLineRef.current?.updateLyricLines(lyricLines)
-    })
-  }, [isShowLyricProgressSetting])
+  // useEffect(() => {
+  //   requestAnimationFrame(() => {
+  //     playLineRef.current?.updateLayoutInfo(listLayoutInfoRef.current)
+  //     playLineRef.current?.updateLyricLines(lyricLines)
+  //   })
+  // }, [isShowLyricProgressSetting])
 
   const handleScrollToIndexFailed: FlatListType['onScrollToIndexFailed'] = (info) => {
     void wait().then(() => {
@@ -310,22 +316,44 @@ export default () => {
 
   const handleLineLayout = useCallback<LineProps['onLayout']>((lineNum, height) => {
     listLayoutInfoRef.current.lineHeights[lineNum] = height
-    playLineRef.current?.updateLayoutInfo(listLayoutInfoRef.current)
+    // playLineRef.current?.updateLayoutInfo(listLayoutInfoRef.current)
   }, [])
 
   const handleSpaceLayout = useCallback(({ nativeEvent }: LayoutChangeEvent) => {
     listLayoutInfoRef.current.spaceHeight = nativeEvent.layout.height
-    playLineRef.current?.updateLayoutInfo(listLayoutInfoRef.current)
+    // playLineRef.current?.updateLayoutInfo(listLayoutInfoRef.current)
   }, [])
 
-  const handlePlayLine = useCallback((time: number) => {
-    playLineRef.current?.setVisible(false)
-    global.app_event.setProgress(time)
-  }, [])
+  // const handlePlayLine = useCallback((time: number) => {
+  //   playLineRef.current?.setVisible(false)
+  //   global.app_event.setProgress(time)
+  // }, [])
+
+  const handleLinePress = useCallback((index: number) => {
+    if (!isShowLyricProgressSetting) return;
+    // 清除可能存在的滚动暂停定时器
+    if (scrollTimoutRef.current) {
+      clearTimeout(scrollTimoutRef.current);
+      scrollTimoutRef.current = null;
+    }
+    if (scrollCancelRef.current) {
+      scrollCancelRef.current();
+      scrollCancelRef.current = null;
+    }
+    // 允许列表滚动
+    isPauseScrollRef.current = false;
+    // 跳转播放
+    const line = lyricLines[index];
+    if (line) {
+      global.app_event.setProgress(line.time / 1000);
+    }
+    // 滚动到点击的行
+    handleScrollToActive(index);
+  }, [isShowLyricProgressSetting, lyricLines]);
 
   const renderItem: FlatListType['renderItem'] = ({ item, index }) => {
-    return <LrcLine line={item} lineNum={index} activeLine={line} onLayout={handleLineLayout} />
-  }
+    return <LrcLine line={item} lineNum={index} activeLine={line} onLayout={handleLineLayout} onPress={handleLinePress} />; // 传入 onPress
+  };
   const getkey: FlatListType['keyExtractor'] = (item, index) => `${index}${item.text}`
 
   const spaceComponent = useMemo(
@@ -351,9 +379,9 @@ export default () => {
         onScrollToIndexFailed={handleScrollToIndexFailed}
         onScroll={handleScroll}
       />
-      {isShowLyricProgressSetting ? (
-        <PlayLine ref={playLineRef} onPlayLine={handlePlayLine} />
-      ) : null}
+      {/*{isShowLyricProgressSetting ? (*/}
+      {/*  <PlayLine ref={playLineRef} onPlayLine={handlePlayLine} />*/}
+      {/*) : null}*/}
     </>
   )
 }

@@ -15,6 +15,16 @@ const defaultSetting: LX.AppSetting = {
   'common.wy_cookie': '',
   'common.alwaysKeepStatusbarHeight': false,
 
+  'common.navStatus': {
+    nav_songlist: true,
+    nav_top: true,
+    nav_love: true,
+    nav_daily_rec: true,
+    nav_my_playlist: true,
+    nav_followed_artists: true,
+    nav_subscribed_albums: true,
+  },
+
   'player.startupAutoPlay': false,
   'player.startupPushPlayDetailScreen': false,
   'player.togglePlayMethod': 'listLoop',
@@ -34,6 +44,7 @@ const defaultSetting: LX.AppSetting = {
   'player.isS2t': true,
   'player.isShowBluetoothLyric': false,
 
+  'playDetail.isCoverSpin': false,
   'playDetail.style.align': 'center',
   'playDetail.vertical.style.lrcFontSize': 200,
   'playDetail.horizontal.style.lrcFontSize': 220,
@@ -83,6 +94,8 @@ const defaultSetting: LX.AppSetting = {
   'theme.dynamicBg': true,
   'theme.blur': 18,
   'theme.fontShadow': false,
+  'theme.customBgPicPath': '',
+  'theme.picOpacity': 76,
 }
 
 // 使用新年皮肤

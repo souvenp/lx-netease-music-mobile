@@ -106,6 +106,7 @@ export const NAV_MENUS = [
   { id: 'nav_love', icon: 'love' },
   { id: 'nav_daily_rec', icon: 'love' },
   { id: 'nav_followed_artists', icon: 'love' },
+  { id: 'nav_subscribed_albums', icon: 'album' },
   { id: 'nav_my_playlist', icon: 'album'},
   // { id: 'download', icon: 'download-2' },
   { id: 'nav_setting', icon: 'setting' },

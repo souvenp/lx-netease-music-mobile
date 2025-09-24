@@ -63,3 +63,47 @@ export const useWyFollowedArtists = () => {
 
   return list
 }
+
+
+export const useIsWyAlbumSubscribed = (albumId: string | number | undefined) => {
+  const strId = String(albumId);
+  const [isSubscribed, setIsSubscribed] = useState(() =>
+    albumId === undefined || albumId === null ? false : state.wy_subscribed_albums.some(a => String(a.id) === strId),
+  );
+
+  useEffect(() => {
+    if (albumId === undefined || albumId === null) {
+      setIsSubscribed(false);
+      return;
+    }
+
+    const handleUpdate = () => {
+      const newSubscribedStatus = state.wy_subscribed_albums.some(a => String(a.id) === strId);
+      setIsSubscribed(newSubscribedStatus);
+    };
+
+    global.state_event.on('wySubscribedAlbumsChanged', handleUpdate);
+    handleUpdate();
+
+    return () => {
+      global.state_event.off('wySubscribedAlbumsChanged', handleUpdate);
+    };
+  }, [strId, albumId]);
+
+  return isSubscribed;
+};
+
+export const useWySubscribedAlbums = () => {
+  const [list, setList] = useState(() => state.wy_subscribed_albums);
+  useEffect(() => {
+    const handleUpdate = () => {
+      setList([...state.wy_subscribed_albums]);
+    };
+    global.state_event.on('wySubscribedAlbumsChanged', handleUpdate);
+    handleUpdate();
+    return () => {
+      global.state_event.off('wySubscribedAlbumsChanged', handleUpdate);
+    };
+  }, []);
+  return list;
+};

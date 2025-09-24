@@ -17,10 +17,13 @@ interface Props {
 // const BLUR_RADIUS = Math.max(scaleSizeAbsHR(18), 10)
 
 export default ({ children }: Props) => {
-  const theme = useTheme()
-  const windowSize = useWindowSize()
-  const pic = useBgPic()
-  const blur = useSettingValue('theme.blur')
+  const theme = useTheme();
+  const windowSize = useWindowSize();
+  const dynamicPic = useBgPic();
+  const customBgPicPath = useSettingValue('theme.customBgPicPath');
+  const pic = customBgPicPath || dynamicPic;
+  const picOpacity = useSettingValue('theme.picOpacity');
+  const blur = useSettingValue('theme.blur');
   // const BLUR_RADIUS = Math.max(scaleSizeAbsHR(blur), 10)
   const BLUR_RADIUS = blur
   // const [wh, setWH] = useState<{ width: number | string, height: number | string }>({ width: '100%', height: Dimensions.get('screen').height })
@@ -88,19 +91,19 @@ export default ({ children }: Props) => {
               flex: 1,
               flexDirection: 'column',
               backgroundColor: theme['c-content-background'],
-              opacity: 0.76,
+              opacity: picOpacity / 100,
             }}
           ></View>
         </ImageBackground>
         <View style={{ flex: 1, flexDirection: 'column' }}>{children}</View>
       </View>
-    )
-  }, [children, pic, theme, windowSize.height, windowSize.width, BLUR_RADIUS])
+    );
+  }, [children, pic, theme, windowSize.height, windowSize.width, BLUR_RADIUS, picOpacity]);
 
   return (
     <>
       <SizeView />
       {pic ? picComponent : themeComponent}
     </>
-  )
+  );
 }
