@@ -17,6 +17,8 @@ import DailyRec from '../Views/DailyRec'
 import MyPlaylist from '../Views/MyPlaylist'
 import FollowedArtists from '../Views/FollowedArtists'
 import SubscribedAlbums from '../Views/SubscribedAlbums';
+import {NAV_MENUS} from "@/config/constant.ts";
+import {useSettingValue} from "@/store/setting/hook.ts";
 
 const hideKeys = ['list.isShowAlbumName', 'list.isShowInterval', 'theme.fontShadow'] as Readonly<
   Array<keyof LX.AppSetting>
@@ -328,158 +330,102 @@ const SettingPage = () => {
   return visible ? component : null
 }
 
-const viewMap = {
-  nav_search: 0,
-  nav_songlist: 1,
-  nav_top: 2,
-  nav_love: 3,
-  nav_daily_rec: 4,
-  nav_followed_artists: 5,
-  nav_subscribed_albums: 6,
-  nav_my_playlist: 7,
-  nav_setting: 8,
-}
-const indexMap = ['nav_search', 'nav_songlist', 'nav_top',
-  'nav_love', 'nav_daily_rec', 'nav_followed_artists',
-  'nav_subscribed_albums', 'nav_my_playlist', 'nav_setting'] as const;
-
 const Main = () => {
-  const pagerViewRef = useRef<ComponentRef<typeof PagerView>>(null)
-  let activeIndexRef = useRef(viewMap[commonState.navActiveId])
-  // const isScrollingRef = useRef(false)
-  // const scrollPositionRef = useRef(-1)
+  const pagerViewRef = useRef<ComponentRef<typeof PagerView>>(null);
+  const navStatus = useSettingValue('common.navStatus'); // 获取菜单显示状态
 
-  // const handlePageScroll = useCallback(({ nativeEvent }) => {
-  //   console.log(nativeEvent.offset, activeIndexRef.current)
-  //   // if (activeIndexRef.current == -1) return
-  //   // if (nativeEvent.offset == 0) {
-  //   //   isScrollingRef.current = false
+  // 根据 navStatus 动态生成可见的菜单项、viewMap 和 indexMap
+  const visibleNavs = useMemo(() => {
+    return NAV_MENUS.filter(
+      menu => menu.id === 'nav_search' || menu.id === 'nav_setting' || (navStatus[menu.id] ?? true)
+    );
+  }, [navStatus]);
 
-  //   //   const index = nativeEvent.position
-  //   //   if (activeIndexRef.current == index) return
-  //   //   activeIndexRef.current = index
-  //   //   setNavActiveIndex(index)
-  //   // } else if (!isScrollingRef.current) {
-  //   //   isScrollingRef.current = true
-  //   // }
-  // }, [setNavActiveIndex])
+  const { viewMap, indexMap } = useMemo(() => {
+    const viewMap: Partial<Record<NAV_ID_Type, number>> = {};
+    const indexMap: NAV_ID_Type[] = [];
+    visibleNavs.forEach((nav, index) => {
+      viewMap[nav.id] = index;
+      indexMap.push(nav.id);
+    });
+    return { viewMap, indexMap };
+  }, [visibleNavs]);
+
+  const activeIndexRef = useRef(viewMap[commonState.navActiveId] ?? 0);
 
   const onPageSelected = useCallback(({ nativeEvent }: PagerViewOnPageSelectedEvent) => {
-    // console.log(nativeEvent)
-    activeIndexRef.current = nativeEvent.position
-    if (activeIndexRef.current != viewMap[commonState.navActiveId]) {
-      setNavActiveId(indexMap[activeIndexRef.current])
+    activeIndexRef.current = nativeEvent.position;
+    if (activeIndexRef.current !== viewMap[commonState.navActiveId]) {
+      setNavActiveId(indexMap[activeIndexRef.current]);
     }
-  }, [])
+  }, [indexMap, viewMap]);
 
   const onPageScrollStateChanged = useCallback(
     ({ nativeEvent }: PageScrollStateChangedNativeEvent) => {
-      // console.log(nativeEvent)
-      const idle = nativeEvent.pageScrollState == 'idle'
-      if (global.lx.homePagerIdle != idle) global.lx.homePagerIdle = idle
-      // if (nativeEvent.pageScrollState != 'idle') return
-      // if (scrollPositionRef.current != commonState.navActiveIndex) {
-      //   setNavActiveIndex(scrollPositionRef.current)
-      // }
-      // if (activeIndexRef.current == -1) return
-      // if (nativeEvent.offset == 0) {
-      //   isScrollingRef.current = false
-
-      //   const index = nativeEvent.position
-      //   if (activeIndexRef.current == index) return
-      //   activeIndexRef.current = index
-      //   setNavActiveIndex(index)
-      // } else if (!isScrollingRef.current) {
-      //   isScrollingRef.current = true
-      // }
+      const idle = nativeEvent.pageScrollState == 'idle';
+      if (global.lx.homePagerIdle != idle) global.lx.homePagerIdle = idle;
     },
     []
-  )
+  );
 
   useEffect(() => {
     const handleUpdate = (id: CommonState['navActiveId']) => {
-      const index = viewMap[id]
-      if (activeIndexRef.current == index) return
-      activeIndexRef.current = index
-      pagerViewRef.current?.setPageWithoutAnimation(index)
-    }
+      const index = viewMap[id];
+      if (index == null || activeIndexRef.current === index) return;
+      activeIndexRef.current = index;
+      pagerViewRef.current?.setPageWithoutAnimation(index);
+    };
     const handleConfigUpdate = (
       keys: Array<keyof LX.AppSetting>,
       setting: Partial<LX.AppSetting>
     ) => {
-      if (!keys.includes('common.homePageScroll')) return
-      pagerViewRef.current?.setScrollEnabled(setting['common.homePageScroll']!)
-    }
-    // window.requestAnimationFrame(() => pagerViewRef.current && pagerViewRef.current.setPage(activeIndexRef.current))
-    global.state_event.on('navActiveIdUpdated', handleUpdate)
-    global.state_event.on('configUpdated', handleConfigUpdate)
+      if (!keys.includes('common.homePageScroll')) return;
+      pagerViewRef.current?.setScrollEnabled(setting['common.homePageScroll']!);
+    };
+
+    global.state_event.on('navActiveIdUpdated', handleUpdate);
+    global.state_event.on('configUpdated', handleConfigUpdate);
     return () => {
-      global.state_event.off('navActiveIdUpdated', handleUpdate)
-      global.state_event.off('configUpdated', handleConfigUpdate)
-    }
-  }, [])
+      global.state_event.off('navActiveIdUpdated', handleUpdate);
+      global.state_event.off('configUpdated', handleConfigUpdate);
+    };
+  }, [viewMap]);
 
-  const component = useMemo(
-    () => (
-      <PagerView
-        ref={pagerViewRef}
-        initialPage={activeIndexRef.current}
-        // onPageScroll={handlePageScroll}
-        offscreenPageLimit={1}
-        onPageSelected={onPageSelected}
-        onPageScrollStateChanged={onPageScrollStateChanged}
-        scrollEnabled={settingState.setting['common.homePageScroll']}
-        style={styles.pagerView}
-      >
-        <View collapsable={false} key="nav_search" style={styles.pageStyle}>
-          <SearchPage />
-        </View>
-        <View collapsable={false} key="nav_songlist" style={styles.pageStyle}>
-          <SongListPage />
-        </View>
-        <View collapsable={false} key="nav_top" style={styles.pageStyle}>
-          <LeaderboardPage />
-        </View>
-        <View collapsable={false} key="nav_love" style={styles.pageStyle}>
-          <MylistPage />
-        </View>
-        <View collapsable={false} key="nav_daily_rec" style={styles.pageStyle}>
-          <DailyRecPage />
-        </View>
-        <View collapsable={false} key="nav_followed_artists" style={styles.pageStyle}>
-          <FollowedArtistsPage />
-        </View>
-        <View collapsable={false} key="nav_subscribed_albums" style={styles.pageStyle}>
-          <SubscribedAlbumsPage />
-        </View>
-        <View collapsable={false} key="nav_my_playlist" style={styles.pageStyle}>
-          <MyPlaylistPage />
-        </View>
-        <View collapsable={false} key="nav_setting" style={styles.pageStyle}>
-          <SettingPage />
-        </View>
-        {/* <View collapsable={false} key="nav_search" style={styles.pageStyle}>
-        <Search />
-      </View>
-      <View collapsable={false} key="nav_songlist" style={styles.pageStyle}>
-        <SongList />
-      </View>
-      <View collapsable={false} key="nav_top" style={styles.pageStyle}>
-        <Leaderboard />
-      </View>
-      <View collapsable={false} key="nav_love" style={styles.pageStyle}>
-        <Mylist />
-      </View>
-      <View collapsable={false} key="nav_setting" style={styles.pageStyle}>
-        <Setting />
-      </View> */}
-      </PagerView>
-    ),
-    [onPageScrollStateChanged, onPageSelected]
-  )
+  // 根据 visibleNavs 动态渲染 PagerView 的子组件
+  const pages = useMemo(() => {
+    const pageComponents = {
+      nav_search: <SearchPage />,
+      nav_songlist: <SongListPage />,
+      nav_top: <LeaderboardPage />,
+      nav_love: <MylistPage />,
+      nav_daily_rec: <DailyRecPage />,
+      nav_followed_artists: <FollowedArtistsPage />,
+      nav_subscribed_albums: <SubscribedAlbumsPage />,
+      nav_my_playlist: <MyPlaylistPage />,
+      nav_setting: <SettingPage />,
+    };
 
-  return component
-}
+    return visibleNavs.map(nav => (
+      <View collapsable={false} key={nav.id} style={styles.pageStyle}>
+        {pageComponents[nav.id]}
+      </View>
+    ));
+  }, [visibleNavs]);
+
+  return (
+    <PagerView
+      ref={pagerViewRef}
+      initialPage={activeIndexRef.current}
+      offscreenPageLimit={1}
+      onPageSelected={onPageSelected}
+      onPageScrollStateChanged={onPageScrollStateChanged}
+      scrollEnabled={settingState.setting['common.homePageScroll']}
+      style={styles.pagerView}
+    >
+      {pages}
+    </PagerView>
+  );
+};
 
 const styles = createStyle({
   pagerView: {

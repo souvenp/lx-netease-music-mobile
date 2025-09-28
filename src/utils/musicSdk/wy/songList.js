@@ -168,6 +168,7 @@ export default {
       if (item.pc) {
         list.push({
           singer: item.pc.ar ?? '',
+          artists: item.ar,
           name: item.pc.sn ?? '',
           albumName: item.pc.alb ?? '',
           albumId: item.al?.id,
@@ -184,6 +185,7 @@ export default {
       } else {
         list.push({
           singer: formatSingerName(item.ar, 'name'),
+          artists: item.ar,
           name: item.name ?? '',
           albumName: item.al?.name,
           albumId: item.al?.id,

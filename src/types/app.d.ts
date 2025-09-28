@@ -69,6 +69,8 @@ declare global {
   var app_event: AppEventTypes & {
     showArtistSelector: (artists: Artist[], onSelect: (artist: Artist) => void) => void;
     triggerSearch: (text: string) => void;
+    'wy-cookie-set': (cookie: string) => void;
+    showWebLogin: () => void;
   }
   var list_event: ListEventTypes
   var dislike_event: DislikeEventTypes
