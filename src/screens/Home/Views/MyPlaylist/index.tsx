@@ -8,6 +8,7 @@ import { useTheme } from '@/store/theme/hook'
 import Text from '@/components/common/Text'
 import SonglistDetail from '../../../SonglistDetail' // 导入详情页组件
 import { type ListInfoItem } from '@/store/songlist/state'
+import commonState from '@/store/common/state'
 
 export default memo(() => {
   const [playlists, setPlaylists] = useState([])
@@ -46,15 +47,28 @@ export default memo(() => {
   // 处理物理返回键，仅在显示详情时触发
   useEffect(() => {
     const onBackPress = () => {
+      // 检查当前是否正在显示歌单详情页B
       if (selectedPlaylistRef.current) {
-        setSelectedPlaylist(null)
-        return true // 阻止事件冒泡
+        // 检查是否有其他原生屏幕（如歌手/专辑详情页C）在Home屏幕之上
+        // 当只有Home屏幕时，componentIds的长度为1。
+        // 当有其他屏幕被push时，长度会大于1。
+        if (Object.keys(commonState.componentIds).length > 1) {
+          // 有其他原生屏幕在顶部，让原生导航处理返回事件
+          return false;
+        }
+
+        // 如果没有其他原生屏幕，说明这个返回操作是针对歌单详情页B的
+        setSelectedPlaylist(null);
+        return true; // 消费事件，防止退出应用
       }
-      return false // 允许默认行为
-    }
-    const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress)
-    return () => subscription.remove()
-  }, [])
+
+      // 如果不在歌单详情页，则不处理返回事件
+      return false;
+    };
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => subscription.remove();
+  }, []); // 依然使用空依赖数组
 
   // 定义点击列表项的事件
   const handleItemPress = useCallback((playlistInfo: ListInfoItem) => {

@@ -9,7 +9,7 @@ import CheckBoxItem from '../../components/CheckBoxItem'
 
 export default memo(() => {
   const t = useI18n()
-  const isEnable = useSettingValue('download.enable')
+  // const isEnable = useSettingValue('download.enable')
   const isWriteCover = useSettingValue('download.writePicture')
   const handleUpdate = (isWriteCover: boolean) => {
     updateSetting({ 'download.writePicture': isWriteCover })
@@ -21,7 +21,7 @@ export default memo(() => {
         check={isWriteCover}
         onChange={handleUpdate}
         label={t('setting_download_write_picture')}
-        disabled={!isEnable}
+        // disabled={!isEnable}
       />
     </View>
   )

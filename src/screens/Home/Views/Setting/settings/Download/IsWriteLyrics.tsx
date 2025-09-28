@@ -9,7 +9,7 @@ import CheckBoxItem from '../../components/CheckBoxItem'
 
 export default memo(() => {
   const t = useI18n()
-  const isEnable = useSettingValue('download.enable')
+  // const isEnable = useSettingValue('download.enable')
   const isWriteLyrics = useSettingValue('download.writeLyric')
   const handleUpdate = (isWriteLyrics: boolean) => {
     updateSetting({ 'download.writeLyric': isWriteLyrics })
@@ -21,7 +21,7 @@ export default memo(() => {
         check={isWriteLyrics}
         onChange={handleUpdate}
         label={t('setting_download_write_lyric')}
-        disabled={!isEnable}
+        // disabled={!isEnable}
       />
     </View>
   )

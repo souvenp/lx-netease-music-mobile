@@ -26,6 +26,7 @@ export enum COMPONENT_IDS {
   songlistDetail = 'songlistDetail',
   comment = 'comment',
   ARTIST_DETAIL = 'ARTIST_DETAIL',
+  ALBUM_DETAIL_SCREEN = 'ALBUM_DETAIL_SCREEN',
 }
 
 export enum NAV_SHEAR_NATIVE_IDS {

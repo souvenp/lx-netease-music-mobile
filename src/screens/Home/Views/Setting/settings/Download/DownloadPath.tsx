@@ -16,7 +16,6 @@ export default memo(() => {
   const downloadPath = useSettingValue('download.path')
   const fileSelectRef = useRef<FileSelectType>(null)
 
-  // <--- 新增：定义默认路径
   const defaultDownloadPath = RNFetchBlob.fs.dirs.MusicDir + '/LX-N Music'
 
   const handleSelectPath = () => {

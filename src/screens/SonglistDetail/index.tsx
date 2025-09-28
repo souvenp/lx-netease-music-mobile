@@ -78,12 +78,21 @@ export default ({ info, onBack }: { info: ListInfoItem, onBack?: () => void }) =
 
   // 为物理返回键设置返回逻辑
   useEffect(() => {
-    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      handleBack()
-      return true
-    })
-    return () => subscription.remove()
-  }, [handleBack])
+    const onBackPress = () => {
+      // 检查是否有 ArtistDetail 或 AlbumDetail 屏幕存在
+      if (commonState.componentIds.ARTIST_DETAIL || commonState.componentIds.ALBUM_DETAIL_SCREEN) {
+        // 如果有，则不处理该事件，让原生导航库来 pop
+        return false;
+      }
+
+      // 否则，执行当前的返回逻辑
+      handleBack();
+      return true;
+    };
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => subscription.remove();
+  }, [handleBack]);
 
 
   useEffect(() => {

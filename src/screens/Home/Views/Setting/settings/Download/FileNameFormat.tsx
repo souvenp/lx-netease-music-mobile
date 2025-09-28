@@ -21,7 +21,7 @@ const useActive = (id: LX.DownloadFileNameFormat) => {
 
 const Item = ({ id, name }: { id: LX.DownloadFileNameFormat; name: string }) => {
   const isActive = useActive(id)
-  const isEnable = useSettingValue('download.enable')
+  // const isEnable = useSettingValue('download.enable')
   return (
     <CheckBox
       marginRight={8}
@@ -30,7 +30,7 @@ const Item = ({ id, name }: { id: LX.DownloadFileNameFormat; name: string }) => 
       onChange={() => {
         setdownloadFileNameFormat(id)
       }}
-      disabled={!isEnable}
+      // disabled={!isEnable}
       need
     />
   )

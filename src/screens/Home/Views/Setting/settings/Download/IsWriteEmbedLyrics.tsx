@@ -1,5 +1,3 @@
-// src/screens/Home/Views/Setting/settings/Download/IsWriteEmbedLyrics.tsx
-
 import { updateSetting } from '@/core/common'
 import { useI18n } from '@/lang'
 import { createStyle } from '@/utils/tools'
@@ -11,7 +9,7 @@ import CheckBoxItem from '../../components/CheckBoxItem'
 
 export default memo(() => {
   const t = useI18n()
-  const isEnable = useSettingValue('download.enable')
+  // const isEnable = useSettingValue('download.enable')
   const isWriteEmbedLyrics = useSettingValue('download.writeEmbedLyric')
   const handleUpdate = (isWriteEmbedLyrics: boolean) => {
     updateSetting({ 'download.writeEmbedLyric': isWriteEmbedLyrics })
@@ -23,7 +21,7 @@ export default memo(() => {
         check={isWriteEmbedLyrics}
         onChange={handleUpdate}
         label={t('setting_download_write_embed_lyric')}
-        disabled={!isEnable}
+        // disabled={!isEnable}
       />
     </View>
   )
