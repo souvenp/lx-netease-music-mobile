@@ -45,6 +45,7 @@
     "@react-native-async-storage/async-storage": "^2.1.1",
     "@react-native-clipboard/clipboard": "^1.16.1",
     "@react-native-community/slider": "^4.5.5",
+    "react-native-webview": "^13.16.0",
     "axios": "^1.12.2",
     "he": "^1.2.0",
     "iconv-lite": "^0.6.3",
