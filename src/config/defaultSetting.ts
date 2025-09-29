@@ -44,11 +44,11 @@ const defaultSetting: LX.AppSetting = {
   'player.isS2t': true,
   'player.isShowBluetoothLyric': false,
 
-  'playDetail.isCoverSpin': false,
+  'playDetail.isCoverSpin': true,
   'playDetail.style.align': 'center',
   'playDetail.vertical.style.lrcFontSize': 200,
   'playDetail.horizontal.style.lrcFontSize': 220,
-  'playDetail.isShowLyricProgressSetting': false,
+  'playDetail.isShowLyricProgressSetting': true,
 
   'desktopLyric.enable': false,
   'desktopLyric.isLock': false,

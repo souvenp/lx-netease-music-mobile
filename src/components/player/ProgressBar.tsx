@@ -118,7 +118,7 @@ const Progress = ({
   const onSetProgress = useCallback((progress: number) => {
     global.app_event.setProgress(progress * durationRef.current)
   }, [])
-
+  const activeColor = theme.isDark ? theme['c-font'] : theme['c-primary'];
   return (
     <View style={styles.progress}>
       <View>
@@ -129,7 +129,7 @@ const Progress = ({
             <View
               style={{
                 ...styles.progressBar,
-                backgroundColor: theme['c-primary-light-100-alpha-700'],
+                backgroundColor: activeColor,
                 width: progressStr,
                 position: 'absolute',
                 left: 0,
@@ -139,7 +139,7 @@ const Progress = ({
             <View
               style={{
                 ...styles.progressBar,
-                backgroundColor: theme['c-primary-light-100-alpha-600'],
+                backgroundColor: activeColor,
                 width: `${dragProgress * 100}%`,
                 position: 'absolute',
                 left: 0,
@@ -148,7 +148,7 @@ const Progress = ({
             >
               <Icon
                 name="full_stop"
-                color={theme['c-primary-light-100']}
+                color={activeColor}
                 rawSize={progressDotSize}
                 style={progressDotStyle}
               />
@@ -158,7 +158,7 @@ const Progress = ({
           <View
             style={{
               ...styles.progressBar,
-              backgroundColor: theme['c-primary-light-100-alpha-400'],
+              backgroundColor: activeColor,
               width: progressStr,
               position: 'absolute',
               left: 0,
@@ -167,7 +167,7 @@ const Progress = ({
           >
             <Icon
               name="full_stop"
-              color={theme['c-primary-light-100']}
+              color={activeColor}
               rawSize={progressDotSize}
               style={progressDotStyle}
             />

@@ -117,6 +117,8 @@ export default {
           alias: item.alia && item.alia.length ? item.alia[0] : '',
           singer: this.getSinger(item.ar),
           artists: item.ar,
+          albumName: item.al?.name,
+          albumId: item.al?.id,
           source: 'wy',
           interval: formatPlayTime(item.dt / 1000),
           meta: {

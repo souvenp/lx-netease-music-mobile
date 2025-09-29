@@ -67,7 +67,7 @@ export const buildActiveThemeColors = (theme: LX.Theme): LX.ActiveTheme => {
     theme.config.extInfo[k] = theme.config.themeColors[v.replace(varColorRxp, '$1') as ColorsKey]
   }
 
-  return {
+  const activeTheme: LX.ActiveTheme = {
     id: theme.id,
     name: theme.name,
     isDark: theme.isDark,
@@ -93,7 +93,14 @@ export const buildActiveThemeColors = (theme: LX.Theme): LX.ActiveTheme => {
     'c-border-background': theme.config.themeColors['c-primary-light-100-alpha-700'],
     'c-liked': theme.config.extInfo['c-liked']!,
     'bg-image': bgImg,
-  } as const
+  };
+
+  // 如果是黑暗主题，我们覆盖掉 'c-primary-font-active'
+  if (theme.isDark) {
+    activeTheme['c-primary-font-active'] = activeTheme['c-000']; // 使用纯白色 (rgb(255,255,255))
+  }
+
+  return activeTheme as const;
 }
 
 // const copyTheme = (theme: LX.Theme): LX.Theme => {

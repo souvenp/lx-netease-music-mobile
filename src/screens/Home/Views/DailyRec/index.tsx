@@ -7,7 +7,7 @@ import wySdk from '@/utils/musicSdk/wy'
 import { useSettingValue } from '@/store/setting/hook'
 import { toast } from '@/utils/tools'
 import { useI18n } from '@/lang'
-import { handlePlay } from './listAction'
+import {autoSaveDailyPlaylist, handlePlay} from './listAction'
 import { usePlayerMusicInfo } from '@/store/player/hook';
 
 export default memo(() => {
@@ -34,6 +34,9 @@ export default memo(() => {
     wySdk.dailyRec.getList(cookie).then(result => {
       listRef.current?.setList(result.list)
       listRef.current?.setStatus('idle')
+      if (result.list && result.list.length > 0) {
+        void autoSaveDailyPlaylist(result.list);
+      }
     }).catch(err => {
       console.error(err)
       toast(t('load_failed'), 'long')
@@ -75,6 +78,9 @@ export default memo(() => {
     listRef.current?.setStatus('refreshing')
     wySdk.dailyRec.getList(cookie).then(result => {
       listRef.current?.setList(result.list)
+      if (result.list && result.list.length > 0) {
+        void autoSaveDailyPlaylist(result.list);
+      }
     }).catch(err => {
       console.error(err)
       toast(t('load_failed'), 'long')

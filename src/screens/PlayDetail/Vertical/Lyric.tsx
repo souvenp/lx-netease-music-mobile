@@ -79,8 +79,8 @@ const LrcLine = memo(
     const colors = useMemo(() => {
       const active = activeLine == lineNum
       return active
-        ? ([theme['c-primary'], theme['c-primary-alpha-200'], 1] as const)
-        : ([theme['c-350'], theme['c-300'], 0.8] as const)
+        ? ([theme.isDark ? theme['c-font'] : theme['c-primary-font-active'], theme['c-primary-alpha-200'], 1] as const)
+        : ([theme['c-450'], theme['c-400'], 0.8] as const)
     }, [activeLine, lineNum, theme])
 
     const handleLayout = ({ nativeEvent }: LayoutChangeEvent) => {

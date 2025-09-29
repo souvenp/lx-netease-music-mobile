@@ -6,6 +6,7 @@ import HeaderBar, { type HeaderBarProps, type HeaderBarType } from './HeaderBar'
 import songlistState, { type InitState, type SortInfo, type ListInfoItem } from '@/store/songlist/state'
 import List, { type ListType } from './List'
 import SonglistDetail from '../../../SonglistDetail'
+import commonState from '@/store/common/state';
 
 interface SonglistInfo {
   source: InitState['sources'][number]
@@ -29,15 +30,26 @@ export default () => {
 
   useEffect(() => {
     const onBackPress = () => {
+      // 检查当前是否正在显示歌单详情页
       if (selectedListRef.current) {
-        setSelectedList(null)
-        return true
+        // 检查是否有其他原生屏幕（如歌手/专辑详情页）在Home屏幕之上
+        if (Object.keys(commonState.componentIds).length > 1) {
+          // 有其他原生屏幕在顶部，不处理返回事件，让原生导航库来 pop
+          return false;
+        }
+
+        // 如果没有其他原生屏幕，说明这个返回操作是针对歌单详情页的
+        setSelectedList(null);
+        return true; // 消费事件
       }
-      return false
-    }
-    const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress)
-    return () => subscription.remove()
-  }, [])
+
+      // 如果不在歌单详情页，则不处理返回事件
+      return false;
+    };
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     void getSongListSetting().then((info) => {

@@ -175,7 +175,7 @@ export const setMusicUrl = (
       console.log(err)
       setStatusText(err.message as string)
       global.app_event.error()
-      addDelayNextTimeout()
+      // addDelayNextTimeout()
     })
     .finally(() => {
       if (musicInfo === playerState.playMusicInfo.musicInfo) {

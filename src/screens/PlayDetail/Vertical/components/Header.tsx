@@ -28,7 +28,7 @@ const Title = () => {
       <Marquee style={styles.title} size={16}>
         {titleText}
       </Marquee>
-      <Text numberOfLines={1} style={styles.title} size={12} color={theme['c-font-label']}>
+      <Text numberOfLines={1} style={styles.title} size={12} color={theme['c-font']}>
         {musicInfo.singer}
       </Text>
     </View>

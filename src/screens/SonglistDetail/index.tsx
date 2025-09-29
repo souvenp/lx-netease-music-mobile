@@ -12,8 +12,8 @@ import { createStyle } from '@/utils/tools'
 import { scaleSizeW } from '@/utils/pixelRatio'
 import { useTheme } from '@/store/theme/hook'
 import { BorderWidths } from '@/theme'
-import { pop } from '@/navigation' // **重新导入 pop**
-import commonState from '@/store/common/state' // **重新导入 commonState**
+import { pop } from '@/navigation'
+import commonState from '@/store/common/state'
 
 export interface DetailInfo {
   name: string

@@ -11,6 +11,7 @@ import { useMemo } from 'react'
 
 const PrevBtn = ({ size }: { size: number }) => {
   const theme = useTheme()
+  const activeColor = theme.isDark ? theme['c-font'] : theme['c-primary'];
   const handlePlayPrev = () => {
     void playPrev()
   }
@@ -20,12 +21,13 @@ const PrevBtn = ({ size }: { size: number }) => {
       activeOpacity={0.5}
       onPress={handlePlayPrev}
     >
-      <Icon name="prevMusic" color={theme['c-button-font']} rawSize={size * 0.7} />
+      <Icon name="prevMusic" color={activeColor} rawSize={size * 0.7} />
     </TouchableOpacity>
   )
 }
 const NextBtn = ({ size }: { size: number }) => {
   const theme = useTheme()
+  const activeColor = theme.isDark ? theme['c-font'] : theme['c-primary'];
   const handlePlayNext = () => {
     void playNext()
   }
@@ -35,13 +37,14 @@ const NextBtn = ({ size }: { size: number }) => {
       activeOpacity={0.5}
       onPress={handlePlayNext}
     >
-      <Icon name="nextMusic" color={theme['c-button-font']} rawSize={size * 0.7} />
+      <Icon name="nextMusic" color={activeColor} rawSize={size * 0.7} />
     </TouchableOpacity>
   )
 }
 
 const TogglePlayBtn = ({ size }: { size: number }) => {
   const theme = useTheme()
+  const activeColor = theme.isDark ? theme['c-font'] : theme['c-primary'];
   const isPlay = useIsPlay()
   return (
     <TouchableOpacity
@@ -49,7 +52,7 @@ const TogglePlayBtn = ({ size }: { size: number }) => {
       activeOpacity={0.5}
       onPress={togglePlay}
     >
-      <Icon name={isPlay ? 'pause' : 'play'} color={theme['c-button-font']} rawSize={size * 0.7} />
+      <Icon name={isPlay ? 'pause' : 'play'} color={activeColor} rawSize={size * 0.7} />
     </TouchableOpacity>
   )
 }

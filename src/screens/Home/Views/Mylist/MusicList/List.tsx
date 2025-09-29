@@ -7,6 +7,7 @@ import {
   type FlatListProps,
 } from 'react-native'
 
+import OnlineListItem from '@/components/OnlineList/ListItem';
 import listState from '@/store/list/state'
 import playerState from '@/store/player/state'
 import { getListPosition, getListPrevSelectId, saveListPosition } from '@/utils/data'
@@ -267,20 +268,42 @@ const List = forwardRef<ListType, ListProps>(
       void saveListPosition(listState.activeListId, nativeEvent.contentOffset.y)
     }
 
-    const renderItem: FlatListType['renderItem'] = ({ item, index }) => (
-      <ListItem
-        item={item}
-        index={index}
-        activeIndex={activeIndex}
-        onPress={handlePress}
-        onLongPress={handleLongPress}
-        onShowMenu={onShowMenu}
-        selectedList={selectedList}
-        rowInfo={rowInfo.current}
-        isShowAlbumName={isShowAlbumName}
-        isShowInterval={isShowInterval}
-      />
-    )
+    const renderItem: FlatListType['renderItem'] = ({ item, index }) => {
+      // 判断歌曲来源
+      if (item.source === 'wy') {
+        // 如果是在线音乐wy，使用 OnlineList 的 ListItem
+        return (
+          <OnlineListItem
+            item={item as LX.Music.MusicInfoOnline} // 类型断言为在线音乐
+            index={index}
+            onPress={handlePress}
+            onLongPress={handleLongPress}
+            onShowMenu={onShowMenu}
+            selectedList={selectedList as LX.Music.MusicInfoOnline[]}
+            playingId={playerState.playMusicInfo.musicInfo?.id ?? ''} // 传入当前播放ID
+            rowInfo={rowInfo.current}
+            isShowAlbumName={isShowAlbumName}
+            isShowInterval={isShowInterval}
+            listId='dailyrec_wy' // 传入当前列表ID以显示爱心图标
+          />
+        );
+      } else {
+        return (
+          <ListItem
+            item={item}
+            index={index}
+            activeIndex={activeIndex}
+            onPress={handlePress}
+            onLongPress={handleLongPress}
+            onShowMenu={onShowMenu}
+            selectedList={selectedList}
+            rowInfo={rowInfo.current}
+            isShowAlbumName={isShowAlbumName}
+            isShowInterval={isShowInterval}
+          />
+        );
+      }
+    }
     const getkey: FlatListType['keyExtractor'] = (item) => item.id
     const getItemLayout: FlatListType['getItemLayout'] = (data, index) => {
       return { length: ITEM_HEIGHT, offset: ITEM_HEIGHT * index, index }

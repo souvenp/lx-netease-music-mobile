@@ -93,7 +93,7 @@ const MenuItem = ({
   const theme = useTheme()
 
   return activeId == id ? (
-    <View style={styles.menuItem}>
+    <View style={{ ...styles.menuItem, backgroundColor: theme['c-primary-background-hover'] }}>
       <View style={styles.iconContent}>
         <Icon name={icon} size={20} color={theme['c-primary-font-active']} />
       </View>

@@ -63,6 +63,7 @@ export default async () => {
   void initSync(setting)
   bootLog('Sync inited.')
 
+  void checkUpdate(true);
   // syncSetting()
 
   isInited ||= true

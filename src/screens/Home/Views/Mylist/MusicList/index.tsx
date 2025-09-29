@@ -33,6 +33,7 @@ import MetadataEditModal, {
 } from '@/components/MetadataEditModal'
 import MusicDownloadModal, { type MusicDownloadModalType } from './MusicDownloadModal'
 import MusicToggleModal, { type MusicToggleModalType } from './MusicToggleModal'
+import {handleShowAlbumDetail, handleShowArtistDetail} from "@/components/OnlineList/listAction.ts";
 
 export default () => {
   const activeListRef = useRef<ActiveListType>(null)
@@ -78,6 +79,17 @@ export default () => {
   const hancelScrollToTop = useCallback(() => {
     listRef.current?.scrollToTop()
   }, [])
+  const handleShowArtist = useCallback((info: SelectInfo) => {
+    if (info.musicInfo.source !== 'local') {
+      void handleShowArtistDetail(info.musicInfo);
+    }
+  }, []);
+
+  const handleShowAlbum = useCallback((info: SelectInfo) => {
+    if (info.musicInfo.source !== 'local') {
+      handleShowAlbumDetail(info.musicInfo);
+    }
+  }, []);
 
   const showMenu = useCallback(
     (musicInfo: LX.Music.MusicInfo, index: number, position: Position) => {
@@ -237,6 +249,8 @@ export default () => {
         onEditMetadata={handleEditMetadata}
         onChangePosition={(info) => musicPositionModalRef.current?.show(info)}
         onToggleSource={(info) => musicToggleModalRef.current?.show(info)}
+        onArtistDetail={handleShowArtist}
+        onAlbumDetail={handleShowAlbum}
       />
       <MetadataEditModal ref={metadataEditTypeRef} onUpdate={handleUpdateMetadata} />
       <MusicToggleModal ref={musicToggleModalRef} />

@@ -14,12 +14,14 @@ import { useBufferProgress } from '@/plugins/player'
 const PlayTimeCurrent = ({ timeStr }: { timeStr: string }) => {
   const theme = useTheme()
   // console.log(timeStr)
-  return <Text color={theme['c-500']}>{timeStr}</Text>
+  const activeColor = theme.isDark ? theme['c-font'] : theme['c-primary'];
+  return <Text color={activeColor}>{timeStr}</Text>
 }
 
 const PlayTimeMax = memo(({ timeStr }: { timeStr: string }) => {
   const theme = useTheme()
-  return <Text color={theme['c-500']}>{timeStr}</Text>
+  const activeColor = theme.isDark ? theme['c-font'] : theme['c-primary'];
+  return <Text color={activeColor}>{timeStr}</Text>
 })
 
 export default () => {

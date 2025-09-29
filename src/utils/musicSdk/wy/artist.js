@@ -9,25 +9,23 @@ export default {
    * 获取歌手详情
    * @param {string} id 歌手ID
    */
-  getDetail(id) {
+  async getDetail(id, retryNum = 0) {
+    if (retryNum > 2) return Promise.reject(new Error('获取歌手详情失败'));
     const requestObj = httpFetch('https://music.163.com/weapi/artist/head/info/get', {
       method: 'post',
       form: weapi({ id }),
-    })
-    return requestObj.promise.then(({ body }) => {
-      if (body.code !== 200) throw new Error('获取歌手详情失败')
-      return body.data
-    })
+    });
+    try {
+      const { body } = await requestObj.promise;
+      if (body.code !== 200) throw new Error('获取歌手详情失败');
+      return body.data;
+    } catch (error) {
+      return this.getDetail(id, retryNum + 1);
+    }
   },
 
-  /**
-   * 获取歌手歌曲
-   * @param {string} id 歌手ID
-   * @param {string} order 'hot' 或 'time'
-   * @param {number} limit
-   * @param {number} offset
-   */
-  getSongs(id, order = 'hot', limit = 100, offset = 0) {
+  async getSongs(id, order = 'hot', limit = 100, offset = 0, retryNum = 0) {
+    if (retryNum > 2) return Promise.reject(new Error('获取歌手歌曲失败'));
     const requestObj = httpFetch('https://music.163.com/weapi/v1/artist/songs', {
       method: 'post',
       form: weapi({
@@ -38,25 +36,23 @@ export default {
         offset,
         limit,
       }),
-    })
-    return requestObj.promise.then(async({ body }) => {
-      if (body.code !== 200) throw new Error('获取歌手歌曲失败')
-      const list = await musicDetailApi.filterList({ songs: body.songs, privileges: [] })
+    });
+    try {
+      const { body } = await requestObj.promise;
+      if (body.code !== 200) throw new Error('获取歌手歌曲失败');
+      const list = await musicDetailApi.filterList({ songs: body.songs, privileges: [] });
       return {
         list,
         total: body.total,
         hasMore: body.more,
-      }
-    })
+      };
+    } catch (error) {
+      return this.getSongs(id, order, limit, offset, retryNum + 1);
+    }
   },
 
-  /**
-   * 获取歌手专辑
-   * @param {string} id 歌手ID
-   * @param {number} limit
-   * @param {number} offset
-   */
-  getAlbums(id, limit = 100, offset = 0) {
+  async getAlbums(id, limit = 100, offset = 0, retryNum = 0) {
+    if (retryNum > 2) return Promise.reject(new Error('获取歌手专辑失败'));
     const requestObj = httpFetch('https://music.163.com/weapi/artist/albums/' + id, {
       method: 'post',
       form: weapi({
@@ -64,14 +60,17 @@ export default {
         offset,
         total: true,
       }),
-    })
-    return requestObj.promise.then(({ body }) => {
-      if (body.code !== 200) throw new Error('获取歌手专辑失败')
+    });
+    try {
+      const { body } = await requestObj.promise;
+      if (body.code !== 200) throw new Error('获取歌手专辑失败');
       return {
         hotAlbums: body.hotAlbums,
         hasMore: body.more,
-      }
-    })
+      };
+    } catch (error) {
+      return this.getAlbums(id, limit, offset, retryNum + 1);
+    }
   },
 
 }

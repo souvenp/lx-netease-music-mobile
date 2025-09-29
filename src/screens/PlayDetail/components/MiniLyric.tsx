@@ -30,13 +30,14 @@ const MiniLyric = ({ onPress, style }: { onPress?: () => void, style?: any }) =>
   const size = lrcFontSize / 16; // 缩小字体
   const lineHeight = setSpText(size) * 1.3;
 
+  const activeColor = theme.isDark ? theme['c-font'] : theme['c-primary'];
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={[styles.container, style]}>
       {currentLine ? (
         <>
           <Text
             size={size}
-            color={theme['c-font']}
+            color={activeColor}
             style={{ textAlign }}
             numberOfLines={1}
           >
@@ -45,7 +46,7 @@ const MiniLyric = ({ onPress, style }: { onPress?: () => void, style?: any }) =>
           {translationLine && (
             <Text
               size={size}
-              color={theme['c-font-label']}
+              color={activeColor}
               style={{ textAlign, marginTop: 4 }}
               numberOfLines={1}
             >
