@@ -11,7 +11,12 @@
 
 <p align="center">一个基于 React Native 开发的音乐软件</p>
 
-这个库在ikun-music和lx-music-mobile基础上继续改造，以满足个人需求
+这个库在lx-music-mobile和ikun-music基础上继续改造，以满足个人需求
+- https://github.com/lyswhut/lx-music-mobile
+- https://github.com/ikunshare/ikun-music-mobile
+
+---
+
 
 ### 网易云
 - 菜单增加：每日推荐
