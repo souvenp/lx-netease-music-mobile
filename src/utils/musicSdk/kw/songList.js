@@ -471,7 +471,7 @@ export default {
         songmid: item.id,
         source: 'kw',
         interval: formatPlayTime(parseInt(item.duration)),
-        img: null,
+        img: item.pic || item.albumpic,
         lrc: null,
         otherSource: null,
         types,

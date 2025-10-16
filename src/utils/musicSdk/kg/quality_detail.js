@@ -161,7 +161,7 @@ export const filterData = async (rawList, options = {}) => {
         interval: options.fix
           ? formatPlayTime(parseInt(item.audio_info.timelength) / 1000)
           : formatPlayTime(parseInt(item.audio_info.timelength)),
-        img: null,
+        img: item.album_info?.sizable_cover?.replace('{size}', '480') ?? null,
         lrc: null,
         hash: item.audio_info.hash,
         otherSource: null,
@@ -179,7 +179,7 @@ export const filterData = async (rawList, options = {}) => {
       songmid: item.audio_id,
       source: 'kg',
       interval: options.fix ? formatPlayTime(item.duration / 1000) : formatPlayTime(item.duration),
-      img: null,
+      img: item.album_info?.sizable_cover?.replace('{size}', '480') ?? null,
       lrc: null,
       hash: item.hash,
       types,

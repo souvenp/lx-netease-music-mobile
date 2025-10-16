@@ -58,7 +58,7 @@ export default {
         source: 'kg',
         interval: formatPlayTime(item.Duration),
         _interval: item.Duration,
-        img: null,
+        img: item.Image ? item.Image.replace('{size}', '480') : null,
         lrc: null,
         otherSource: null,
         hash: item.FileHash,
