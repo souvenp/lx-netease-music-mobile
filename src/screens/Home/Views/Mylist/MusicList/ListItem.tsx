@@ -9,6 +9,7 @@ import { useAssertApiSupport } from '@/store/common/hook'
 import { scaleSizeH } from '@/utils/pixelRatio'
 import Text from '@/components/common/Text'
 import Badge from '@/components/common/Badge'
+import Image from '@/components/common/Image';
 
 export const ITEM_HEIGHT = scaleSizeH(LIST_ITEM_HEIGHT)
 
@@ -82,13 +83,10 @@ export default memo(
             onLongPress(item, index)
           }}
         >
-          {active ? (
-            <Icon style={styles.sn} name="play-outline" size={13} color={theme['c-primary-font']} />
-          ) : (
-            <Text style={styles.sn} size={13} color={theme['c-300']}>
-              {index + 1}
-            </Text>
-          )}
+
+          <View style={styles.sn}>
+            <Image url={item.meta.picUrl} style={styles.albumArt} />
+          </View>
           <View style={styles.itemInfo}>
             {/* <View style={styles.listItemTitle}> */}
             <Text color={active ? theme['c-primary-font'] : theme['c-font']} numberOfLines={1}>
@@ -158,12 +156,16 @@ const styles = createStyle({
     alignItems: 'center',
   },
   sn: {
-    width: 38,
-    // fontSize: 12,
-    textAlign: 'center',
-    // backgroundColor: 'rgba(0,0,0,0.2)',
-    paddingLeft: 3,
-    paddingRight: 3,
+    width: 70,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingLeft: 5,
+    paddingRight: 5,
+  },
+  albumArt: {
+    width: 52,
+    height: 52,
+    borderRadius: 4,
   },
   itemInfo: {
     flexGrow: 1,

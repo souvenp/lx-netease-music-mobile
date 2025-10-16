@@ -346,6 +346,8 @@ declare global {
        */
       'list.addMusicLocationType': AddMusicLocationType
 
+      'list.isShowMyListSubMenu': boolean;
+      'list.isAutoSaveDailyRec': boolean;
       /**
        * 是否启用下载
        */

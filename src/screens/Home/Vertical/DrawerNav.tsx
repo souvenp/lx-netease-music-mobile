@@ -12,7 +12,90 @@ import type { InitState } from '@/store/common/state'
 import { exitApp, setNavActiveId } from '@/core/common'
 import Text from '@/components/common/Text'
 import { useSettingValue } from '@/store/setting/hook'
+import React, { useState, useRef, useCallback } from 'react';
+import { Animated, Easing } from 'react-native';
+import { useMyList } from '@/store/list/hook';
+import { setActiveList } from '@/core/list';
 
+const CollapsibleMyListItem = () => {
+  const t = useI18n();
+  const theme = useTheme();
+  const allList = useMyList();
+  const [isExpanded, setExpanded] = useState(false);
+  const animation = useRef(new Animated.Value(0)).current;
+  const contentHeight = useRef(0); // 用于存储子列表的实际高度
+
+  const toggleCollapse = () => {
+    const toValue = isExpanded ? 0 : 1;
+    Animated.timing(animation, {
+      toValue,
+      duration: 300,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: false, // 高度动画必须禁用原生驱动
+    }).start();
+    setExpanded(!isExpanded);
+  };
+
+  const handleSelect = useCallback((listId: string) => {
+    setNavActiveId('nav_love');
+    setActiveList(listId);
+    global.app_event.changeMenuVisible(false);
+  }, []);
+
+  // 动画插值
+  const animatedHeight = animation.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, contentHeight.current],
+  });
+
+  const animatedOpacity = animation.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [0, 0, 1],
+  });
+
+  const arrowRotation = animation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '90deg'],
+  });
+
+  return (
+    <View>
+      {/* 主菜单项 */}
+      <TouchableOpacity style={styles.menuItem} onPress={toggleCollapse}>
+        <View style={styles.iconContent}>
+          <Icon name="love" size={20} color={theme['c-font-label']} />
+        </View>
+        <Text style={styles.text}>{t('nav_love')}</Text>
+        {/*<Animated.View style={{ transform: [{ rotate: arrowRotation }] }}>*/}
+        {/*  <Icon name="chevron-right" size={16} color={theme['c-font-label']} />*/}
+        {/*</Animated.View>*/}
+      </TouchableOpacity>
+
+      {/* 可折叠的子列表 */}
+      <Animated.View style={{ height: animatedHeight, opacity: animatedOpacity, overflow: 'hidden' }}>
+        <View
+          onLayout={(event) => {
+            // 测量内容实际高度，用于动画
+            contentHeight.current = event.nativeEvent.layout.height;
+          }}
+          style={{ position: 'absolute', width: '100%' }} // 使用绝对定位来测量，避免影响布局
+        >
+          {allList.map(list => (
+            <TouchableOpacity
+              key={list.id}
+              style={styles.subMenuItem}
+              onPress={() => handleSelect(list.id)}
+            >
+              <Text size={14} color={theme['c-font-label']} numberOfLines={1}>
+                {list.name}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </Animated.View>
+    </View>
+  );
+};
 const styles = createStyle({
   container: {
     flex: 1,
@@ -33,6 +116,15 @@ const styles = createStyle({
   },
   menus: {
     flex: 1,
+  },
+  subMenuItem: {
+    paddingVertical: 12,
+    paddingLeft: 55, // 缩进，使其在主菜单项的下方
+    paddingRight: 25,
+  },
+  collapsibleMenuItemText: {
+    flex: 1,
+    paddingLeft: 20,
   },
   list: {
     paddingTop: 10,
@@ -122,6 +214,7 @@ export default memo(() => {
   const showBackBtn = useSettingValue('common.showBackBtn')
   const showExitBtn = useSettingValue('common.showExitBtn')
   const navStatus = useSettingValue('common.navStatus');
+  const isShowMyListSubMenu = useSettingValue('list.isShowMyListSubMenu');
 
   const handlePress = (id: IdType) => {
     switch (id) {
@@ -154,9 +247,14 @@ export default memo(() => {
       <Header />
       <ScrollView style={styles.menus}>
         <View style={styles.list}>
-          {filteredNavMenus.map((menu) => ( // 使用过滤后的菜单
-            <MenuItem key={menu.id} id={menu.id} icon={menu.icon} onPress={handlePress} />
-          ))}
+          {filteredNavMenus.map((menu) => {
+            if (menu.id === 'nav_love') {
+              return isShowMyListSubMenu
+                ? <CollapsibleMyListItem key={menu.id} />
+                : <MenuItem key={menu.id} id={menu.id} icon={menu.icon} onPress={handlePress} />;
+            }
+            return <MenuItem key={menu.id} id={menu.id} icon={menu.icon} onPress={handlePress} />;
+          })}
         </View>
       </ScrollView>
 

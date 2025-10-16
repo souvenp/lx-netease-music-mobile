@@ -3,6 +3,7 @@ import {setTempList, setActiveList, createList, removeUserList} from '@/core/lis
 import { playList } from '@/core/player/player'
 import listState from '@/store/list/state'
 import {clearPlayedList} from "@/core/player/playedList.ts";
+import settingState from '@/store/setting/state';
 import {toast} from "@/utils/tools.ts";
 
 export const handlePlay = async (list: LX.Music.MusicInfoOnline[], index = 0) => {
@@ -31,6 +32,7 @@ const getLogicalDateForPlaylist = (): Date => {
  * @param songList 每日推荐的歌曲列表
  */
 export const autoSaveDailyPlaylist = async (songList: LX.Music.MusicInfoOnline[]) => {
+  if (!settingState.setting['list.isAutoSaveDailyRec']) return;
   if (!songList.length) return;
 
   const logicalDate = getLogicalDateForPlaylist();

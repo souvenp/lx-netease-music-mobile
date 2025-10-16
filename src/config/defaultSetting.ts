@@ -75,6 +75,8 @@ const defaultSetting: LX.AppSetting = {
   'list.isShowInterval': true,
   'list.isSaveScrollLocation': true,
   'list.addMusicLocationType': 'top',
+  'list.isShowMyListSubMenu': true,
+  'list.isAutoSaveDailyRec': true,
 
   'download.enable': true,
   'download.path': '',
