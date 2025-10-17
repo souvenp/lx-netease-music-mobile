@@ -118,6 +118,7 @@ export default () => {
         onSortChange={handleSortChange}
         onTagChange={handleTagChange}
         onSourceChange={handleSourceChange}
+        onOpenDetail={handleOpenDetail}
       />
       <List ref={listRef} onOpenDetail={handleOpenDetail} />
     </View>

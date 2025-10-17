@@ -8,7 +8,7 @@ import SortTab, { type SortTabProps, type SortTabType } from './SortTab'
 import { createStyle } from '@/utils/tools'
 // import { BorderWidths } from '@/theme'
 import SourceSelector, { type SourceSelectorType, type SourceSelectorProps } from './SourceSelector'
-import { type Source } from '@/store/songlist/state'
+import {ListInfoItem, type Source} from '@/store/songlist/state'
 // import { useTheme } from '@/store/theme/hook'
 import Tag, { type TagType, type TagProps } from './Tag'
 import OpenList, { type OpenListType } from './OpenList'
@@ -18,6 +18,7 @@ export interface HeaderBarProps {
   onSortChange: SortTabProps['onSortChange']
   onTagChange: TagProps['onTagChange']
   onSourceChange: SourceSelectorProps['onSourceChange']
+  onOpenDetail: (item: ListInfoItem) => void;
 }
 
 export interface HeaderBarType {
@@ -25,7 +26,7 @@ export interface HeaderBarType {
 }
 
 export default forwardRef<HeaderBarType, HeaderBarProps>(
-  ({ onSortChange, onTagChange, onSourceChange }, ref) => {
+  ({ onSortChange, onTagChange, onSourceChange, onOpenDetail }, ref) => {
     const sortTabRef = useRef<SortTabType>(null)
     const tagRef = useRef<TagType>(null)
     const openListRef = useRef<OpenListType>(null)
@@ -49,7 +50,7 @@ export default forwardRef<HeaderBarType, HeaderBarProps>(
       <View style={styles.searchBar}>
         <SortTab ref={sortTabRef} onSortChange={onSortChange} />
         <Tag ref={tagRef} onTagChange={onTagChange} />
-        <OpenList ref={openListRef} />
+        <OpenList ref={openListRef} onOpenDetail={onOpenDetail} />
         <SourceSelector ref={sourceSelectorRef} onSourceChange={onSourceChange} />
       </View>
     )

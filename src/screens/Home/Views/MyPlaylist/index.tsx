@@ -1,5 +1,5 @@
 import { memo, useEffect, useState, useCallback, useRef } from 'react'
-import { View, FlatList, RefreshControl, BackHandler } from 'react-native' // 导入 BackHandler
+import { View, FlatList, RefreshControl, BackHandler, StyleSheet } from 'react-native' // 导入 BackHandler
 import ListItem from './ListItem'
 import wyApi from '@/utils/musicSdk/wy/user'
 import { useSettingValue } from '@/store/setting/hook'
@@ -77,10 +77,10 @@ export default memo(() => {
 
 
   // 条件渲染逻辑
-  if (selectedPlaylist) {
-    // 传入 onBack 回调，用于关闭详情视图
-    return <SonglistDetail info={selectedPlaylist} onBack={() => setSelectedPlaylist(null)} />
-  }
+  // if (selectedPlaylist) {
+  //   // 传入 onBack 回调，用于关闭详情视图
+  //   return <SonglistDetail info={selectedPlaylist} onBack={() => setSelectedPlaylist(null)} />
+  // }
 
   if (!cookie) {
     return (
@@ -92,6 +92,7 @@ export default memo(() => {
 
   return (
     <View style={{ flex: 1 }}>
+      {/* 歌单列表页 - 始终渲染 */}
       <FlatList
         data={playlists}
         renderItem={({ item }) => <ListItem item={item} onPress={handleItemPress} />}
@@ -104,6 +105,13 @@ export default memo(() => {
           />
         }
       />
+
+      {/* 歌单详情页 - 条件渲染为覆盖层 */}
+      {selectedPlaylist && (
+        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: theme['c-content-background'] }]}>
+          <SonglistDetail info={selectedPlaylist} onBack={() => setSelectedPlaylist(null)} />
+        </View>
+      )}
     </View>
-  )
+  );
 })

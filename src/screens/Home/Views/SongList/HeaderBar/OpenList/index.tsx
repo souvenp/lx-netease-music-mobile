@@ -3,7 +3,7 @@ import { useRef, forwardRef, useImperativeHandle } from 'react'
 import Button from '@/components/common/Button'
 // import { navigations } from '@/navigation'
 import Modal, { type ModalType } from './Modal'
-import { type Source } from '@/store/songlist/state'
+import {ListInfoItem, type Source} from '@/store/songlist/state'
 import { createStyle } from '@/utils/tools'
 import Text from '@/components/common/Text'
 import { useI18n } from '@/lang'
@@ -14,11 +14,15 @@ import commonState from '@/store/common/state'
 //   onTagChange: (name: string, id: string) => void
 // }
 
+interface OpenListProps {
+  onOpenDetail: (item: ListInfoItem) => void;
+}
 export interface OpenListType {
   setInfo: (source: Source) => void
 }
 
-export default forwardRef<OpenListType, {}>((props, ref) => {
+
+export default forwardRef<OpenListType, OpenListProps>(({ onOpenDetail }, ref) => {
   const t = useI18n()
   const modalRef = useRef<ModalType>(null)
   const songlistInfoRef = useRef<{ source: Source }>({ source: 'kw' })
@@ -31,7 +35,16 @@ export default forwardRef<OpenListType, {}>((props, ref) => {
 
   const handleOpenSonglist = (id: string) => {
     // console.log(id, songlistInfoRef.current.source)
-    navigations.pushSonglistDetailScreen(commonState.componentIds.home!, {
+    // navigations.pushSonglistDetailScreen(commonState.componentIds.home!, {
+    //   play_count: undefined,
+    //   id,
+    //   author: '',
+    //   name: '',
+    //   img: undefined,
+    //   desc: undefined,
+    //   source: songlistInfoRef.current.source,
+    // })
+    onOpenDetail({
       play_count: undefined,
       id,
       author: '',
@@ -39,7 +52,7 @@ export default forwardRef<OpenListType, {}>((props, ref) => {
       img: undefined,
       desc: undefined,
       source: songlistInfoRef.current.source,
-    })
+    });
   }
 
   // const handleSourceChange: ModalProps['onSourceChange'] = (source) => {
