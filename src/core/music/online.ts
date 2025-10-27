@@ -61,51 +61,56 @@ export const getMusicUrl = async ({
   const cachedUrl = await getStoreMusicUrl(musicInfo, targetQuality)
   if (cachedUrl && !isRefresh) return cachedUrl
 
-  // ========== 新增逻辑开始 ==========
-  // API 优先的逻辑
-  if (prefer === 'api') {
+  // 定义高音质列表
+  const highQualityLevels: LX.Quality[] = ['flac', 'hires', 'master', 'atmos', 'atmos_plus'];
+
+  // 检查是否优先使用 API (下载场景或高音质播放场景)
+  const preferApi = prefer === 'api' || (musicInfo.source == 'wy' && highQualityLevels.includes(targetQuality));
+
+  if (preferApi) {
     try {
-      // 1. 尝试使用自定义API
+      console.log('Attempting to get music URL via custom API');
+      // 优先尝试自定义音源 (API)
       const result = await handleGetOnlineMusicUrl({
         musicInfo,
         quality: targetQuality,
         onToggleSource,
         isRefresh,
         allowToggleSource,
-      })
-      void saveMusicUrl(musicInfo, result.quality, result.url)
-      return result.url
+      });
+      console.log('Custom API request succeeded', result);
+      void saveMusicUrl(musicInfo, result.quality, result.url);
+      return result.url;
     } catch (apiError) {
-      console.log('API request failed, falling back to Cookie request', apiError)
-      // 2. API失败后，尝试使用Cookie
+      console.log('API request failed, falling back to Cookie request', apiError);
+      // 如果 API 失败且有 Cookie，则尝试 Cookie 作为备用方案
       if (musicInfo.source == 'wy' && settingState.setting['common.wy_cookie']) {
         try {
-          const { url } = await wySdk.cookie.getMusicUrl(musicInfo, targetQuality).promise
+          const { url } = await wySdk.cookie.getMusicUrl(musicInfo, targetQuality).promise;
           if (url) {
-            void saveMusicUrl(musicInfo, targetQuality, url)
-            return url
+            void saveMusicUrl(musicInfo, targetQuality, url);
+            return url;
           }
         } catch (cookieError) {
-          console.log('Cookie request also failed', cookieError)
+          console.log('Cookie request also failed', cookieError);
         }
       }
-      // 如果两种方式都失败，则抛出最初的API错误
-      throw apiError
+      throw apiError; // 如果备用方案也失败，则抛出原始错误
     }
   }
 
+  // 默认流程 (低音质播放或非网易云源)
   if (musicInfo.source == 'wy' && settingState.setting['common.wy_cookie']) {
     try {
-      const { url } = await wySdk.cookie.getMusicUrl(musicInfo, targetQuality).promise
+      const { url } = await wySdk.cookie.getMusicUrl(musicInfo, targetQuality).promise;
       if (url) {
-        void saveMusicUrl(musicInfo, targetQuality, url)
-        return url
+        void saveMusicUrl(musicInfo, targetQuality, url);
+        return url;
       }
     } catch (error) {
-      console.log('Get music url with cookie failed, fallback to custom api', error)
+      console.log('Get music url with cookie failed, fallback to custom api', error);
     }
   }
-  // ========== 新增逻辑结束 ==========
 
   return handleGetOnlineMusicUrl({
     musicInfo,
