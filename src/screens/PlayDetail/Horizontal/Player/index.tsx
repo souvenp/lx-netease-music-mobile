@@ -20,7 +20,7 @@ export default memo(() => {
 const styles = createStyle({
   container: {
     flexShrink: 0,
-    flexGrow: 1,
+    flexGrow: 0,
     marginLeft: marginLeftRaw,
     // paddingRight: 15,
     // backgroundColor: 'rgba(0,0,0,0.1)',

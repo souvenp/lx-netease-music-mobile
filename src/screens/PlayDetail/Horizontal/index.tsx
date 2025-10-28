@@ -3,8 +3,6 @@ import { View, AppState } from 'react-native'
 import { screenkeepAwake, screenUnkeepAwake } from '@/utils/nativeModules/utils'
 import StatusBar from '@/components/common/StatusBar'
 import MoreBtn from './MoreBtn'
-
-import MiniLyric from '../components/MiniLyric';
 import Header from './components/Header'
 import { setComponentId } from '@/core/common'
 import { COMPONENT_IDS } from '@/config/constant'
@@ -60,7 +58,6 @@ export default memo(({ componentId }: { componentId: string }) => {
           <View style={styles.leftContent}>
             <MoreBtn />
             <Pic componentId={componentId} />
-            <MiniLyric style={styles.miniLyricContainer} />
           </View>
           <Player />
           {/* <View style={styles.controlBtn} nativeID="pageIndicator">

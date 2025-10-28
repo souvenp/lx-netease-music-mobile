@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Python RN 调试器 (日志捕获模式)</title>
+    <style>
+        body { font-family: Consolas, "Courier New", monospace; background-color: #1e1e1e; color: #d4d4d4; margin: 0; padding: 0; font-size: 14px; }
+        #logs { display: flex; flex-direction: column; padding: 40px 10px 10px 10px; }
+        .log-item { display: flex; border-bottom: 1px solid #333; padding: 8px 5px; word-break: break-all; align-items: baseline; }
+        .log-meta { flex-shrink: 0; min-width: 90px; color: #888; padding-right: 10px; }
+        .log-content { flex-grow: 1; display: flex; flex-wrap: wrap; gap: 12px; align-items: baseline; } /* 增加 align-items */
+        
+        /* 根据日志级别添加不同颜色的左边框 */
+        .log-item.LOG { border-left: 3px solid #569cd6; }
+        .log-item.WARN { border-left: 3px solid #f7b731; }
+        .log-item.ERROR { border-left: 3px solid #f44747; }
+
+        .log-text { white-space: pre-wrap; color: #d4d4d4; }
+
+        details { border: 1px solid #444; border-radius: 4px; padding: 8px; background-color: #252526; display: inline-block; min-width: 150px; margin: 0; }
+        summary { cursor: pointer; color: #9cdcfe; outline: none; }
+        .prop { margin-left: 20px; }
+        .key { color: #ce9178; }
+        .string { color: #d69d85; }
+        .number { color: #b5cea8; }
+        .boolean { color: #569cd6; }
+        .null { color: #808080; }
+
+        #toolbar {
+            position: fixed; top: 0; left: 0; right: 0;
+            background-color: #333; color: white; padding: 5px 10px;
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 12px; z-index: 100; border-bottom: 1px solid #444;
+        }
+        #status { flex-grow: 1; text-align: center; }
+        #clear-btn {
+            background-color: #555; color: #fff; border: 1px solid #666;
+            padding: 4px 10px; border-radius: 4px; cursor: pointer; font-family: inherit;
+        }
+        #clear-btn:hover { background-color: #666; }
+    </style>
+</head>
+<body>
+    <div id="toolbar">
+        <div id="status">正在连接到调试工具...</div>
+        <button id="clear-btn">清空日志</button>
+    </div>
+    <div id="logs"></div>
+
+    <script>
+        const logsContainer = document.getElementById('logs');
+        const statusEl = document.getElementById('status');
+        const clearBtn = document.getElementById('clear-btn');
+        const socket = new WebSocket('ws://localhost:8089');
+
+        clearBtn.addEventListener('click', () => {
+            logsContainer.innerHTML = '';
+        });
+
+        socket.onopen = () => { statusEl.textContent = '连接成功！等待日志...'; };
+        socket.onclose = () => {
+            statusEl.textContent = '连接已断开。请重新运行 Python 脚本并刷新页面。';
+            toolbar.style.backgroundColor = '#f44747';
+        };
+
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'status') {
+                statusEl.textContent = data.message;
+            } else if (data.type === 'structured_log') {
+                renderLogItem(data);
+            }
+        };
+
+        function renderLogItem(log) {
+            const item = document.createElement('div');
+            item.className = `log-item ${log.logType}`; // 添加日志级别类
+            
+            const meta = document.createElement('div');
+            meta.className = 'log-meta';
+            meta.textContent = `[${log.timestamp}]`;
+            item.appendChild(meta);
+
+            const content = document.createElement('div');
+            content.className = 'log-content';
+            
+            // 遍历 payload 数组，渲染每一个参数
+            log.payload.forEach(arg => {
+                content.appendChild(renderValue(arg));
+            });
+            
+            item.appendChild(content);
+            logsContainer.appendChild(item);
+            window.scrollTo(0, document.body.scrollHeight);
+        }
+
+        function renderValue(value) {
+            const type = typeof value;
+            if (value === null) {
+                const span = document.createElement('span');
+                span.textContent = 'null';
+                span.className = 'null';
+                return span;
+            } else if (type === 'object') {
+                return renderObject(value);
+            } else {
+                const span = document.createElement('span');
+                if (type === 'string') {
+                    // 对于普通字符串，不再添加双引号
+                    span.textContent = value;
+                    span.className = 'log-text';
+                } else {
+                    span.textContent = String(value);
+                    span.className = type; // number, boolean
+                }
+                return span;
+            }
+        }
+
+        function renderObject(obj) {
+            const details = document.createElement('details');
+            const summary = document.createElement('summary');
+            summary.textContent = Array.isArray(obj) ? `Array(${Object.keys(obj).length})` : 'Object';
+            details.appendChild(summary);
+            for (const key in obj) {
+                if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                    const propDiv = document.createElement('div');
+                    propDiv.className = 'prop';
+                    const keySpan = document.createElement('span');
+                    keySpan.className = 'key';
+                    keySpan.textContent = `${key}: `;
+                    propDiv.appendChild(keySpan);
+                    
+                    // 对于对象内部的值，需要恢复字符串的引号显示
+                    const valueNode = renderValueWithQuotes(obj[key]);
+                    propDiv.appendChild(valueNode);
+                    details.appendChild(propDiv);
+                }
+            }
+            return details;
+        }
+
+        // 新增一个函数，用于在渲染对象内部时，给字符串值加上引号
+        function renderValueWithQuotes(value) {
+            if (typeof value === 'string') {
+                const span = document.createElement('span');
+                span.textContent = `"${value}"`;
+                span.className = 'string';
+                return span;
+            }
+            // 对于非字符串类型，沿用旧的渲染逻辑
+            return renderValue(value);
+        }
+    </script>
+</body>
+</html>

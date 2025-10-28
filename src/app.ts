@@ -9,6 +9,53 @@ import { windowSizeTools } from './utils/windowSizeTools'
 import { listenLaunchEvent } from './navigation/regLaunchedEvent'
 import { tipDialog } from './utils/tools'
 
+// --- START: CONSOLE LOG PATCH (v2) ---
+if (__DEV__) {
+  const originalLog = console.log;
+  const originalWarn = console.warn;
+  const originalError = console.error;
+
+  const PREFIX = '###RN_DEBUG_START###';
+  const SUFFIX = '###RN_DEBUG_END###';
+
+  /**
+   * @param {'log' | 'warn' | 'error'} type
+   * @param {any[]} args
+   */
+  const remoteLog = (type, ...args) => {
+    try {
+      // 创建一个包含所有参数的结构化对象
+      const payload = {
+        type: type,
+        // 我们直接将参数数组发送过去
+        // JSON.stringify 会自动处理大多数JS类型
+        payload: args,
+      };
+
+      // 将整个结构化对象转换为字符串，并用标记包裹
+      // Metro 会将此作为单行日志打印出来
+      originalLog(`${PREFIX}${JSON.stringify(payload)}${SUFFIX}`);
+
+    } catch (e) {
+      // 如果序列化失败（如循环引用），则回退到原始的 console.log
+      originalLog('Logger Patch Error:', e);
+      if (type === 'warn') {
+        originalWarn.apply(console, args);
+      } else if (type === 'error') {
+        originalError.apply(console, args);
+      } else {
+        originalLog.apply(console, args);
+      }
+    }
+  };
+
+  // 覆盖全局 console 对象
+  console.log = (...args) => remoteLog('log', ...args);
+  console.warn = (...args) => remoteLog('warn', ...args);
+  console.error = (...args) => remoteLog('error', ...args);
+}
+// --- END: CONSOLE LOG PATCH (v2) ---
+
 console.log('starting app...')
 listenLaunchEvent()
 

@@ -11,6 +11,7 @@ import * as apiCookie from './api-cookie'
 // import tipSearch from './tipSearch'
 import artist from './artist'
 import album from './album'
+import {resolveQualityAlias} from "@/utils/musicSdk/utils";
 
 const wy = {
   // tipSearch,
@@ -23,7 +24,9 @@ const wy = {
   dailyRec,
   cookie: apiCookie,
   getMusicUrl(songInfo, type) {
-    return apis('wy').getMusicUrl(songInfo, type)
+    console.log('[LX Music SDK] Requested quality:', type);
+    const qualityToRequest = resolveQualityAlias('wy', type);
+    return apis('wy').getMusicUrl(songInfo, qualityToRequest);
   },
   getLyric(songInfo) {
     return getLyric(songInfo.songmid)

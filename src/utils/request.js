@@ -5,6 +5,7 @@ import { requestMsg } from './message'
 import { bHh } from './musicSdk/options'
 import { deflateRaw } from 'pako'
 import settingState from '@/store/setting/state'
+import {toast} from "@/utils/tools";
 
 const defaultHeaders = {
   'User-Agent':
@@ -194,27 +195,38 @@ const fetchData = (url, { timeout = 15000, ...options }) => {
           ...options,
           signal: controller.signal,
         })
-        .then((resp) =>
-          (options.binary ? resp.blob() : resp.text()).then((text) => {
-            // --- 新增的调试代码 ---
-            console.log('--- Response Body for:', url, '---');
-            try {
-              // 尝试以 JSON 格式打印，如果失败则直接打印文本
-              console.log(JSON.parse(text));
-            } catch (e) {
-              console.log(text);
-            }
-            // --- 调试代码结束 ---
-            return {
-              headers: resp.headers.map,
-              body: text,
-              statusCode: resp.status,
-              statusMessage: resp.statusText,
-              url: resp.url,
-              ok: resp.ok,
-            }
+        .then((resp) => {
+          if (resp.status === 301 && url.includes('music.163.com')) {
+            // 检查到是网易云的请求并且状态码是 301
+            setTimeout(() => {
+              // global.app_event.emit('showWebLogin');
+              toast('登录状态已过期，请重新登录', 'long');
+            }, 0);
+
+            // 抛出一个错误来中断当前的请求链，防止后续代码继续执行
+            throw new Error('需要重新登录 (Need to re-login)');
+          }
+
+            return (options.binary ? resp.blob() : resp.text()).then((text) => {
+              // --- 新增的调试代码 ---
+              console.log('--- Response Body for:', url, '---');
+              try {
+                // 尝试以 JSON 格式打印，如果失败则直接打印文本
+                console.log(JSON.parse(text));
+              } catch (e) {
+                console.log(text);
+              }
+              // --- 调试代码结束 ---
+              return {
+                headers: resp.headers.map,
+                body: text,
+                statusCode: resp.status,
+                statusMessage: resp.statusText,
+                url: resp.url,
+                ok: resp.ok,
+              }
+            });
           })
-        )
         .then((resp) => {
           if (options.binary) {
             return blobToBuffer(resp.body).then((buffer) => {

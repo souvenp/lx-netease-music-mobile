@@ -5,6 +5,7 @@ import musicSearch from './musicSearch'
 import { apis } from '../api-source'
 import hotSearch from './hotSearch'
 import comment from './comment'
+import {resolveQualityAlias} from "@/utils/musicSdk/utils";
 // import tipSearch from './tipSearch'
 
 const tx = {
@@ -16,7 +17,8 @@ const tx = {
   comment,
 
   getMusicUrl(songInfo, type) {
-    return apis('tx').getMusicUrl(songInfo, type)
+    const qualityToRequest = resolveQualityAlias('tx', type);
+    return apis('tx').getMusicUrl(songInfo, qualityToRequest);
   },
   getLyric(songInfo) {
     // let singer = songInfo.singer.indexOf('、') > -1 ? songInfo.singer.split('、')[0] : songInfo.singer

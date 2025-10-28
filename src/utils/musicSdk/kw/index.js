@@ -9,6 +9,7 @@ import { apis } from '../api-source'
 import songList from './songList'
 import hotSearch from './hotSearch'
 import comment from './comment'
+import {resolveQualityAlias} from "@/utils/musicSdk/utils";
 
 const kw = {
   _musicInfoRequestObj: null,
@@ -59,7 +60,8 @@ const kw = {
   },
 
   getMusicUrl(songInfo, type) {
-    return apis('kw').getMusicUrl(songInfo, type)
+    const qualityToRequest = resolveQualityAlias('kw', type); // 2. 解析音质
+    return apis('kw').getMusicUrl(songInfo, qualityToRequest);
   },
 
   getMusicInfo(songInfo) {

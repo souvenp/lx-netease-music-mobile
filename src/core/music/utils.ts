@@ -11,6 +11,7 @@ import settingState from '@/store/setting/state'
 import { requestMsg } from '@/utils/message'
 import BackgroundTimer from 'react-native-background-timer'
 import { apis } from '@/utils/musicSdk/api-source'
+import wySdk from '@/utils/musicSdk/wy';
 
 const getOtherSourcePromises = new Map()
 export const existTimeExp = /\[\d{1,2}:.*\d{1,4}\]/
@@ -240,22 +241,33 @@ export const getOnlineOtherSourcePicByLocal = async (
 
 export const TRY_QUALITYS_LIST = ['master', 'atmos_plus', 'atmos', 'hires', 'flac', '320k'] as const
 type TryQualityType = (typeof TRY_QUALITYS_LIST)[number]
+const QUALITY_RANK: readonly LX.Quality[] = ['master', 'atmos_plus', 'atmos', 'hires', 'flac', '320k', '128k'];
+
 export const getPlayQuality = (
-  highQuality: LX.Quality,
+  preferredQuality: LX.Quality,
   musicInfo: LX.Music.MusicInfoOnline
 ): LX.Quality => {
-  let type: LX.Quality = '128k'
-  if (TRY_QUALITYS_LIST.includes(highQuality as TryQualityType)) {
-    let list = global.lx.qualityList[musicInfo.source]
-    //
-    // let t = TRY_QUALITYS_LIST.slice(TRY_QUALITYS_LIST.indexOf(highQuality as TryQualityType)).find(
-    //   (q) => list?.includes(q)
-    // )
+  console.log('Preferred quality:', preferredQuality);
+  // 获取这首歌实际支持的所有音质
+  const availableQualities = musicInfo.meta._qualitys;
 
-    return highQuality
-    // if (t) type = t
+  // 找到用户偏好音质在排行榜中的位置
+  const startIndex = QUALITY_RANK.indexOf(preferredQuality);
+
+  // 如果用户的偏好设置不在我们的榜单里（例如设置了无效值），就从最高音质开始找
+  const searchIndex = startIndex === -1 ? 0 : startIndex;
+
+  // 从用户偏好的音质开始，向下遍历排行榜
+  for (let i = searchIndex; i < QUALITY_RANK.length; i++) {
+    const quality = QUALITY_RANK[i];
+    // 如果当前歌曲支持这个音质，那么它就是我们要找的最佳音质
+    if (availableQualities[quality]) {
+      return quality;
+    }
   }
-  return type
+
+  // 如果遍历完都找不到（极不可能发生，因为歌曲至少有128k），则返回最低音质
+  return '128k';
 }
 
 export const getOnlineOtherSourceMusicUrl = async ({
@@ -372,7 +384,22 @@ export const handleGetOnlineMusicUrl = async ({
       return { musicInfo, url, quality: type, isFromCache: false }
     })
     .catch(async (err: any) => {
-      console.log(err)
+      // --- START: Cookie Fallback 逻辑 ---
+      if (musicInfo.source == 'wy' && settingState.setting['common.wy_cookie']) {
+        try {
+          console.log('Attempting fallback to Cookie API...');
+          const { url, type: quality } = await wySdk.cookie.getMusicUrl(toOldMusicInfo(musicInfo), targetQuality).promise;
+          if (url) {
+            console.log('Cookie API fallback successful.');
+            // 如果Cookie成功，直接返回结果，不再继续后续的换源流程
+            return { musicInfo, url, quality, isFromCache: false };
+          }
+        } catch (cookieError) {
+          console.log('Cookie API fallback also failed:', cookieError);
+        }
+      }
+      // --- END: Cookie Fallback 逻辑 ---
+
       if (!allowToggleSource || err.message == requestMsg.tooManyRequests) throw err
       onToggleSource()
 

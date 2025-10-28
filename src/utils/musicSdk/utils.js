@@ -1,5 +1,7 @@
 import { stringMd5 } from 'react-native-quick-md5'
 import { decodeName } from '../index'
+import settingState from '@/store/setting/state';
+import {logPlugin} from "@babel/preset-env/lib/debug";
 
 /**
  * 获取音乐音质
@@ -39,3 +41,36 @@ export const formatSingerName = (singers, nameKey = 'name', join = '、') => {
   }
   return decodeName(String(singers ?? ''))
 }
+
+/**
+ * 根据当前激活的自定义API配置，解析音质的别名。
+ * 例如，如果应用请求 'hires'，但API配置只支持 'flac24bit'，则将其映射回去。
+ * @param {LX.OnlineSource} source 音乐源ID, e.g., 'kw', 'wy'
+ * @param {LX.Quality} type 应用请求的音质类型
+ * @returns {LX.Quality} 应该传递给API的实际音质类型
+ */
+export const resolveQualityAlias = (source, type) => {
+  const activeApiId = settingState.setting['common.apiSource'];
+  // 此逻辑仅适用于用户自定义API
+  if (!/^user_api/.test(activeApiId)) {
+    console.log(`[LX Music SDK] No custom API detected (activeApiId: '${activeApiId}'), skipping quality alias resolution.`);
+    return type;
+  }
+  const supportedQualities = global.lx.qualityList[source];
+  // console.log(`[LX Music SDK] Supported qualities for source '${source}':`, supportedQualities);
+  // 如果没有找到该源的音质配置，则不进行转换
+  if (!supportedQualities) {
+    console.log(`[LX Music SDK] No quality configuration found for source '${source}', skipping quality alias resolution.`);
+    return type;
+  }
+  // 处理 'hires' 与 'flac24bit' 的别名情况
+  if (
+    type === 'hires' &&
+    !supportedQualities.includes('hires')
+  ) {
+    console.log(`[LX Music SDK] Resolving quality alias for source '${source}': 'hires' -> 'flac24bit'`);
+    return 'flac24bit';
+  }
+
+  return type; // 如果没有匹配的别名规则，返回原始类型
+};
