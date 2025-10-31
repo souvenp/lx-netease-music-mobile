@@ -305,9 +305,8 @@ export const handleDownload = async (musicInfo: LX.Music.MusicInfo, quality: LX.
               tasks.push(writeLyric(filePath, embedLyricContent))
             }
           } else if (settingState.setting['download.writeLyric'] || settingState.setting['download.writeRomaLyric']) {
-            const translationLyric = settingState.setting['download.writeLyric'] ? lyrics.tlyric : null
             const romaLyric = settingState.setting['download.writeRomaLyric'] ? lyrics.rlyric : null
-            const finalLyricContent = mergeLyrics(lyrics.lyric, translationLyric, romaLyric)
+            const finalLyricContent = mergeLyrics(lyrics.lyric, lyrics.tlyric, romaLyric)
 
             if (finalLyricContent) {
               tasks.push(writeFile(`${baseFilePath}.lrc`, finalLyricContent))

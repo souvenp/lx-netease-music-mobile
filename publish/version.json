@@ -1,6 +1,6 @@
 {
-  "version": "1.8.6",
-  "desc": "版本1.8.6：webdav同步增加，cookie过期提示，cookie下载网易云歌曲修复等",
+  "version": "1.8.60",
+  "desc": "版本1.8.60：webdav同步增加\ncookie过期提示，cookie下载网易云歌曲修复\n下载管理器增加",
   "history": [
     {
       "version": "1.8.54",

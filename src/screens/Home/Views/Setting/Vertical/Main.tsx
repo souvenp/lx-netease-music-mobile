@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { FlatList, type FlatListProps } from 'react-native'
+import {FlatList, type FlatListProps, ScrollView} from 'react-native'
 
 import Basic from '../settings/Basic'
 import Player from '../settings/Player'
@@ -62,17 +62,8 @@ export default () => {
   const getkey: FlatListType['keyExtractor'] = (item) => item
 
   return (
-    <FlatList
-      data={SETTING_SCREENS}
-      keyboardShouldPersistTaps={'always'}
-      renderItem={renderItem}
-      keyExtractor={getkey}
-      contentContainerStyle={styles.content}
-      maxToRenderPerBatch={2}
-      // updateCellsBatchingPeriod={80}
-      windowSize={2}
-      // removeClippedSubviews={true}
-      initialNumToRender={1}
-    />
+    <ScrollView keyboardShouldPersistTaps={'always'} contentContainerStyle={styles.content}>
+      {SETTING_SCREENS.map(id => <ListItem id={id} key={id} />)}
+    </ScrollView>
   )
 }

@@ -21,7 +21,6 @@ import {
 import { showPactModal as handleShowPactModal } from '@/navigation'
 import { hideDesktopLyricView } from '@/utils/nativeModules/lyricDesktop'
 import { getPersistedUriList, selectManagedFolder } from '@/utils/fs'
-
 const throttleSaveSetting = throttle(() => {
   void saveData(storageDataPrefix.setting, settingState.setting)
 })
@@ -40,9 +39,9 @@ export const initSetting = async () => {
  * @param setting 新设置
  */
 export const updateSetting = (setting: Partial<LX.AppSetting>) => {
-  settingActions.updateSetting(setting)
-  throttleSaveSetting()
-}
+  settingActions.updateSetting(setting);
+  throttleSaveSetting();
+};
 
 export const setLanguage = (locale: Parameters<typeof applyLanguage>[0]) => {
   updateSetting({ 'common.langId': locale })

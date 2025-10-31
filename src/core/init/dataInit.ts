@@ -11,6 +11,8 @@ import { TEMP_FILE_PATH } from '@/utils/tools'
 // import { play, playList } from '../player/player'
 import wyUserApi from '@/utils/musicSdk/wy/user'
 import {setWyFollowedArtists, setWyLikedSongs, setWySubscribedAlbums} from '@/store/user/action.ts'
+import {getDownloadTasks} from "@/utils/data/download.ts";
+import downloadActions from '@/store/download/action';
 // const initPrevPlayInfo = async(appSetting: LX.AppSetting) => {
 //   const info = await getPlayInfo()
 //   global.lx.restorePlayInfo = null
@@ -32,6 +34,12 @@ export default async (appSetting: LX.AppSetting) => {
   setUserList(await getUserLists()) // 获取用户列表
   setDislikeInfo(await getDislikeInfo()) // 获取不喜欢列表
   bootLog('User list inited.')
+
+
+  bootLog('Download tasks init...');
+  const savedTasks = await getDownloadTasks();
+  downloadActions.setTasks(savedTasks);
+  bootLog('Download tasks inited.');
 
   // 获取网易云喜欢列表
   const wy_cookie = appSetting['common.wy_cookie']

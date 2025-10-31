@@ -8,6 +8,7 @@ declare global {
 
     interface AppSetting {
       version: string
+      'version.autoCheckUpdate': boolean;
       /**
        * 是否跟随系统切换亮暗主题
        */

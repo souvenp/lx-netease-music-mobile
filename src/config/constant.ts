@@ -27,6 +27,7 @@ export enum COMPONENT_IDS {
   comment = 'comment',
   ARTIST_DETAIL = 'ARTIST_DETAIL',
   ALBUM_DETAIL_SCREEN = 'ALBUM_DETAIL_SCREEN',
+  DOWNLOAD_MANAGER = 'DOWNLOAD_MANAGER'
 }
 
 export enum NAV_SHEAR_NATIVE_IDS {
@@ -81,6 +82,7 @@ export const storageDataPrefix = {
   dislikeList: '@dislike_list',
 
   userApi: '@user_api__',
+  downloadList: '@download_list',
   wyUidCache: '@wy_uid_cache__',
 } as const
 

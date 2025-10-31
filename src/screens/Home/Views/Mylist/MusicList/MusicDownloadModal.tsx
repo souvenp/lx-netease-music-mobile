@@ -6,6 +6,7 @@ import { createStyle } from '@/utils/tools'
 import CheckBox from '@/components/common/CheckBox'
 import { handleDownload } from './listAction'
 import { getLastSelectQuality, saveLastSelectQuality } from '@/utils/data'
+import { addTask as addDownloadTask } from '@/core/download';
 
 interface TitleType {
   updateTitle: (musicInfo: LX.Music.MusicInfo) => void
@@ -130,7 +131,8 @@ export default forwardRef<MusicDownloadModalType, MusicDownloadModalProps>(
     const handleDownloadMusic = () => {
       void saveLastSelectQuality(selectedQuality)
       alertRef.current?.setVisible(false)
-      handleDownload(selectedInfo.current, selectedQuality)
+      // handleDownload(selectedInfo.current, selectedQuality)
+      addDownloadTask(selectedInfo.current, selectedQuality);
       // 下载后重置回默认值，以便下次打开时重新加载
       setTimeout(() => {
         setSelectedQuality('128k')

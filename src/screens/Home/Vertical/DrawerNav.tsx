@@ -16,6 +16,8 @@ import React, { useState, useRef, useCallback } from 'react';
 import { Animated, Easing } from 'react-native';
 import { useMyList } from '@/store/list/hook';
 import { setActiveList } from '@/core/list';
+import {navigations} from "@/navigation";
+import commonState from '@/store/common/state';
 
 const CollapsibleMyListItem = () => {
   const t = useI18n();
@@ -147,6 +149,16 @@ const styles = createStyle({
     paddingLeft: 20,
     // fontWeight: '500',
   },
+  footer: {
+    paddingVertical: 5,
+    paddingHorizontal: 15,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  footerBtn: {
+    padding: 10,
+  },
 })
 
 const Header = () => {
@@ -217,25 +229,28 @@ export default memo(() => {
   const isShowMyListSubMenu = useSettingValue('list.isShowMyListSubMenu');
 
   const handlePress = (id: IdType) => {
-    switch (id) {
-      case 'nav_exit':
-        void confirmDialog({
-          message: global.i18n.t('exit_app_tip'),
-          confirmButtonText: global.i18n.t('list_remove_tip_button'),
-        }).then((isExit) => {
-          if (!isExit) return
-          exitApp('Exit Btn')
-        })
-        return
-      case 'back_home':
-        backHome()
-        return
-    }
-
+    // switch (id) {
+    //   case 'nav_exit':
+    //     void confirmDialog({
+    //       message: global.i18n.t('exit_app_tip'),
+    //       confirmButtonText: global.i18n.t('list_remove_tip_button'),
+    //     }).then((isExit) => {
+    //       if (!isExit) return
+    //       exitApp('Exit Btn')
+    //     })
+    //     return
+    //   case 'back_home':
+    //     backHome()
+    //     return
+    // }
     global.app_event.changeMenuVisible(false)
     setNavActiveId(id)
   }
 
+  const handleDownloadPress = () => {
+    global.app_event.changeMenuVisible(false);
+    navigations.pushDownloadManagerScreen(commonState.componentIds.home!);
+  };
   const filteredNavMenus = useMemo(() => {
     return NAV_MENUS.filter(
       menu => menu.id === 'nav_search' || menu.id === 'nav_setting' || (navStatus[menu.id] ?? true)
@@ -257,6 +272,12 @@ export default memo(() => {
           })}
         </View>
       </ScrollView>
+
+      <View style={styles.footer}>
+        <TouchableOpacity style={styles.footerBtn} onPress={handleDownloadPress}>
+          <Icon name="download-2" size={22} color={theme['c-font-label']} />
+        </TouchableOpacity>
+      </View>
 
       {showBackBtn ? <MenuItem id="back_home" icon="home" onPress={handlePress} /> : null}
       {showExitBtn ? <MenuItem id="nav_exit" icon="exit2" onPress={handlePress} /> : null}

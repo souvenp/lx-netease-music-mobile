@@ -62,8 +62,11 @@ export default async () => {
 
   void initSync(setting)
   bootLog('Sync inited.')
-
-  void checkUpdate(true);
+  if (setting['version.autoCheckUpdate']) {
+    void checkUpdate(false);
+  } else {
+    void checkUpdate(true);
+  }
   // syncSetting()
 
   isInited ||= true

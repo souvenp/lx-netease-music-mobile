@@ -536,6 +536,7 @@
   "version_title_unknown": "❓ 獲取最新版本資訊失敗 ❓",
   "version_title_update": "🚀 軟體更新 🚀",
   "version_btn_check_update": "檢查更新",
+  "setting_version_auto_check_update": "啟動時自動檢查更新",
   "128k": "128K",
   "320k": "320K",
   "flac": "FLAC",

@@ -148,7 +148,7 @@ export async function manualDownloadSettingsAndApis() {
     const remoteSettingsContent = await webdav.downloadFile(remoteSettingsPath);
     if (remoteSettingsContent) {
       const remoteSettingsData = JSON.parse(remoteSettingsContent);
-      updateSetting(remoteSettingsData.data, true);
+      updateSetting(remoteSettingsData.data);
     } else {
       toast('云端未找到设置文件，跳过设置同步');
     }
@@ -237,7 +237,7 @@ export async function triggerWebDAVSync(isManual = false) {
             log.info('[WebDAV Sync] Conflict resolved by user: Force pulling remote state.');
             await overwriteListFull(remoteData.data);
             await clearOperationQueue();
-            updateSetting({ 'sync.webdav.lastSyncTimeLists': remoteTimestamp }, true);
+            updateSetting({ 'sync.webdav.lastSyncTimeLists': remoteTimestamp });
             toast('已从云端同步歌单，本地更改已放弃！');
           } else { // 用户关闭了对话框 (userChoice === null)
             log.info('[WebDAV Sync] Conflict resolution cancelled by user.');
@@ -250,7 +250,7 @@ export async function triggerWebDAVSync(isManual = false) {
             await uploadLists(remoteListsPath, mergedData); // 将合并后的结果上传
             if (isManual) toast('歌单合并同步成功！');
           } else {
-            updateSetting({ 'sync.webdav.lastSyncTimeLists': remoteTimestamp }, true);
+            updateSetting({ 'sync.webdav.lastSyncTimeLists': remoteTimestamp });
             if (isManual) toast('歌单已从云端同步！');
           }
           await clearOperationQueue(); // 成功后清空队列

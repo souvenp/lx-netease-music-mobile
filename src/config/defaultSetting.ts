@@ -1,5 +1,6 @@
 const defaultSetting: LX.AppSetting = {
   version: '2.0',
+  'version.autoCheckUpdate': true,
   'common.isAutoTheme': false,
   'common.langId': null,
   'common.apiSource': '',
@@ -81,7 +82,7 @@ const defaultSetting: LX.AppSetting = {
   'download.enable': true,
   'download.path': '',
   'download.fileName': '歌名 - 歌手',
-  'download.writeLyric': true,
+  'download.writeLyric': false,
   'download.writeRomaLyric': false,
   'download.writeEmbedLyric': true,
   'download.writeMetadata': true,
