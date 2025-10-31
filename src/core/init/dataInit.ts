@@ -10,7 +10,7 @@ import { unlink } from '@/utils/fs'
 import { TEMP_FILE_PATH } from '@/utils/tools'
 // import { play, playList } from '../player/player'
 import wyUserApi from '@/utils/musicSdk/wy/user'
-import { setWyFollowedArtists, setWyLikedSongs } from '@/store/user/action.ts'
+import {setWyFollowedArtists, setWyLikedSongs, setWySubscribedAlbums} from '@/store/user/action.ts'
 // const initPrevPlayInfo = async(appSetting: LX.AppSetting) => {
 //   const info = await getPlayInfo()
 //   global.lx.restorePlayInfo = null
@@ -38,20 +38,28 @@ export default async (appSetting: LX.AppSetting) => {
   if (wy_cookie) {
     bootLog('Wy like list init...')
     wyUserApi.getUid(wy_cookie)
-      .then(uid => wyUserApi.getLikedSongList(uid, wy_cookie))
-      .then(ids => {
-        setWyLikedSongs(ids)
-        bootLog('Wy like list inited.')
+      .then(uid =>
+      {
+        wyUserApi.getLikedSongList(uid, wy_cookie).then(ids => {
+          setWyLikedSongs(ids)
+          bootLog('Wy like list inited.')
+        })
+        wyUserApi.getSublist(100, 0).then(artists => {
+          setWyFollowedArtists(artists)
+          bootLog('Wy followed artists inited.')
+        }).catch(err => {
+          bootLog(`Wy followed artists init failed: ${err.message}`)
+        })
+        wyUserApi.getSubAlbumList().then(albums => {
+          setWySubscribedAlbums(albums)
+          bootLog('Wy liked albums inited.')
+        }).catch(err => {
+          bootLog(`Wy liked albums init failed: ${err.message}`)
+        })
       })
       .catch(err => {
         bootLog(`Wy like list init failed: ${err.message}`)
       })
-    wyUserApi.getSublist(100, 0).then(artists => {
-      setWyFollowedArtists(artists)
-      bootLog('Wy followed artists inited.')
-    }).catch(err => {
-      bootLog(`Wy followed artists init failed: ${err.message}`)
-    })
   }
 
   setNavActiveId((await getViewPrevState()).id)

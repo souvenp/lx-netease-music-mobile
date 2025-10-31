@@ -9,7 +9,7 @@ export const getMusicUrl = (songInfo, type) => {
   const songId = songInfo.songmid || songInfo.meta.songId
   const targetPrefer = {
     level: 'standard', // standard, higher, exhigh, lossless, hires, jyeffect, jymaster
-    encodeType: 'aac',
+    encodeType: 'flac',
   }
   switch (type) {
     case '128k':

@@ -1,7 +1,7 @@
 import { httpFetch } from '../../request'
 import { weapi } from './utils/crypto'
 import { getWyUidCache, saveWyUidCache } from '@/utils/data'
-import { toMD5 } from '@/utils/tools'
+import {toast, toMD5} from '@/utils/tools'
 import settingState from "@/store/setting/state";
 
 export default {
@@ -29,6 +29,10 @@ export default {
 
     const { body, statusCode } = await request.promise
     if (statusCode !== 200 || body.code !== 200) throw new Error('获取UID失败')
+    if (!body.account) {
+      toast('登录已过期或Cookie无效', 'long');
+      throw new Error('登录已过期或Cookie无效');
+    }
     const uid = body.account.id
     await saveWyUidCache(hashedCookie, String(uid))
     return uid

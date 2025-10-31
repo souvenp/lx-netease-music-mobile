@@ -203,7 +203,7 @@ export const handleDownload = async (musicInfo: LX.Music.MusicInfo, quality: LX.
   try {
     await requestStoragePermission()
     try {
-      const url = await getMusicUrl({
+      let url = await getMusicUrl({
         // @ts-ignore
         musicInfo,
         quality,
@@ -222,15 +222,20 @@ export const handleDownload = async (musicInfo: LX.Music.MusicInfo, quality: LX.
 
       const downloader = RNFetchBlob.config({
         fileCache: true,
-        addAndroidDownloads: {
-          useDownloadManager: true,
-          notification: true,
-          path: path,
-          title: `${musicInfo.name} - ${musicInfo.singer}`,
-          description: '正在下载文件...',
-        },
+        path: path,
+        // addAndroidDownloads: {
+        //   useDownloadManager: true,
+        //   notification: true,
+        //   path: path,
+        //   title: `${musicInfo.name} - ${musicInfo.singer}`,
+        //   description: '正在下载文件...',
+        // },
       })
-      const data = await downloader.fetch('GET', url)
+      const headers = {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36 Edg/108.0.1462.54',
+          Referer: 'https://music.163.com/',
+      }
+      const data = await downloader.fetch('GET', url, headers)
       const filePath = data.path()
 
       toast(`${fileName} 下载成功! 正在写入元数据`, 'short')

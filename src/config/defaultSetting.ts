@@ -88,6 +88,13 @@ const defaultSetting: LX.AppSetting = {
   'download.writePicture': true,
 
   'sync.enable': false,
+  'sync.webdav.enable': false,
+  'sync.webdav.syncLists': false,
+  'sync.webdav.url': '',
+  'sync.webdav.username': '',
+  'sync.webdav.password': '',
+  'sync.webdav.path': '/LX_Music/',
+  'sync.webdav.lastSyncTimeLists': 0,
 
   'theme.id': 'green',
   'theme.lightId': 'green',

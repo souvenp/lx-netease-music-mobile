@@ -1,5 +1,13 @@
 import { LIST_IDS } from '@/config/constant'
-import {setTempList, setActiveList, createList, removeUserList} from '@/core/list'
+import {
+  setTempList,
+  setActiveList,
+  createList,
+  removeUserList,
+  getListMusics,
+  overwriteListMusics,
+  updateUserList
+} from '@/core/list'
 import { playList } from '@/core/player/player'
 import listState from '@/store/list/state'
 import {clearPlayedList} from "@/core/player/playedList.ts";
@@ -31,7 +39,7 @@ const getLogicalDateForPlaylist = (): Date => {
  * 自动保存每日推荐到我的列表
  * @param songList 每日推荐的歌曲列表
  */
-export const autoSaveDailyPlaylist = async (songList: LX.Music.MusicInfoOnline[]) => {
+export const autoSaveDailyPlaylist = async(songList: LX.Music.MusicInfoOnline[]) => {
   if (!settingState.setting['list.isAutoSaveDailyRec']) return;
   if (!songList.length) return;
 
@@ -40,33 +48,36 @@ export const autoSaveDailyPlaylist = async (songList: LX.Music.MusicInfoOnline[]
   const day = logicalDate.getDate().toString().padStart(2, '0');
   const playlistName = `${month}_${day}_daily`;
 
-  // 1. 检查当天的歌单是否已经存在
-  if (listState.userList.some(p => p.name === playlistName)) {
-    console.log(`歌单 ${playlistName} 已存在，跳过自动保存。`);
-    return;
-  }
+  const existingPlaylist = listState.userList.find(p => p.name === playlistName);
 
-  // 2. 管理历史歌单，保持最多30个
-  const dailyPlaylists = listState.userList.filter(p => /\d{2}_\d{2}_daily/.test(p.name));
-  if (dailyPlaylists.length >= 30) {
-    // 按名称排序找到最早的歌单（例如 "08_15_daily" < "09_12_daily"）
-    dailyPlaylists.sort((a, b) => a.name.localeCompare(b.name));
-    const oldestPlaylist = dailyPlaylists[0];
-    if (oldestPlaylist) {
-      await removeUserList([oldestPlaylist.id]);
-      // toast(`已删除旧的每日推荐歌单: ${oldestPlaylist.name}`);
+  if (existingPlaylist) {
+    const existingSongs = await getListMusics(existingPlaylist.id);
+    if (existingSongs.length && existingSongs[0].id === songList[0].id) {
+      console.log(`歌单 ${playlistName} 无需更新，跳过保存。`);
+      return;
     }
-  }
-
-  // 3. 创建新的每日推荐歌单
-  try {
-    await createList({
-      name: playlistName,
-      list: songList,
-    });
-    toast(`已自动保存每日推荐: ${playlistName}`);
-  } catch (error: any) {
-    toast(`自动保存每日推荐失败: ${error.message}`);
-    console.error('自动保存每日推荐失败:', error);
+    console.log(`歌单 ${playlistName} 内容已更新，执行覆盖操作。`);
+    await overwriteListMusics(existingPlaylist.id, songList);
+    await updateUserList([{ ...existingPlaylist, locationUpdateTime: Date.now() }]);
+    toast(`已自动更新每日推荐: ${playlistName}`);
+  } else {
+    const dailyPlaylists = listState.userList.filter(p => /\d{2}_\d{2}_daily/.test(p.name));
+    if (dailyPlaylists.length >= 30) {
+      dailyPlaylists.sort((a, b) => a.name.localeCompare(b.name));
+      const oldestPlaylist = dailyPlaylists[0];
+      if (oldestPlaylist) {
+        await removeUserList([oldestPlaylist.id]);
+      }
+    }
+    try {
+      await createList({
+        name: playlistName,
+        list: songList,
+      });
+      toast(`已自动保存每日推荐: ${playlistName}`);
+    } catch (error: any) {
+      toast(`自动保存每日推荐失败: ${error.message}`);
+      console.error('自动保存每日推荐失败:', error);
+    }
   }
 };

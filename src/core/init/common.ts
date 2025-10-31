@@ -3,6 +3,9 @@
 import playerState from '@/store/player/state'
 import { prefetch } from '@/components/common/ImageBackground'
 import { setBgPic } from '@/core/common'
+import wyUserApi from '@/utils/musicSdk/wy/user';
+import { setWyFollowedArtists, setWyLikedSongs, setWySubscribedAlbums } from '@/store/user/action';
+import { toast } from '@/utils/tools';
 
 // const handleUpdateSourceNmaes = () => {
 //   const prefix = settingState.setting['common.sourceNameType'] == 'real' ? 'source_' : 'source_alias_'
@@ -67,7 +70,31 @@ export default async (setting: LX.AppSetting) => {
       if (pic) handleUpdatePic(pic)
     } else setBgPic(null)
   }
+
+  const handleWyCookieUpdate = (keys: Array<keyof LX.AppSetting>, setting: Partial<LX.AppSetting>) => {
+    if (!keys.includes('common.wy_cookie')) return;
+    const cookie = setting['common.wy_cookie'];
+    if (cookie) {
+      console.log('正在刷新网易云数据...');
+      wyUserApi.getUid(cookie)
+        .then(uid => Promise.all([
+          wyUserApi.getLikedSongList(uid, cookie),
+          wyUserApi.getSublist(100, 0),
+          wyUserApi.getSubAlbumList(),
+        ]))
+        .then(([likedIds, followedArtists, subscribedAlbums]) => {
+          setWyLikedSongs(likedIds);
+          setWyFollowedArtists(followedArtists);
+          setWySubscribedAlbums(subscribedAlbums);
+        })
+        .catch((err: any) => {
+          toast(`网易云数据获取失败: ${err.message}`);
+        });
+    } else {
+    }
+  };
   handlePicUpdate()
   global.state_event.on('playerMusicInfoChanged', handlePicUpdate)
   global.state_event.on('configUpdated', handleConfigUpdate)
+  global.state_event.on('configUpdated', handleWyCookieUpdate);
 }

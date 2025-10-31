@@ -196,17 +196,6 @@ const fetchData = (url, { timeout = 15000, ...options }) => {
           signal: controller.signal,
         })
         .then((resp) => {
-          if (resp.status === 301 && url.includes('music.163.com')) {
-            // 检查到是网易云的请求并且状态码是 301
-            setTimeout(() => {
-              // global.app_event.emit('showWebLogin');
-              toast('登录状态已过期，请重新登录', 'long');
-            }, 0);
-
-            // 抛出一个错误来中断当前的请求链，防止后续代码继续执行
-            throw new Error('需要重新登录 (Need to re-login)');
-          }
-
             return (options.binary ? resp.blob() : resp.text()).then((text) => {
               // --- 新增的调试代码 ---
               console.log('--- Response Body for:', url, '---');
@@ -230,14 +219,21 @@ const fetchData = (url, { timeout = 15000, ...options }) => {
         .then((resp) => {
           if (options.binary) {
             return blobToBuffer(resp.body).then((buffer) => {
-              resp.body = buffer
-              return resp
-            })
+              resp.body = buffer;
+              return resp;
+            });
           } else {
             try {
-              resp.body = JSON.parse(resp.body)
-            } catch {}
-            return resp
+              const parsedBody = JSON.parse(resp.body);
+              if (parsedBody?.code === 301 && url.includes('music.163.com')) {
+                throw new Error('登录状态已过期');
+              }
+              resp.body = parsedBody;
+            } catch (e) {
+              if (e.message.startsWith('登录状态已过期')) throw e;
+              // 非JSON响应或非登录错误，保持原始body
+            }
+            return resp;
           }
         })
         .catch((err) => {

@@ -1,6 +1,6 @@
 {
   "name": "lx-netease-music-mobile",
-  "version": "1.8.54",
+  "version": "1.8.6",
   "versionCode": 70,
   "private": true,
   "scripts": {
@@ -45,7 +45,7 @@
     "@react-native-async-storage/async-storage": "^2.1.1",
     "@react-native-clipboard/clipboard": "^1.16.1",
     "@react-native-community/slider": "^4.5.5",
-    "react-native-webview": "^13.16.0",
+    "@react-native-cookies/cookies": "^6.2.1",
     "axios": "^1.12.2",
     "he": "^1.2.0",
     "iconv-lite": "^0.6.3",
@@ -66,7 +66,9 @@
     "react-native-quick-md5": "^3.0.6",
     "react-native-track-player": "github:lyswhut/react-native-track-player#75c097a4a46bea19970540bbc1bd38527ea73cde",
     "react-native-vector-icons": "^10.2.0",
-    "rn-fetch-blob": "^0.12.0"
+    "react-native-webview": "^13.16.0",
+    "rn-fetch-blob": "^0.12.0",
+    "webdav": "^5.8.0"
   },
   "devDependencies": {
     "@babel/core": "^7.26.7",

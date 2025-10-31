@@ -218,7 +218,7 @@ export const confirmDialog = async ({
   cancelButtonText = global.i18n.t('dialog_cancel'),
   confirmButtonText = global.i18n.t('dialog_confirm'),
   bgClose = true,
-}) => {
+}): Promise<boolean | null> => {
   return new Promise<boolean>((resolve) => {
     Alert.alert(
       title,
@@ -240,7 +240,7 @@ export const confirmDialog = async ({
       {
         cancelable: bgClose,
         onDismiss() {
-          resolve(false)
+          resolve(null)
         },
       }
     )

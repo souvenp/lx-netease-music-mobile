@@ -385,6 +385,13 @@ declare global {
        * 是否启用同步
        */
       'sync.enable': boolean
+      'sync.webdav.enable': boolean;
+      'sync.webdav.syncLists': boolean;
+      'sync.webdav.url': string;
+      'sync.webdav.username': string;
+      'sync.webdav.password': string;
+      'sync.webdav.path': string;
+      'sync.webdav.lastSyncTimeLists': number;
     }
   }
 }

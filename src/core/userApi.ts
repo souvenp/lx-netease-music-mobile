@@ -7,6 +7,8 @@ import {
 } from '@/utils/data'
 import { destroy, loadScript } from '@/utils/nativeModules/userApi'
 import { log as writeLog } from '@/utils/log'
+import {getAllKeys, removeDataMultiple, saveDataMultiple} from "@/plugins/storage.ts";
+import {storageDataPrefix} from "@/config/constant.ts";
 
 export const setUserApi = async (apiId: string) => {
   global.lx.qualityList = {}
@@ -44,6 +46,34 @@ export const setUserApiAllowShowUpdateAlert = async (id: string, enable: boolean
   await setUserApiAllowShowUpdateAlertFromStore(id, enable)
   action.setUserApiAllowShowUpdateAlert(id, enable)
 }
+
+export const overwriteUserApis = async (data: { list: LX.UserApi.UserApiInfo[], scripts: Record<string, string> }) => {
+  try {
+    // 1. 清理不再存在的旧脚本
+    const allKeys = await getAllKeys();
+    const oldScriptKeys = allKeys.filter(key => key.startsWith(storageDataPrefix.userApi) && key !== storageDataPrefix.userApi);
+    const newScriptIds = new Set(Object.keys(data.scripts));
+    const keysToRemove = oldScriptKeys.filter(key => {
+      const scriptId = key.substring(storageDataPrefix.userApi.length);
+      return !newScriptIds.has(scriptId);
+    });
+    if (keysToRemove.length) await removeDataMultiple(keysToRemove);
+
+    // 2. 批量保存新的元数据和所有脚本内容
+    const saveTasks: Array<[string, any]> = [];
+    saveTasks.push([storageDataPrefix.userApi, data.list]);
+    for (const [id, script] of Object.entries(data.scripts)) {
+      saveTasks.push([`${storageDataPrefix.userApi}${id}`, script]);
+    }
+    await saveDataMultiple(saveTasks);
+
+    // 3. 更新内存中的状态
+    action.setUserApiList(data.list);
+  } catch (error: any) {
+    log.error('Overwrite user apis failed:', error.message);
+    throw error;
+  }
+};
 
 export const log = {
   r_info(...params: any[]) {
