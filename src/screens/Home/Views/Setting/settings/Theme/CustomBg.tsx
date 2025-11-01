@@ -5,8 +5,11 @@ import Button from '../../components/Button';
 import { useSettingValue } from '@/store/setting/hook';
 import { updateSetting } from '@/core/common';
 import FileSelect, { type FileSelectType } from '@/components/common/FileSelect';
-import { createStyle } from '@/utils/tools';
+import { createStyle, toast } from '@/utils/tools';
 import Text from '@/components/common/Text';
+import { privateStorageDirectoryPath, mkdir, copyFile, unlink, existsFile } from '@/utils/fs';
+
+const BG_PIC_DIR = privateStorageDirectoryPath + '/backgrounds';
 
 export default memo(() => {
   const customBgPath = useSettingValue('theme.customBgPicPath');
@@ -19,14 +22,43 @@ export default memo(() => {
         dirOnly: false,
         filter: ['jpg', 'jpeg', 'png', 'webp'],
       },
-      (path) => {
+      async (path) => {
         if (!path) return;
-        updateSetting({ 'theme.customBgPicPath': `file://${path}` });
+
+        try {
+          await mkdir(BG_PIC_DIR);
+
+          if (customBgPath && customBgPath.startsWith('file://' + BG_PIC_DIR)) {
+            if (await existsFile(customBgPath.replace('file://', ''))) {
+              await unlink(customBgPath.replace('file://', ''));
+            }
+          }
+          const extension = path.split('.').pop()?.split('?')[0] || 'jpg';
+          const newFileName = `bg_${Date.now()}.${extension}`;
+          const newPath = `${BG_PIC_DIR}/${newFileName}`;
+          await copyFile(path, newPath);
+          updateSetting({ 'theme.customBgPicPath': `file://${newPath}` });
+          toast('背景设置成功');
+
+        } catch (error: any) {
+          console.error('设置背景图片失败:', error);
+          toast(`设置背景图片失败: ${error.message}`, 'long');
+        }
       },
     );
   };
 
-  const handleClearPath = () => {
+  const handleClearPath = async() => {
+    // 清除设置的同时，也删除已保存的背景图文件
+    if (customBgPath && customBgPath.startsWith('file://' + BG_PIC_DIR)) {
+      try {
+        if (await existsFile(customBgPath.replace('file://', ''))) {
+          await unlink(customBgPath.replace('file://', ''));
+        }
+      } catch (e) {
+        console.error('删除旧背景图片失败:', e);
+      }
+    }
     updateSetting({ 'theme.customBgPicPath': '' });
   };
 
@@ -51,4 +83,4 @@ const styles = createStyle({
   btns: {
     flexDirection: 'row',
   },
-})
+});

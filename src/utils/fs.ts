@@ -101,3 +101,4 @@ export const downloadFile = (
 export const stopDownload = (jobId: number) => {
   RNFS.stopDownload(jobId)
 }
+export const copyFile = async (fromPath: string, toPath: string) => RNFS.copyFile(fromPath, toPath);

@@ -1,7 +1,11 @@
 {
-  "version": "1.8.60",
-  "desc": "版本1.8.60：webdav同步增加\ncookie过期提示，cookie下载网易云歌曲修复\n下载管理器增加",
+  "version": "1.8.61",
+  "desc": "修复自定义背景图片的设置",
   "history": [
+    {
+      "version": "1.8.60",
+      "desc": "webdav同步增加\ncookie过期提示，cookie下载网易云歌曲修复\n下载管理器增加"
+    },
     {
       "version": "1.8.54",
       "desc": "版本1.8.54：自定义源的hires和flac24bit名称差异修复，播放音质逻辑优化，横屏封面修复"
