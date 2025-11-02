@@ -179,7 +179,7 @@ export const filterData = async (rawList, options = {}) => {
       songmid: item.audio_id,
       source: 'kg',
       interval: options.fix ? formatPlayTime(item.duration / 1000) : formatPlayTime(item.duration),
-      img: item.album_info?.sizable_cover?.replace('{size}', '480') ?? null,
+      img: (item.album_sizable_cover || item.album_info?.sizable_cover || item.imgurl)?.replace('{size}', '480') ?? null,
       lrc: null,
       hash: item.hash,
       types,
