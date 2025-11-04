@@ -4,7 +4,7 @@ import {
   FlatList,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
-  type FlatListProps,
+  type FlatListProps, Keyboard,
 } from 'react-native'
 
 import OnlineListItem from '@/components/OnlineList/ListItem';
@@ -293,6 +293,7 @@ const List = forwardRef<ListType, ListProps>(
             item={item}
             index={index}
             activeIndex={activeIndex}
+            onScrollBeginDrag={Keyboard.dismiss}
             onPress={handlePress}
             onLongPress={handleLongPress}
             onShowMenu={onShowMenu}

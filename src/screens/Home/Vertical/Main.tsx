@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef } from 'react'
-import { View } from 'react-native'
+import {Keyboard, View} from 'react-native'
 import Search from '../Views/Search'
 import SongList from '../Views/SongList'
 import Mylist from '../Views/Mylist'
@@ -362,6 +362,7 @@ const Main = () => {
 
   const onPageScrollStateChanged = useCallback(
     ({ nativeEvent }: PageScrollStateChangedNativeEvent) => {
+      Keyboard.dismiss();
       const idle = nativeEvent.pageScrollState == 'idle';
       if (global.lx.homePagerIdle != idle) global.lx.homePagerIdle = idle;
     },

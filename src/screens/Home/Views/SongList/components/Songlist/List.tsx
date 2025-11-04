@@ -1,5 +1,5 @@
 import { useRef, useState, useMemo, forwardRef, useImperativeHandle } from 'react'
-import { FlatList, View, RefreshControl, type FlatListProps } from 'react-native'
+import {FlatList, View, RefreshControl, type FlatListProps, Keyboard} from 'react-native'
 
 import ListItem from './ListItem'
 // import { navigations } from '@/navigation'
@@ -158,6 +158,7 @@ export default forwardRef<ListType, ListProps>(({ onRefresh, onLoadMore, onOpenD
           numColumns={rowInfo.num}
           data={list}
           maxToRenderPerBatch={4}
+          onScrollBeginDrag={Keyboard.dismiss}
           // updateCellsBatchingPeriod={80}
           windowSize={8}
           removeClippedSubviews={true}

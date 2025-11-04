@@ -16,6 +16,7 @@ import commonState from '@/store/common/state';
 import {navigations} from "@/navigation";
 import {usePlayerMusicInfo} from "@/store/player/hook.ts";
 import PlayerPlaylist, {PlayerPlaylistType} from "@/components/player/PlayerPlaylist.tsx";
+import DownloadBall from "@/components/DownloadBall";
 
 export default memo(({ isHome = false }: { isHome?: boolean }) => {
   // const { onLayout, ...layout } = useLayout()
@@ -60,6 +61,7 @@ export default memo(({ isHome = false }: { isHome?: boolean }) => {
     <>
       {autoHidePlayBar && keyboardShown ? null : playerComponent}
       <PlayerPlaylist ref={playlistRef} />
+      <DownloadBall />
     </>
   )
 })

@@ -31,6 +31,9 @@ export default {
       if (updatedFields.status) {
         global.app_event.emit('download_status_update', { id, status: updatedFields.status, errorMsg: updatedFields.errorMsg });
       }
+      if (updatedFields.metadataStatus) {
+        global.app_event.emit('download_metadata_update', { id, metadataStatus: updatedFields.metadataStatus }); // [!code ++]
+      }
       throttledSave();
     }
   },

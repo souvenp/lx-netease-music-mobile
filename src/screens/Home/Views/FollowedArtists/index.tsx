@@ -1,5 +1,5 @@
 import { memo, useState, useCallback } from 'react'
-import { View, FlatList, RefreshControl } from 'react-native'
+import {View, FlatList, RefreshControl, Keyboard} from 'react-native'
 import ListItem from './ListItem'
 import { useWyFollowedArtists } from '@/store/user/hook.ts'
 import wyApi from '@/utils/musicSdk/wy/user'
@@ -28,6 +28,7 @@ export default memo(() => {
   return (
     <View style={{ flex: 1 }}>
       <FlatList
+        onScrollBeginDrag={Keyboard.dismiss}
         data={followedArtists}
         renderItem={({ item }) => <ListItem artist={item} />}
         keyExtractor={item => String(item.id)}

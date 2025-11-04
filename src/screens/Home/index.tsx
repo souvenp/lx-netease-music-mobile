@@ -16,7 +16,6 @@ import {useBackHandler} from "@/utils/hooks/useBackHandler.ts";
 
 import { setSearchText as setSearchState } from '@/core/search/search'
 import WebLoginManager from "@/components/WebLoginManager.tsx";
-import DownloadBall from "@/components/DownloadBall";
 interface Props {
   componentId: string
 }
@@ -74,6 +73,5 @@ export default ({ componentId }: Props) => {
       <PageContent>{isHorizontalMode ? <Horizontal /> : <Vertical />}</PageContent>
       <ArtistSelectorManager />
       <WebLoginManager />
-      <DownloadBall />
     </>
   )}

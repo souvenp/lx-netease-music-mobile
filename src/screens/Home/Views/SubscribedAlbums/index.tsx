@@ -1,5 +1,5 @@
 import { memo, useState, useCallback, useEffect } from 'react';
-import { View, FlatList, RefreshControl, TouchableOpacity } from 'react-native';
+import {View, FlatList, RefreshControl, TouchableOpacity, Keyboard} from 'react-native';
 import { useWySubscribedAlbums } from '@/store/user/hook';
 import wyApi from '@/utils/musicSdk/wy/user';
 import { setWySubscribedAlbums } from '@/store/user/action';
@@ -87,6 +87,7 @@ export default memo(() => {
   return (
     <View style={{ flex: 1 }}>
       <FlatList
+        onScrollBeginDrag={Keyboard.dismiss}
         data={subscribedAlbums}
         renderItem={({ item }) => <ListItem item={item} />}
         keyExtractor={item => String(item.id)}

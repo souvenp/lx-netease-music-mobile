@@ -1,5 +1,5 @@
 import { memo, useEffect, useState, useCallback, useRef } from 'react'
-import { View, FlatList, RefreshControl, BackHandler, StyleSheet } from 'react-native' // 导入 BackHandler
+import {View, FlatList, RefreshControl, BackHandler, StyleSheet, Keyboard} from 'react-native' // 导入 BackHandler
 import ListItem from './ListItem'
 import wyApi from '@/utils/musicSdk/wy/user'
 import { useSettingValue } from '@/store/setting/hook'
@@ -94,6 +94,7 @@ export default memo(() => {
     <View style={{ flex: 1 }}>
       {/* 歌单列表页 - 始终渲染 */}
       <FlatList
+        onScrollBeginDrag={Keyboard.dismiss}
         data={playlists}
         renderItem={({ item }) => <ListItem item={item} onPress={handleItemPress} />}
         keyExtractor={item => String(item.id)}

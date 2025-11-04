@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, forwardRef, useImperativeHandle } from 'react'
-import { FlatList, type FlatListProps, RefreshControl, View } from 'react-native'
+import {FlatList, type FlatListProps, Keyboard, RefreshControl, View} from 'react-native'
 
 // import { useMusicList } from '@/store/list/hook'
 import ListItem, { ITEM_HEIGHT } from './ListItem'
@@ -243,7 +243,9 @@ const List = forwardRef<ListType, ListProps>(
         </View>
       )
     }, [onLoadMore, status, visibleMultiSelect])
-
+    const handleScrollBeginDrag = () => {
+       if (listId !== 'search') Keyboard.dismiss()
+    }
     return (
       <FlatList
         ref={flatListRef}
@@ -259,6 +261,7 @@ const List = forwardRef<ListType, ListProps>(
         renderItem={renderItem}
         keyExtractor={getkey}
         getItemLayout={getItemLayout}
+        onScrollBeginDrag={handleScrollBeginDrag}
         // onRefresh={onRefresh}
         // refreshing={refreshing}
         onEndReachedThreshold={0.5}

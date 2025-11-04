@@ -139,7 +139,7 @@ export default memo(
               <Text
                 style={styles.listItemSingleText}
                 size={11}
-                color={isPlaying ? theme['c-primary-font-active'] : theme['c-500']}
+                color={isPlaying ? theme['c-primary-alpha-200'] : theme['c-500']}
                 numberOfLines={1}
               >
                 {singer}

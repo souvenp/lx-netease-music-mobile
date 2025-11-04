@@ -25,10 +25,15 @@ export default memo(({ task: initialTask, onRemove }: { task: LX.Download.Downlo
         setTask(prevTask => ({ ...prevTask, status, errorMsg }));
       }
     };
-
+    const handleMetadataUpdate = ({ id, metadataStatus }: { id: string, metadataStatus: LX.Download.DownloadTask['metadataStatus'] }) => {
+      if (id === task.id) {
+        setTask(prevTask => ({ ...prevTask, metadataStatus }));
+      }
+    }
     // 我们需要让 downloadActions 在更新 status 时也广播 errorMsg
     global.app_event.on('download_progress_update', handleProgressUpdate);
     global.app_event.on('download_status_update', handleStatusUpdate);
+    global.app_event.on('download_metadata_update', handleMetadataUpdate);
 
     // 当从父组件接收到的 initialTask 发生变化时（例如列表刷新），也更新内部状态
     setTask(initialTask);
@@ -36,6 +41,7 @@ export default memo(({ task: initialTask, onRemove }: { task: LX.Download.Downlo
     return () => {
       global.app_event.off('download_progress_update', handleProgressUpdate);
       global.app_event.off('download_status_update', handleStatusUpdate);
+      global.app_event.off('download_metadata_update', handleMetadataUpdate);
     };
   }, [task.id, initialTask]); // 依赖 task.id 和 initialTask
 

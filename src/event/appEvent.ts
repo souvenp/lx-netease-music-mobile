@@ -218,11 +218,17 @@ export class AppEvent extends Event {
   download_task_add(task: DownloadTask) {
     this.emit('download_task_add', task);
   }
+  download_ball_dismiss() {
+    this.emit('download_ball_dismiss');
+  }
   download_progress_update(payload: { id: string, progress: DownloadTask['progress'] }) {
     this.emit('download_progress_update', payload);
   }
   download_status_update(payload: { id: string, status: DownloadTask['status'] }) {
     this.emit('download_status_update', payload);
+  }
+  download_metadata_update(payload: { id: string, metadataStatus: DownloadTask['metadataStatus'] }) {
+    this.emit('download_metadata_update', payload);
   }
   show_download_ball() {
     this.emit('show_download_ball');
