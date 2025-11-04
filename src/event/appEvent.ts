@@ -218,9 +218,6 @@ export class AppEvent extends Event {
   download_task_add(task: DownloadTask) {
     this.emit('download_task_add', task);
   }
-  download_ball_dismiss() {
-    this.emit('download_ball_dismiss');
-  }
   download_progress_update(payload: { id: string, progress: DownloadTask['progress'] }) {
     this.emit('download_progress_update', payload);
   }

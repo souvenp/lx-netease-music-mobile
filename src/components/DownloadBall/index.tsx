@@ -1,5 +1,5 @@
-import { memo, useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { View, TouchableOpacity, Animated, Easing, Modal, StyleSheet } from 'react-native';
+import { memo, useState, useEffect, useRef, useMemo } from 'react';
+import { View, TouchableOpacity, Animated, Easing } from 'react-native';
 import * as Progress from 'react-native-progress';
 import { Icon } from '@/components/common/Icon';
 import { useTheme } from '@/store/theme/hook';
@@ -14,13 +14,9 @@ export default memo(() => {
   const [activeTasks, setActiveTasks] = useState<Map<string, DownloadTask>>(new Map());
   const scaleAnim = useRef(new Animated.Value(0)).current;
 
-  const handleDismiss = useCallback(() => {
-    setIsVisible(false);
-    setActiveTasks(new Map());
-  }, []);
-
   const { totalProgress, isCompleted } = useMemo(() => {
     if (activeTasks.size === 0) return { totalProgress: 0, isCompleted: true };
+
     let currentProgress = 0;
     for (const task of activeTasks.values()) {
       currentProgress += task.progress.percent;
@@ -29,6 +25,7 @@ export default memo(() => {
 
     // 检查是否所有活动任务都已完成/失败
     const allFinished = Array.from(activeTasks.values()).every(t => t.status === 'completed' || t.status === 'error');
+
     return { totalProgress, isCompleted: allFinished };
   }, [activeTasks]);
 
@@ -63,17 +60,15 @@ export default memo(() => {
     };
 
     global.app_event.on('download_task_add', handleTaskAdd);
-    global.app_event.on('download_ball_dismiss', handleDismiss);
     global.app_event.on('download_progress_update', handleProgressUpdate);
     global.app_event.on('download_status_update', handleStatusUpdate);
 
     return () => {
       global.app_event.off('download_task_add', handleTaskAdd);
-      global.app_event.off('download_ball_dismiss', handleDismiss);
       global.app_event.off('download_progress_update', handleProgressUpdate);
       global.app_event.off('download_status_update', handleStatusUpdate);
     };
-  }, [isVisible, scaleAnim, handleDismiss]);
+  }, [isVisible, scaleAnim]);
 
   // 完成动画
   useEffect(() => {
@@ -93,7 +88,8 @@ export default memo(() => {
       easing: Easing.inOut(Easing.ease),
       useNativeDriver: true,
     }).start(() => {
-      global.app_event.emit('download_ball_dismiss');
+      setIsVisible(false);
+      setActiveTasks(new Map()); // 清空状态以便下次出现
     });
     navigations.pushDownloadManagerScreen(commonState.componentIds.home!);
   };
@@ -101,26 +97,22 @@ export default memo(() => {
   if (!isVisible) return null;
 
   return (
-    <Modal transparent visible={isVisible} onRequestClose={() => {}} animationType="none">
-      <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-        <Animated.View style={[styles.container, { transform: [{ scale: scaleAnim }] }]}>
-          <TouchableOpacity onPress={handlePress}>
-            <Progress.Circle
-              size={50}
-              progress={totalProgress}
-              showsText={false}
-              color={isCompleted ? theme['c-success'] : theme['c-primary']}
-              unfilledColor="rgba(0,0,0,0.2)"
-              borderWidth={0}
-              thickness={3}
-            />
-            <View style={styles.iconContainer}>
-              <Icon name={isCompleted ? "checkbox-marked" : "download-2"} size={22} color={isCompleted ? theme['c-success'] : theme['c-primary-font-active']} />
-            </View>
-          </TouchableOpacity>
-        </Animated.View>
-      </View>
-    </Modal>
+    <Animated.View style={[styles.container, { transform: [{ scale: scaleAnim }] }]}>
+      <TouchableOpacity onPress={handlePress}>
+        <Progress.Circle
+          size={50}
+          progress={totalProgress}
+          showsText={false}
+          color={isCompleted ? theme['c-success'] : theme['c-primary']}
+          unfilledColor="rgba(0,0,0,0.2)"
+          borderWidth={0}
+          thickness={3}
+        />
+        <View style={styles.iconContainer}>
+          <Icon name={isCompleted ? "checkbox-marked" : "download-2"} size={22} color={isCompleted ? theme['c-success'] : theme['c-primary-font-active']} />
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
   );
 });
 
