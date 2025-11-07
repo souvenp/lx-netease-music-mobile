@@ -7,9 +7,10 @@ import { useStatusbarHeight } from '@/store/common/hook';
 import { Icon } from '@/components/common/Icon';
 import Text from '@/components/common/Text';
 import { toast } from '@/utils/tools';
+import wyApi from '@/utils/musicSdk/wy/user';
 
-const LOGIN_URL = 'https://music.163.com/login';
-const SUCCESS_URL_FLAG = 'music.163.com/m/';
+const LOGIN_URL = 'https://music.163.com/#/login';
+const SUCCESS_URL_FLAG = 'discover';
 
 export interface WebLoginModalType {
   show: () => void;
@@ -29,16 +30,17 @@ const Header = ({ onClose }: { onClose: () => void }) => {
     </View>
   );
 };
-
 export default forwardRef<WebLoginModalType, {}>((props, ref) => {
   const modalRef = useRef<ModalType>(null);
   const webViewRef = useRef<WebView>(null);
   const loggedInRef = useRef(false);
+  const isCheckingRef = useRef(false);
   const theme = useTheme();
 
   useImperativeHandle(ref, () => ({
     show() {
       loggedInRef.current = false;
+      isCheckingRef.current = false;
       modalRef.current?.setVisible(true);
     },
   }));
@@ -52,30 +54,38 @@ export default forwardRef<WebLoginModalType, {}>((props, ref) => {
   };
 
   const handleNavigationStateChange = (navState: WebViewNavigation) => {
-    if (navState.url.includes(SUCCESS_URL_FLAG)) {
+    console.log('Web登录: 页面导航状态变化:', navState.url);
+    if (navState.url.includes(SUCCESS_URL_FLAG) || navState.url == 'https://music.163.com/') {
+      console.log('Web登录: injecting cookie');
       webViewRef.current?.injectJavaScript('window.ReactNativeWebView.postMessage(document.cookie);');
     }
   };
+  const handleMessage = async (event: any) => {
+    console.log('Web登录: 收到消息:', event.nativeEvent.data);
+    if (loggedInRef.current || isCheckingRef.current) return;
 
-  const handleMessage = (event: any) => {
-    if (loggedInRef.current) return;
     const cookie = event.nativeEvent.data;
-    if (cookie && cookie.includes('S_INFO=')) {
+    if (!cookie || !cookie.includes('S_INFO=')) return;
+
+    isCheckingRef.current = true;
+    try {
+      // 使用 getUid 接口验证 Cookie 有效性
+      await wyApi.getUid(cookie);
+
+      // 验证成功
       loggedInRef.current = true;
       global.app_event.emit('wy-cookie-set', cookie);
       toast('登录成功，已自动获取Cookie！');
-      // setTimeout(() => {
-      //   handleClose();
-      // }, 300);
+      handleClose();
+    } catch (error) {
+      // Cookie 无效，静默处理，等待用户后续操作
+      console.log('Web登录: Cookie验证失败:', (error as Error).message);
+    } finally {
+      isCheckingRef.current = false;
     }
   };
 
-  const injectedJavaScript = `
-    setInterval(function() {
-      window.ReactNativeWebView.postMessage(document.cookie);
-    }, 1500);
-    true;
-  `;
+  const injectedJavaScript = `true;`;
 
   return (
     <Modal ref={modalRef} onHide={stopPolling} statusBarPadding={false} bgHide={false}>

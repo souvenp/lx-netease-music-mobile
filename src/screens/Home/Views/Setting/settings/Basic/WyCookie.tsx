@@ -45,10 +45,10 @@ export default memo(() => {
 
   const setCookie = (val: string) => {
     // 先同步到原生层
-    void syncCookieToNative(val).then(() => {
+    // void syncCookieToNative(val).then(() => {
       // 再更新应用状态
       updateSetting({ 'common.wy_cookie': val });
-    });
+    // });
   };
 
   const handleChanged: InputItemProps['onChanged'] = (text, callback) => {
