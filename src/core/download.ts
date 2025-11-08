@@ -85,6 +85,12 @@ const startDownload = async (task: DownloadTask) => {
   currentJobId = null;
   downloadActions.updateTask(task.id, { filePath });
   await handleMetadata(task, filePath);
+  try {
+    await RNFetchBlob.fs.scanFile([{ path: filePath }]);
+    console.log(`[Download Manager] Media scan requested for: ${filePath}`);
+  } catch (scanError) {
+    console.error(`[Download Manager] Failed to request media scan for ${filePath}:`, scanError);
+  }
   downloadActions.updateTask(task.id, { status: 'completed', progress: { ...task.progress, percent: 1 } });
 
   toast(`${fileName} 下载完成!`, 'short');
