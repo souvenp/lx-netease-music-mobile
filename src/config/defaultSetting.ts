@@ -14,6 +14,7 @@ const defaultSetting: LX.AppSetting = {
   'common.showExitBtn': false,
   'common.useSystemFileSelector': true,
   'common.wy_cookie': '',
+  'common.yt_cookie': '',
   'common.alwaysKeepStatusbarHeight': false,
 
   'common.navStatus': {
@@ -78,6 +79,8 @@ const defaultSetting: LX.AppSetting = {
   'list.addMusicLocationType': 'top',
   'list.isShowMyListSubMenu': true,
   'list.isAutoSaveDailyRec': true,
+  'list.isShowCover': true,
+  'artistDetail.albumViewMode': 'grid',
 
   'download.enable': true,
   'download.path': '',

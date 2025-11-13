@@ -9,7 +9,7 @@ import { useTheme } from '@/store/theme/hook'
 import { getSearchSetting } from '@/utils/data'
 import { BorderWidths } from '@/theme'
 
-const SEARCH_TYPE_LIST = ['music', 'songlist'] as const
+const SEARCH_TYPE_LIST = ['music', 'songlist', 'singer', 'album'] as const
 
 export default () => {
   const t = useI18n()

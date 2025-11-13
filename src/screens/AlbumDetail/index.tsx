@@ -47,6 +47,12 @@ export default memo(({ componentId, albumInfo }: { componentId: string; albumInf
     void playOnlineList(listId, albumDetail.list, index);
   }, [albumDetail.list, albumInfo.id]);
 
+  const handleListUpdate = useCallback((newList: LX.Music.MusicInfoOnline[]) => {
+    setAlbumDetail(prev => ({
+      ...prev,
+      list: newList,
+    }));
+  }, []);
   return (
     <PageContent>
       <View style={styles.container}>
@@ -56,8 +62,9 @@ export default memo(({ componentId, albumInfo }: { componentId: string; albumInf
           forcePlayList={true}
           ListHeaderComponent={<Header albumInfo={albumDetail.info || albumInfo} componentId={componentId} />}
           onPlayList={onPlayList}
-          onLoadMore={onRefresh}
+          onLoadMore={() => {}}
           onRefresh={onRefresh}
+          onListUpdate={handleListUpdate}
         />
         <PlayerBar />
       </View>

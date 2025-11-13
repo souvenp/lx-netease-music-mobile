@@ -626,3 +626,26 @@ export const getWyUidCache = async (hashedCookie: string): Promise<string | null
 export const saveWyUidCache = async (hashedCookie: string, uid: string) => {
   await saveData(wyUidCachePrefix + hashedCookie, uid)
 }
+
+const similarSongsCacheKey = storageDataPrefix.similarSongsCache;
+export interface DailyRecCacheItem {
+  dailySong: LX.Music.MusicInfoOnline
+  similarSongs: LX.Music.MusicInfoOnline[]
+  fetchStatus: 'pending' | 'fetched' | 'failed'
+}
+export interface DailyRecCache {
+  dailyRecId: string
+  items: DailyRecCacheItem[]
+}
+
+export const getDailyRecCache = async(): Promise<DailyRecCache | null> => {
+  return getData<DailyRecCache>(similarSongsCacheKey)
+}
+
+export const saveDailyRecCache = async(cache: DailyRecCache) => {
+  await saveData(similarSongsCacheKey, cache)
+}
+
+export const clearDailyRecCache = async() => {
+  await removeData(similarSongsCacheKey);
+};

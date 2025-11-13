@@ -1,11 +1,9 @@
-import { memo, useRef } from 'react'
-
-import { View, StyleSheet, TouchableOpacity } from 'react-native'
-
+import { memo, useRef, useMemo, useCallback } from 'react'
+import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native'
 import { Icon } from '@/components/common/Icon'
-import { pop } from '@/navigation'
+import { pop, navigations } from '@/navigation'
 import { useTheme } from '@/store/theme/hook'
-import { usePlayerMusicInfo } from '@/store/player/hook'
+import { usePlayMusicInfo } from '@/store/player/hook'
 import Text from '@/components/common/Text'
 import { scaleSizeH } from '@/utils/pixelRatio'
 import { HEADER_HEIGHT as _HEADER_HEIGHT, NAV_SHEAR_NATIVE_IDS } from '@/config/constant'
@@ -19,7 +17,39 @@ export const HEADER_HEIGHT = scaleSizeH(_HEADER_HEIGHT)
 
 const Title = () => {
   const theme = useTheme()
-  const musicInfo = usePlayerMusicInfo()
+  const playMusicInfo = usePlayMusicInfo()
+  const musicInfo = 'progress' in playMusicInfo.musicInfo ? playMusicInfo.musicInfo.metadata.musicInfo : playMusicInfo.musicInfo
+
+  const handleArtistPress = useCallback((artist: { id: string | number, name: string }) => {
+    if (musicInfo.source !== 'wy' || !artist.id) return
+    navigations.pushArtistDetailScreen(commonState.componentIds.playDetail!, { id: String(artist.id), name: artist.name })
+  }, [musicInfo])
+
+
+  const singerRender = useMemo(() => {
+    if (!musicInfo || !musicInfo.artists?.length || musicInfo.source == 'local') {
+      return (
+        <Text numberOfLines={1} style={styles.title} size={12} color={theme['c-font-label']}>
+          {musicInfo?.singer}
+        </Text>
+      )
+    }
+
+    return (
+      // <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <View style={styles.singerContainer}>
+          {musicInfo.artists.map((artist, index) => (
+            <TouchableOpacity key={artist.id || index} onPress={() => handleArtistPress(artist)}>
+              <Text style={styles.singerText} size={12} color={theme['c-font-label']}>
+                {artist.name}
+                {index < musicInfo.artists.length - 1 ? ' / ' : ''}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      // </ScrollView>
+    )
+  }, [musicInfo, theme, handleArtistPress])
 
   return (
     <View style={styles.titleContent}>
@@ -27,23 +57,19 @@ const Title = () => {
         {musicInfo.name}
         {musicInfo.alias ? <Text color={theme['c-font-label']}> ({musicInfo.alias})</Text> : null}
       </Text>
-      <Text numberOfLines={1} style={styles.title} size={12} color={theme['c-font-label']}>
-        {musicInfo.singer}
-      </Text>
+      {singerRender}
     </View>
   )
 }
 
 export default memo(() => {
   const popupRef = useRef<SettingPopupType>(null)
-
   const back = () => {
     void pop(commonState.componentIds.playDetail!)
   }
   const showSetting = () => {
     popupRef.current?.show()
   }
-
   return (
     <View style={{ height: HEADER_HEIGHT }} nativeID={NAV_SHEAR_NATIVE_IDS.playDetail_header}>
       <View style={styles.container}>
@@ -86,5 +112,12 @@ const styles = StyleSheet.create({
   icon: {
     paddingLeft: 4,
     paddingRight: 4,
+  },
+  singerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  singerText: {
+    paddingTop: 2,
   },
 })

@@ -12,8 +12,9 @@ import event = Animated.event;
 import wyApi from '@/utils/musicSdk/wy/user'
 import { useIsWyArtistFollowed } from '@/store/user/hook'
 import { addWyFollowedArtist, removeWyFollowedArtist } from '@/store/user/action'
+import {FollowedArtistInfo} from "@/store/user/state.ts";
 
-export default memo(({ artist }) => {
+export default memo(({ artist, showFollowButton = false }: { artist: any, showFollowButton?: boolean }) => {
   const theme = useTheme()
   const isFollowed = useIsWyArtistFollowed(artist.id)
 
@@ -23,7 +24,15 @@ export default memo(({ artist }) => {
     wyApi.followSinger(String(artist.id), newFollowState).then(() => {
       toast(newFollowState ? '关注成功' : '取消关注成功')
       if (newFollowState) {
-        addWyFollowedArtist(artist.id)
+        const artistInfoForStore: FollowedArtistInfo = {
+          id: artist.id,
+          name: artist.name,
+          alias: artist.alias ? artist.alias.split(' / ') : null,
+          albumSize: artist.albumSize,
+          picUrl: artist.picUrl,
+          img1v1Url: artist.picUrl,
+        }
+        addWyFollowedArtist(artistInfoForStore)
       } else {
         removeWyFollowedArtist(artist.id)
       }
@@ -47,9 +56,11 @@ export default memo(({ artist }) => {
         </Text>
         <Text size={12} color={theme['c-font-label']}>专辑: {artist.albumSize}</Text>
       </View>
-      <TouchableOpacity style={styles.followButton} onPress={handleFollow}>
-        <Icon name={isFollowed ? 'love-filled' : 'love'} color={isFollowed ? theme['c-liked'] : theme['c-font-label']} size={20} />
-      </TouchableOpacity>
+      {showFollowButton && (
+        <TouchableOpacity style={styles.followButton} onPress={handleFollow}>
+          <Icon name={isFollowed ? 'love-filled' : 'love'} color={isFollowed ? theme['c-liked'] : theme['c-font-label']} size={20} />
+        </TouchableOpacity>
+      )}
     </TouchableOpacity>
   )
 })
@@ -64,9 +75,9 @@ const styles = createStyle({
     borderBottomColor: 'rgba(0,0,0,0.05)',
   },
   avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 70,
+    height: 70,
+    borderRadius: 50,
   },
   info: {
     flex: 1,

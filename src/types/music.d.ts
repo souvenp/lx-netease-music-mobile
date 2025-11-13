@@ -40,7 +40,9 @@ declare namespace LX {
       fee?: number
       qualitys: MusicQualityType[]
       _qualitys: _MusicQualityType
-      albumId?: string | number // 歌曲专辑ID
+      albumId?: string | number
+      originCoverType?: number
+      _full?: boolean
     }
 
     interface MusicInfoMeta_local extends MusicInfoMetaBase {

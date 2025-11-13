@@ -100,7 +100,6 @@ export default {
     });
   },
 
-
   /**
    * 获取关注的歌手列表
    * @param {number} limit
@@ -190,5 +189,61 @@ export default {
       throw new Error((body && body.message) || '操作失败');
     }
     return body;
+  },
+
+
+  async scrobble(songId, sourceId, duration, retryNum = 0) {
+    const maxRetries = 3;
+    const retryDelay = 500;
+
+    const cookie = settingState.setting['common.wy_cookie'];
+    if (!cookie) return Promise.reject(new Error('未设置Cookie'));
+    const csrfToken = (cookie.match(/_csrf=([^(;|$)]+)/) || [])[1];
+    const payload = {
+      logs: JSON.stringify([{
+        action: 'play',
+        json: {
+          id: songId,
+          download: 0,
+          type: 'song',
+          sourceId: String(sourceId), // 歌单或专辑 id
+          time: Math.floor(duration), // 播放时长（秒）
+          end: 'playend',
+          wifi: 0,
+        },
+      }]),
+    }
+
+    const requestObj = httpFetch('https://music.163.com/weapi/feedback/weblog', {
+      method: 'post',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36 Edg/108.0.1462.54',
+        origin: 'https://music.163.com',
+        Referer: 'https://music.163.com',
+        cookie,
+      },
+      form: weapi({
+        ...payload,
+        csrf_token: csrfToken || '',
+      }),
+    })
+
+    try {
+      const { body, statusCode } = await requestObj.promise;
+      if (statusCode !== 200 || body.code !== 200) {
+        throw new Error((body && body.message) || '歌曲打点失败');
+      }
+      console.log('歌曲打点成功:', songId);
+      return body;
+    } catch (error) {
+      console.error(`歌曲打点失败 (尝试 ${retryNum + 1}/${maxRetries}):`, error);
+      if (retryNum < maxRetries - 1) {
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        return this.scrobble(songId, sourceId, duration, retryNum + 1);
+      } else {
+        console.error('歌曲打点失败 (已达最大重试次数)', error);
+        throw error;
+      }
+    }
   },
 }

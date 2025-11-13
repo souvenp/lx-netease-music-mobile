@@ -1,250 +1,243 @@
-// 文件路径: src/components/player/PlayerPlaylist.tsx
+import {forwardRef, useImperativeHandle, useRef, useState, useEffect, useCallback, memo, useMemo} from 'react';
+import AnimatedSlideUpPanel, { type AnimatedSlideUpPanelType } from '@/components/common/AnimatedSlideUpPanel';
+import { useI18n } from '@/lang';
+import { FlatList, View, TouchableOpacity } from 'react-native';
+import Text from '@/components/common/Text';
+import { useTheme } from '@/store/theme/hook';
+import playerState from '@/store/player/state';
+import { getListMusicSync } from '@/utils/listManage';
+import { usePlayInfo, usePlayerMusicInfo } from '@/store/player/hook';
+import { playList } from '@/core/player/player';
+import { createStyle, toast, type RowInfo } from '@/utils/tools';
+import { scaleSizeH } from '@/utils/pixelRatio';
+import { LIST_ITEM_HEIGHT, LIST_IDS } from '@/config/constant';
+import MusicAddModal, { type MusicAddModalType } from '@/components/MusicAddModal';
+import MusicDownloadModal, { type MusicDownloadModalType } from '@/screens/Home/Views/Mylist/MusicList/MusicDownloadModal';
+import { useSettingValue } from '@/store/setting/hook';
+import listState from '@/store/list/state';
+import { addTempPlayList } from '@/core/player/tempPlayList';
+import { Icon } from "@/components/common/Icon.tsx";
 
-import { forwardRef, useImperativeHandle, useRef, useState, useEffect, useCallback, memo } from 'react'
-import Popup, { type PopupType } from '@/components/common/Popup'
-import { useI18n } from '@/lang'
-import { FlatList, View, TouchableOpacity } from 'react-native'
-import Text from '@/components/common/Text'
-import Image from '@/components/common/Image'
-import { Icon } from '@/components/common/Icon'
-import { useTheme } from '@/store/theme/hook'
-import playerState from '@/store/player/state'
-import { getListMusicSync } from '@/utils/listManage'
-import { usePlayInfo, usePlayerMusicInfo } from '@/store/player/hook'
-import { playList } from '@/core/player/player'
-import { createStyle } from '@/utils/tools'
-import { scaleSizeH } from '@/utils/pixelRatio'
-import { LIST_ITEM_HEIGHT } from '@/config/constant'
-import { useIsWyLiked } from '@/store/user/hook'
-import {
-  handleShare,
-  handleUpdateMusicInfo,
-  handleDownload,
-} from '@/screens/Home/Views/Mylist/MusicList/listAction'
-import ListMenu, { type ListMenuType, type Position, type SelectInfo } from '@/screens/Home/Views/Mylist/MusicList/ListMenu'
-import MusicAddModal, { type MusicAddModalType } from '@/components/MusicAddModal'
-import MetadataEditModal, { type MetadataEditType, type MetadataEditProps } from '@/components/MetadataEditModal'
-import MusicToggleModal, { type MusicToggleModalType } from '@/screens/Home/Views/Mylist/MusicList/MusicToggleModal'
-import { useSettingValue } from '@/store/setting/hook'
-import Badge, { type BadgeType } from '@/components/common/Badge'
+import OnlineListItem from '@/components/OnlineList/ListItem';
+import ListMenu, { type ListMenuType, type Position, type SelectInfo } from '@/components/OnlineList/ListMenu';
 import {
   handleDislikeMusic,
   handleLikeMusic,
   handleShowAlbumDetail,
-  handleShowArtistDetail
-} from "@/components/OnlineList/listAction.ts";
-import MusicDownloadModal, { type MusicDownloadModalType } from '@/screens/Home/Views/Mylist/MusicList/MusicDownloadModal';
+  handleShowArtistDetail,
+  handleShowMusicSourceDetail,
+} from "@/components/OnlineList/listAction";
+import { handleShare } from '@/screens/Home/Views/Mylist/MusicList/listAction';
+import settingState from '@/store/setting/state';
 
 export interface PlayerPlaylistType {
-  show: () => void
+  show: () => void;
 }
-
-const useQualityTag = (musicInfo: LX.Music.MusicInfoOnline) => {
-  const t = useI18n()
-  let info: { type: BadgeType | null; text: string } = { type: null, text: '' }
-  if (musicInfo.meta._qualitys.hires) {
-    info.type = 'secondary'
-    info.text = t('quality_lossless_24bit')
-  } else if (musicInfo.meta._qualitys.flac) {
-    info.type = 'sq'
-    info.text = t('quality_lossless')
-  } else if (musicInfo.meta._qualitys['320k']) {
-    info.type = 'tertiary'
-    info.text = t('quality_high_quality')
-  }
-  return info
-}
-
-
-const PlaylistItem = memo(({ item, index, activeId, onPress, onShowMenu, onLike }: {
-  item: LX.Player.PlayMusic,
-  index: number,
-  activeId: string | null,
-  onPress: (index: number) => void,
-  onShowMenu: (musicInfo: LX.Music.MusicInfo, index: number, position: Position) => void,
-  onLike: (musicInfo: LX.Music.MusicInfoOnline) => void
-}) => {
-  const theme = useTheme()
-  const musicInfo = 'progress' in item ? item.metadata.musicInfo : item
-  const isActive = musicInfo.id === activeId
-  const isShowAlbumName = useSettingValue('list.isShowAlbumName')
-  const isLiked = useIsWyLiked(musicInfo.meta.songId)
-  const moreButtonRef = useRef<TouchableOpacity>(null)
-  const qualityTag = musicInfo.source !== 'local' ? useQualityTag(musicInfo as LX.Music.MusicInfoOnline) : { type: null, text: '' }
-
-  const showLikeButton = musicInfo.source === 'wy'
-
-  const handleShowMenu = () => {
-    if (moreButtonRef.current?.measure) {
-      moreButtonRef.current.measure((fx, fy, width, height, px, py) => {
-        onShowMenu(musicInfo, index, { x: Math.ceil(px), y: Math.ceil(py), w: Math.ceil(width), h: Math.ceil(height) })
-      })
-    }
-  }
-
-  const singer = `${musicInfo.singer}${isShowAlbumName && musicInfo.meta.albumName ? ` · ${musicInfo.meta.albumName}` : ''}`
-
-  return (
-    <View style={{ ...styles.listItem, height: scaleSizeH(LIST_ITEM_HEIGHT), backgroundColor: isActive ? theme['c-primary-background-hover'] : 'transparent' }}>
-      <TouchableOpacity style={styles.itemLeft} onPress={() => onPress(index)}>
-        <Image url={musicInfo.meta.picUrl} style={styles.artwork} />
-        <View style={styles.itemInfo}>
-          <Text color={isActive ? theme['c-primary-font'] : theme['c-font']} numberOfLines={1}>
-            {musicInfo.name}
-            {musicInfo.alias ? <Text color={theme['c-font-label']}> ({musicInfo.alias})</Text> : null}
-          </Text>
-          <View style={styles.listItemSingle}>
-            {qualityTag.type ? <Badge type={qualityTag.type}>{qualityTag.text}</Badge> : null}
-            {musicInfo.source !== 'local' && (musicInfo as LX.Music.MusicInfoOnline).meta.fee === 1 ? <Badge type="vip">VIP</Badge> : null}
-            <Text
-              style={styles.listItemSingleText}
-              size={11}
-              color={isActive ? theme['c-primary-alpha-200'] : theme['c-500']}
-              numberOfLines={1}
-            >
-              {singer}
-            </Text>
-          </View>
-        </View>
-      </TouchableOpacity>
-      {showLikeButton && (
-        <TouchableOpacity onPress={() => onLike(musicInfo as LX.Music.MusicInfoOnline)} style={styles.likeButton}>
-          <Icon name={isLiked ? 'love-filled' : 'love'} size={18} color={isLiked ? theme['c-liked'] : theme['c-font-label']} />
-        </TouchableOpacity>
-      )}
-      <TouchableOpacity onPress={handleShowMenu} ref={moreButtonRef} style={styles.moreButton}>
-        <Icon name="dots-vertical" style={{ color: theme['c-350'] }} size={12} />
-      </TouchableOpacity>
-    </View>
-  )
-})
-
 
 export default forwardRef<PlayerPlaylistType, {}>((props, ref) => {
-  const popupRef = useRef<PopupType>(null)
-  const flatListRef = useRef<FlatList>(null)
-  const [visible, setVisible] = useState(false)
-  const t = useI18n()
-  const playerInfo = usePlayInfo()
-  const playerMusicInfo = usePlayerMusicInfo()
-  const [playlist, setPlaylist] = useState<LX.Player.PlayMusic[]>([])
-  const [shouldScroll, setShouldScroll] = useState(false)
-  const selectedInfoRef = useRef<SelectInfo>()
+  const panelRef = useRef<AnimatedSlideUpPanelType>(null);
+  const flatListRef = useRef<FlatList>(null);
+  const t = useI18n();
+  const theme = useTheme();
+  const playerInfo = usePlayInfo();
+  const playerMusicInfo = usePlayerMusicInfo();
+  const [playlist, setPlaylist] = useState<LX.Player.PlayMusic[]>([]);
+  const [isVisible, setIsVisible] = useState(false);
   const musicDownloadModalRef = useRef<MusicDownloadModalType>(null);
-
-  const listMenuRef = useRef<ListMenuType>(null)
-  const musicAddModalRef = useRef<MusicAddModalType>(null)
-  const metadataEditTypeRef = useRef<MetadataEditType>(null)
-  const musicToggleModalRef = useRef<MusicToggleModalType>(null)
+  const listMenuRef = useRef<ListMenuType>(null);
+  const musicAddModalRef = useRef<MusicAddModalType>(null);
+  const isShowAlbumName = useSettingValue('list.isShowAlbumName');
+  const isShowInterval = useSettingValue('list.isShowInterval');
+  const showCover = useSettingValue('list.isShowCover');
+  const rowInfo = useRef({ rowNum: undefined, rowWidth: '100%' } as const).current;
 
   useImperativeHandle(ref, () => ({
     show() {
-      if (playerInfo.playerListId) {
-        const currentList = getListMusicSync(playerInfo.playerListId)
-        setPlaylist(currentList)
-        setShouldScroll(true)
-      }
-      if (visible) {
-        popupRef.current?.setVisible(true)
-      } else {
-        setVisible(true)
-      }
+      setIsVisible(true);
     },
-  }))
+  }));
+  const { activeIndex, totalCount } = useMemo(() => {
+    if (!playlist.length) return { activeIndex: -1, totalCount: 0 };
+
+    const index = playlist.findIndex(item => ('progress' in item ? item.metadata.musicInfo.id : item.id) === playerMusicInfo.id);
+    return { activeIndex: index, totalCount: playlist.length };
+  }, [playlist, playerMusicInfo.id]);
 
   useEffect(() => {
-    if (visible && shouldScroll && playlist.length > 0) {
-      const activeIndex = playlist.findIndex(item => ('progress' in item ? item.metadata.musicInfo.id : item.id) === playerMusicInfo.id)
+    if (isVisible) {
+      panelRef.current?.setVisible(true);
+      if (playerInfo.playerListId) {
+        const currentList = getListMusicSync(playerInfo.playerListId);
+        setPlaylist(currentList);
+      }
+    }
+  }, [isVisible, playerInfo.playerListId]);
+
+  useEffect(() => {
+    if (isVisible && playlist.length > 0) {
+      const activeIndex = playlist.findIndex(item => ('progress' in item ? item.metadata.musicInfo.id : item.id) === playerMusicInfo.id);
       if (activeIndex > -1) {
         setTimeout(() => {
           flatListRef.current?.scrollToIndex({
             index: activeIndex,
             viewPosition: 0,
             animated: true,
-          })
-        }, 100)
+          });
+        }, 100);
       }
-      setShouldScroll(false)
     }
-  }, [visible, shouldScroll, playlist, playerMusicInfo.id])
-
-  useEffect(() => {
-    if (visible) {
-      requestAnimationFrame(() => {
-        popupRef.current?.setVisible(true)
-      })
-    }
-  }, [visible])
+  }, [isVisible, playlist, playerMusicInfo.id]);
 
   const handlePlay = useCallback((index: number) => {
     if (playerInfo.playerListId) {
-      void playList(playerInfo.playerListId, index)
+      void playList(playerInfo.playerListId, index);
     }
-  }, [playerInfo.playerListId])
+  }, [playerInfo.playerListId]);
 
   const handleShowMenu = useCallback((musicInfo: LX.Music.MusicInfo, index: number, position: Position) => {
+    // 菜单需要 MusicInfoOnline 类型适配
+    const adaptedMusicInfo = {
+      ...musicInfo,
+      source: musicInfo.source as LX.OnlineSource,
+      meta: {
+        ...musicInfo.meta,
+        qualitys: (musicInfo as LX.Music.MusicInfoOnline).meta.qualitys || [],
+        _qualitys: (musicInfo as LX.Music.MusicInfoOnline).meta._qualitys || {},
+      },
+    } as LX.Music.MusicInfoOnline;
+
     listMenuRef.current?.show({
-      musicInfo,
+      musicInfo: adaptedMusicInfo,
       index,
-      listId: playerInfo.playerListId!,
-      single: false,
+      single: true,
       selectedList: [],
-    }, position)
-  }, [playerInfo.playerListId])
+    }, position);
+  }, []);
 
 
-  const renderItem = ({ item, index }: { item: LX.Player.PlayMusic, index: number }) => (
-    <PlaylistItem
-      item={item}
-      index={index}
-      activeId={playerMusicInfo.id}
-      onPress={handlePlay}
-      onShowMenu={handleShowMenu}
-      onLike={handleLikeMusic}
-    />
-  )
+  const renderItem = ({ item, index }: { item: LX.Player.PlayMusic, index: number }) => {
+    const originalMusicInfo = ('progress' in item ? item.metadata.musicInfo : item);
+
+    // 将所有类型的 musicInfo 转换为 OnlineListItem 能安全渲染的结构
+    const renderableMusicInfo: LX.Music.MusicInfoOnline = {
+      ...originalMusicInfo,
+      id: originalMusicInfo.id,
+      name: originalMusicInfo.name,
+      singer: originalMusicInfo.singer,
+      source: originalMusicInfo.source as LX.OnlineSource,
+      interval: originalMusicInfo.interval,
+      alias: originalMusicInfo.alias || null,
+      artists: originalMusicInfo.artists || [],
+      meta: {
+        ...originalMusicInfo.meta,
+        songId: originalMusicInfo.meta.songId,
+        picUrl: originalMusicInfo.meta.picUrl,
+        albumName: originalMusicInfo.meta.albumName,
+        // 提供安全的默认值以防止崩溃
+        qualitys: (originalMusicInfo as LX.Music.MusicInfoOnline).meta.qualitys || [],
+        _qualitys: (originalMusicInfo as LX.Music.MusicInfoOnline).meta._qualitys || {},
+        fee: (originalMusicInfo as LX.Music.MusicInfoOnline).meta.fee ?? 0,
+        originCoverType: (originalMusicInfo as LX.Music.MusicInfoOnline).meta.originCoverType ?? 0,
+      },
+    } as LX.Music.MusicInfoOnline;
+
+    const listIdForIcon = playerInfo.playerListId === LIST_IDS.TEMP ? listState.tempListMeta.id : playerInfo.playerListId;
+
+    return (
+      <OnlineListItem
+        item={renderableMusicInfo}
+        index={index}
+        onPress={() => handlePlay(index)}
+        onLongPress={() => {}}
+        onShowMenu={(musicInfo, index, position) => {
+          handleShowMenu(originalMusicInfo, index, position); // 菜单使用原始数据
+        }}
+        selectedList={[]}
+        playingId={playerMusicInfo.id}
+        rowInfo={rowInfo}
+        isShowAlbumName={isShowAlbumName}
+        isShowInterval={isShowInterval}
+        listId={listIdForIcon ?? undefined}
+        showCover={showCover}
+      />
+    );
+  };
 
   const getItemLayout = useCallback((data: any, index: number) => ({
     length: scaleSizeH(LIST_ITEM_HEIGHT),
     offset: scaleSizeH(LIST_ITEM_HEIGHT) * index,
     index,
-  }), [])
+  }), []);
 
-  const handleAddMusic = useCallback((info: SelectInfo) => {
+  const onAdd = (info: SelectInfo) => {
     musicAddModalRef.current?.show({
       musicInfo: info.musicInfo,
-      listId: info.listId,
       isMove: false,
-    })
-  }, [])
+      listId: playerState.playMusicInfo.listId!,
+    });
+  };
 
-  const handleUpdateMetadata = useCallback<MetadataEditProps['onUpdate']>((info) => {
-    if (!selectedInfoRef.current || selectedInfoRef.current.musicInfo.source != 'local') return
-    handleUpdateMusicInfo(selectedInfoRef.current.listId, selectedInfoRef.current.musicInfo as LX.Music.MusicInfoLocal, info)
-  }, [])
+  const onPlayLater = (info: SelectInfo) => {
+    addTempPlayList([{
+      listId: playerState.playMusicInfo.listId!,
+      musicInfo: info.musicInfo,
+      isTop: true,
+    }]);
+    toast('已添加到下一首播放');
+  };
 
-  const handleDownloadPress = useCallback((info: SelectInfo) => {
-    musicDownloadModalRef.current?.show(info.musicInfo)
-  }, []);
+  const onDownload = (info: SelectInfo) => {
+    musicDownloadModalRef.current?.show(info.musicInfo);
+  };
 
-  const handleArtistDetail = useCallback((info: SelectInfo) => {
-    popupRef.current?.setVisible(false) // 先关闭Popup
-    requestAnimationFrame(() => { // 延迟到下一帧再执行导航
-      void handleShowArtistDetail(info.musicInfo as LX.Music.MusicInfoOnline)
-    })
-  }, [])
+  const onArtistDetail = (info: SelectInfo) => {
+    panelRef.current?.setVisible(false);
+    requestAnimationFrame(() => {
+      handleShowArtistDetail(info.musicInfo);
+    });
+  };
 
-  const handleAlbumDetail = useCallback((info: SelectInfo) => {
-    popupRef.current?.setVisible(false) // 先关闭Popup
-    requestAnimationFrame(() => { // 延迟到下一帧再执行导航
-      handleShowAlbumDetail(info.musicInfo as LX.Music.MusicInfoOnline)
-    })
-  }, [])
+  const onAlbumDetail = (info: SelectInfo) => {
+    panelRef.current?.setVisible(false);
+    requestAnimationFrame(() => {
+      handleShowAlbumDetail(info.musicInfo);
+    });
+  };
 
-  return visible
-    ? (
-      <>
-        <Popup ref={popupRef} position="bottom" title={t('list_name_temp')} onHide={() => setVisible(false)}>
+  const onLike = (info: SelectInfo) => {
+    if (info.musicInfo.source === 'wy') {
+      handleLikeMusic(info.musicInfo as LX.Music.MusicInfoOnline);
+    }
+  };
+
+  const onMusicSourceDetail = (info: SelectInfo) => {
+    panelRef.current?.setVisible(false);
+    requestAnimationFrame(() => {
+      handleShowMusicSourceDetail(info.musicInfo);
+    });
+  };
+
+  const handlePanelHide = () => {
+    setIsVisible(false);
+  };
+
+  return (
+    <>
+      <AnimatedSlideUpPanel ref={panelRef} onHide={handlePanelHide}>
+        <View style={{ ...styles.panelContent, backgroundColor: theme['c-content-background'] }}>
+          <View style={{ ...styles.header, borderBottomColor: theme['c-border-background'] }}>
+            <View style={styles.headerTitleContainer}>
+              <Text style={styles.panelTitle}>{t('list_name_temp')}</Text>
+              {activeIndex > -1 && (
+                <Text style={styles.countText} size={12} color={theme['c-font-label']}>
+                  {activeIndex + 1} / {totalCount}
+                </Text>
+              )}
+            </View>
+            <TouchableOpacity onPress={() => panelRef.current?.setVisible(false)} style={styles.closeButton}>
+              <Icon name="close" size={14} color={theme['c-font-label']} />
+            </TouchableOpacity>
+          </View>
           <FlatList
             ref={flatListRef}
             style={styles.list}
@@ -254,74 +247,58 @@ export default forwardRef<PlayerPlaylistType, {}>((props, ref) => {
             initialNumToRender={10}
             getItemLayout={getItemLayout}
           />
-        </Popup>
-        <ListMenu
-          ref={listMenuRef}
-          onAdd={handleAddMusic}
-          onRemove={() => {}}
-          onDislikeMusic={info => handleDislikeMusic(info.musicInfo)}
-          onCopyName={handleShare}
-          onDownload={handleDownloadPress}
-          onEditMetadata={info => {
-            if (info.musicInfo.source != 'local') return
-            selectedInfoRef.current = info
-            metadataEditTypeRef.current?.show(info.musicInfo.meta.filePath)
-          }}
-          onToggleSource={(info) => musicToggleModalRef.current?.show(info)}
-          onArtistDetail={handleArtistDetail}
-          onAlbumDetail={handleAlbumDetail}
-        />
-        <MusicAddModal ref={musicAddModalRef} />
-        <MetadataEditModal ref={metadataEditTypeRef} onUpdate={handleUpdateMetadata} />
-        <MusicToggleModal ref={musicToggleModalRef} />
-        <MusicDownloadModal ref={musicDownloadModalRef} onDownloadInfo={(info) => { }} />
-      </>
-    )
-    : null
-})
+        </View>
+      </AnimatedSlideUpPanel>
+
+      <ListMenu
+        ref={listMenuRef}
+        onPlay={() => {}}
+        onPlayLater={onPlayLater}
+        onAdd={onAdd}
+        onDownload={onDownload}
+        onCopyName={handleShare}
+        onMusicSourceDetail={onMusicSourceDetail}
+        onDislikeMusic={handleDislikeMusic}
+        onArtistDetail={onArtistDetail}
+        onAlbumDetail={onAlbumDetail}
+        onLike={onLike}
+      />
+      <MusicAddModal ref={musicAddModalRef} />
+      {settingState.setting['download.enable'] && <MusicDownloadModal ref={musicDownloadModalRef} onDownloadInfo={() => {}} />}
+    </>
+  );
+});
 
 const styles = createStyle({
-  list: {
-    height: '70%',
+  panelContent: {
+    flex: 1,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+    overflow: 'hidden',
   },
-  listItem: {
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingLeft: 15,
-    paddingRight: 5,
   },
-  itemLeft: {
+  panelTitle: {
+    paddingVertical: 15,
+    // paddingLeft: 15,
+    fontSize: 14,
+  },
+  countText: {
+    marginLeft: 8,
+    paddingBottom: 1,
+  },
+  closeButton: {
+    padding: 15,
+  },
+  list: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    overflow: 'hidden',
   },
-  artwork: {
-    width: 45,
-    height: 45,
-    borderRadius: 4,
-  },
-  itemInfo: {
-    flex: 1,
-    paddingLeft: 10,
-    paddingRight: 10,
-  },
-  listItemSingle: {
-    paddingTop: 2,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  listItemSingleText: {
-    flexGrow: 0,
-    flexShrink: 1,
-    fontWeight: '300',
-  },
-  likeButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-  },
-  moreButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-  },
-})
+});

@@ -1,41 +1,88 @@
-import {memo, useMemo, useRef} from 'react'
-import { View } from 'react-native'
+import { memo, useMemo, useRef } from 'react'
+import { PanResponder, View, TouchableOpacity } from 'react-native'
 import { useKeyboard } from '@/utils/hooks'
-
 import Pic from './components/Pic'
 import Title from './components/Title'
 import PlayInfo from './components/PlayInfo'
 import ControlBtn from './components/ControlBtn'
 import { createStyle } from '@/utils/tools'
-// import { useSettingValue } from '@/store/setting/hook'
 import { useTheme } from '@/store/theme/hook'
 import { useSettingValue } from '@/store/setting/hook'
-import { Icon } from '@/components/common/Icon';
-import { TouchableOpacity } from 'react-native';
-import commonState from '@/store/common/state';
-import {navigations} from "@/navigation";
-import {usePlayerMusicInfo} from "@/store/player/hook.ts";
-import PlayerPlaylist, {PlayerPlaylistType} from "@/components/player/PlayerPlaylist.tsx";
+import { Icon } from '@/components/common/Icon'
+import { navigations } from '@/navigation'
+import commonState from '@/store/common/state'
+import { usePlayerMusicInfo } from '@/store/player/hook'
+import PlayerPlaylist, { PlayerPlaylistType } from '@/components/player/PlayerPlaylist.tsx'
+import MiniProgressBar from "@/components/player/PlayerBar/components/MiniProgressBar.tsx";
+
 
 export default memo(({ isHome = false }: { isHome?: boolean }) => {
-  // const { onLayout, ...layout } = useLayout()
   const { keyboardShown } = useKeyboard()
   const theme = useTheme()
   const autoHidePlayBar = useSettingValue('common.autoHidePlayBar')
-  const musicInfo = usePlayerMusicInfo();
+  const musicInfo = usePlayerMusicInfo()
   const playlistRef = useRef<PlayerPlaylistType>(null)
+  const drawerLayoutPosition = useSettingValue('common.drawerLayoutPosition')
 
   const handleNavigate = () => {
-    if (!musicInfo.id) return;
-    navigations.pushPlayDetailScreen(commonState.componentIds.home!);
-  };
-  const handleShowPlaylist = () => { // 新增处理函数
+    if (!musicInfo.id) return
+    navigations.pushPlayDetailScreen(commonState.componentIds.home!)
+  }
+
+  const handleShowPlaylist = () => {
     playlistRef.current?.show()
   }
 
+  const gestureAction = useRef<'drawer' | 'playlist' | null>(null)
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        const { dx, dy } = gestureState
+        // 优先判断手势的主方向
+        if (Math.abs(dx) > Math.abs(dy) * 1.5) { // 水平滑动为主
+          if (drawerLayoutPosition === 'left' && dx > 10) {
+            gestureAction.current = 'drawer'
+            return true
+          }
+          if (drawerLayoutPosition === 'right' && dx < -10) {
+            gestureAction.current = 'drawer'
+            return true
+          }
+        } else if (Math.abs(dy) > Math.abs(dx) * 1.5) { // 垂直滑动为主
+          if (dy < -10) {
+            gestureAction.current = 'playlist'
+            return true
+          }
+        }
+        return false
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        const { dx, dy } = gestureState
+        // 根据已确定的手势类型执行操作
+        if (gestureAction.current === 'drawer') {
+          if (drawerLayoutPosition === 'left' && dx > 50) {
+            global.app_event.changeMenuVisible(true)
+          } else if (drawerLayoutPosition === 'right' && dx < -50) {
+            global.app_event.changeMenuVisible(true)
+          }
+        } else if (gestureAction.current === 'playlist' && dy < -50) {
+          handleShowPlaylist()
+        }
+        // 重置手势状态
+        gestureAction.current = null
+      },
+      onPanResponderTerminate: (evt, gestureState) => {
+        gestureAction.current = null
+      },
+    }),
+  ).current
+
   const playerComponent = useMemo(
     () => (
-      <View style={{ ...styles.container, backgroundColor: theme['c-content-background'] }}>
+      <View style={{ ...styles.container, backgroundColor: theme['c-content-background'] }}
+            {...panResponder.panHandlers}>
+        <MiniProgressBar />
+
         <TouchableOpacity style={styles.left} onPress={handleNavigate} activeOpacity={0.8}>
           <Pic isHome={isHome} />
           <View style={styles.center}>
@@ -51,10 +98,8 @@ export default memo(({ isHome = false }: { isHome?: boolean }) => {
         </View>
       </View>
     ),
-    [theme, isHome, handleShowPlaylist],
-  );
-
-  // console.log('render pb')
+    [theme, isHome, handleShowPlaylist, panResponder.panHandlers, drawerLayoutPosition],
+  )
 
   return (
     <>

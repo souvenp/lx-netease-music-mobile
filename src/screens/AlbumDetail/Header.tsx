@@ -64,15 +64,8 @@ export default memo(({ albumInfo, componentId }) => {
     </TouchableOpacity>
   ))
 
-  const back = () => {
-    void pop(componentId)
-  }
-
   return (
     <View style={{ paddingTop: statusBarHeight, backgroundColor: 'rgba(0,0,0,0.2)' }}>
-      <TouchableOpacity onPress={back} style={styles.backBtn}>
-        <Icon name="chevron-left" size={24} color="#fff" />
-      </TouchableOpacity>
       <View style={styles.headerContainer}>
         <Image url={albumInfo.picUrl || albumInfo.img} style={styles.albumArt} />
         <View style={styles.infoContainer}>

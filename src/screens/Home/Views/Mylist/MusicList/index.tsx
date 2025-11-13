@@ -34,6 +34,8 @@ import MetadataEditModal, {
 import MusicDownloadModal, { type MusicDownloadModalType } from './MusicDownloadModal'
 import MusicToggleModal, { type MusicToggleModalType } from './MusicToggleModal'
 import {handleShowAlbumDetail, handleShowArtistDetail} from "@/components/OnlineList/listAction.ts";
+import {useSettingValue} from "@/store/setting/hook.ts";
+import {updateSetting} from "@/core/common.ts";
 
 export default () => {
   const activeListRef = useRef<ActiveListType>(null)
@@ -55,6 +57,11 @@ export default () => {
   const isShowMultipleModeBar = useRef(false)
   const isShowSearchBarModeBar = useRef(false)
   const selectedInfoRef = useRef<SelectInfo>()
+
+  const showCover = useSettingValue('list.isShowCover');
+  const handleToggleView = useCallback(() => {
+    updateSetting({ 'list.isShowCover': !showCover });
+  }, [showCover]);
 
   const hancelMultiSelect = useCallback(() => {
     if (isShowSearchBarModeBar.current) {
@@ -180,6 +187,8 @@ export default () => {
           ref={activeListRef}
           onShowSearchBar={handleShowSearch}
           onScrollToTop={hancelScrollToTop}
+          showCover={showCover}
+          onToggleView={handleToggleView}
         />
         <MultipleModeBar
           ref={multipleModeBarRef}
@@ -201,6 +210,7 @@ export default () => {
           onShowMenu={showMenu}
           onMuiltSelectMode={hancelMultiSelect}
           onSelectAll={(isAll) => multipleModeBarRef.current?.setIsSelectAll(isAll)}
+          showCover={showCover}
         />
         <ListMusicSearch ref={listMusicSearchRef} onScrollToInfo={handleScrollToInfo} />
       </View>

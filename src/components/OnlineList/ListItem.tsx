@@ -1,5 +1,3 @@
-// src/components/OnlineList/ListItem.tsx
-
 import { memo, useRef } from 'react'
 import { View, TouchableOpacity } from 'react-native'
 import Text from '@/components/common/Text'
@@ -10,8 +8,8 @@ import { useTheme } from '@/store/theme/hook'
 import { scaleSizeH } from '@/utils/pixelRatio'
 import { LIST_ITEM_HEIGHT } from '@/config/constant'
 import { createStyle, type RowInfo } from '@/utils/tools'
-import Image from '@/components/common/Image' // <--- 1. 引入 Image 组件
-import { useIsWyLiked } from '@/store/user/hook' // 1. 引入Hook
+import Image from '@/components/common/Image'
+import { useIsWyLiked } from '@/store/user/hook'
 import { handleLikeMusic } from './listAction'
 
 export const ITEM_HEIGHT = scaleSizeH(LIST_ITEM_HEIGHT)
@@ -58,6 +56,7 @@ export default memo(
      playingId,
      isShowInterval,
      listId,
+     showCover = true,
    }: {
     item: LX.Music.MusicInfoOnline
     index: number
@@ -75,6 +74,7 @@ export default memo(
     isShowInterval: boolean
     playingId?: string | null;
     listId?: string
+    showCover?: boolean
   }) => {
     const theme = useTheme()
     const isPlaying = playingId === item.id;
@@ -95,17 +95,14 @@ export default memo(
       }
     }
 
-    // 5. 定义是否显示喜欢按钮的逻辑
-    const showLikeButton = item.source === 'wy' &&
-      (listId === 'dailyrec_wy' || listId === 'search' || listId === 'album' ||
-        listId?.startsWith('wy__'))
+    const showLikeButton = item.source === 'wy'
 
     const handleLike = () => {
       handleLikeMusic(item)
     }
 
     const tagInfo = useQualityTag(item)
-    const singer = `${item.singer}${isShowAlbumName && item.meta.albumName ? ` · ${item.meta.albumName}` : ''}`
+    const singer = `${item.singer}${isShowAlbumName && item.meta.albumName ? `·${item.meta.albumName}` : ''}`
 
     return (
       <View
@@ -124,8 +121,16 @@ export default memo(
             onLongPress(item, index)
           }}
         >
-          <View style={styles.sn}>
-            <Image url={item.meta.picUrl} style={styles.albumArt} />
+
+
+          <View style={showCover ? styles.sn : styles.snIndex}>
+            {showCover ? (
+              <Image url={item.meta.picUrl} style={styles.albumArt} />
+            ) : (
+              <Text color={isPlaying ? theme['c-primary-font'] : theme['c-font']} size={12}>
+                {index + 1}
+              </Text>
+            )}
           </View>
           <View style={styles.itemInfo}>
             <Text numberOfLines={1} color={isPlaying ? theme['c-primary-font'] : theme['c-font']}>
@@ -133,9 +138,10 @@ export default memo(
               {item.alias ? <Text color={theme['c-font-label']}> ({item.alias})</Text> : null}
             </Text>
             <View style={styles.listItemSingle}>
+              {showSource ? <Badge type="tertiary">{item.source.toUpperCase()}</Badge> : null}
               {tagInfo.type ? <Badge type={tagInfo.type}>{tagInfo.text}</Badge> : null}
               {item.meta.fee === 1 ? <Badge type="vip">VIP</Badge> : null}
-              {showSource ? <Badge type="tertiary">{item.source}</Badge> : null}
+              {item.source === 'wy' && item.meta.originCoverType === 2 ? <Badge type="normal">cover</Badge> : null}
               <Text
                 style={styles.listItemSingleText}
                 size={11}
@@ -147,7 +153,7 @@ export default memo(
             </View>
           </View>
           {isShowInterval ? (
-            <Text size={12} color={theme['c-250']} numberOfLines={1}>
+            <Text size={11} color={isPlaying ? theme['c-primary-alpha-200'] : theme['c-500']} numberOfLines={1}>
               {item.interval}
             </Text>
           ) : null}
@@ -174,7 +180,8 @@ export default memo(
       prevProps.listId === nextProps.listId &&
       prevProps.playingId === nextProps.playingId &&
       nextProps.selectedList.includes(nextProps.item) ==
-      prevProps.selectedList.includes(nextProps.item)
+      prevProps.selectedList.includes(nextProps.item) &&
+      prevProps.showCover === nextProps.showCover
     )
   }
 )
@@ -193,9 +200,15 @@ const styles = createStyle({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  // ⬇️⬇️⬇️ 3. 修改样式以适应图片 ⬇️⬇️⬇️
   sn: {
     width: 70,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingLeft: 5,
+    paddingRight: 5,
+  },
+  snIndex: {
+    width: 40,
     justifyContent: 'center',
     alignItems: 'center',
     paddingLeft: 5,
@@ -209,10 +222,9 @@ const styles = createStyle({
   itemInfo: {
     flexGrow: 1,
     flexShrink: 1,
-    paddingLeft: 2, // 调整左边距
+    paddingLeft: 2,
     paddingRight: 2,
   },
-  // ⬆️⬆️⬆️ 样式修改结束 ⬆️⬆️⬆️
   listItemSingle: {
     paddingTop: 2,
     flexDirection: 'row',
@@ -246,7 +258,7 @@ const styles = createStyle({
   },
   moreButton: {
     height: '80%',
-    paddingLeft: 16,
+    paddingLeft: 10,
     paddingRight: 16,
     justifyContent: 'center',
   },

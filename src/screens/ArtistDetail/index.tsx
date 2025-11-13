@@ -5,11 +5,12 @@ import Header from './Header';
 import SongList from './SongList';
 import wyApi from '@/utils/musicSdk/wy/artist';
 import { toast } from '@/utils/tools';
-import { setComponentId } from '@/core/common';
+import {setComponentId, updateSetting} from '@/core/common';
 import PlayerBar from '@/components/player/PlayerBar';
 import { createStyle } from '@/utils/tools';
 import { getArtistCache, setArtistCache,
   clearArtistCache, getArtistDetailCache, setArtistDetailCache } from '@/core/cache';
+import {useSettingValue} from "@/store/setting/hook.ts";
 
 const SONG_LIMIT = 100;
 const ALBUM_LIMIT = 100;
@@ -19,8 +20,16 @@ export default memo(({ componentId, artistInfo }: { componentId: string, artistI
   const [songs, setSongs] = useState({ list: [], hasMore: true, page: 1, loading: false, sort: 'hot' });
   const [albums, setAlbums] = useState({ list: [], hasMore: true, page: 1, loading: false });
   const [activeTab, setActiveTab] = useState('songs');
+  const albumViewMode = useSettingValue('artistDetail.albumViewMode')
   const componentIdRef = useRef(componentId);
   const isFirstSortEffect = useRef(true);
+
+  const handleSongListUpdate = useCallback((newList: LX.Music.MusicInfoOnline[]) => {
+    setSongs(prev => ({
+      ...prev,
+      list: newList,
+    }))
+  }, [])
 
   useEffect(() => {
     setComponentId('ARTIST_DETAIL', componentId);
@@ -128,7 +137,7 @@ export default memo(({ componentId, artistInfo }: { componentId: string, artistI
     if (isFirstSortEffect.current) {
       isFirstSortEffect.current = false;
       return;
-    };
+    }
     setSongs(prev => ({ ...prev, page: 1, list: [], hasMore: true }));
     loadSongs(songs.sort, 1, true);
   }, [songs.sort]);
@@ -170,7 +179,12 @@ export default memo(({ componentId, artistInfo }: { componentId: string, artistI
     }
   }, [artistInfo.id, songs.sort, loadSongs, activeTab, loadAlbums]);
 
-  const displayArtist = artistDetail?.artist || artistInfo;
+
+  const handleAlbumViewModeChange = useCallback((mode: 'grid' | 'list') => {
+    updateSetting({ 'artistDetail.albumViewMode': mode })
+  }, [])
+
+  const displayArtist = artistDetail?.artist || artistInfo
   return (
     <PageContent>
       <View style={styles.container}>
@@ -179,11 +193,14 @@ export default memo(({ componentId, artistInfo }: { componentId: string, artistI
           songs={songs}
           albums={albums}
           activeTab={activeTab}
+          albumViewMode={albumViewMode}
           onTabChange={handleTabChange}
           onLoadMoreSongs={handleLoadMoreSongs}
           onLoadMoreAlbums={handleLoadMoreAlbums}
           onSortChange={handleSortChange}
           onRefresh={handleRefresh}
+          onAlbumViewModeChange={handleAlbumViewModeChange}
+          onSongListUpdate={handleSongListUpdate}
         />
         <PlayerBar />
       </View>

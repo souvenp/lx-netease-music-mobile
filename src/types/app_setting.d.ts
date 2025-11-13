@@ -73,6 +73,7 @@ declare global {
        * 网易云音乐 Cookie
        */
       'common.wy_cookie': string
+      'common.yt_cookie': string
 
       /**
        * 总是保留状态栏高度
@@ -336,6 +337,7 @@ declare global {
        * 是否显示歌曲时长
        */
       'list.isShowInterval': boolean
+      'list.isShowCover': boolean
 
       /**
        * 是否自动恢复列表滚动位置（仅对我的列表有效）
@@ -347,8 +349,9 @@ declare global {
        */
       'list.addMusicLocationType': AddMusicLocationType
 
-      'list.isShowMyListSubMenu': boolean;
-      'list.isAutoSaveDailyRec': boolean;
+      'list.isShowMyListSubMenu': boolean
+      'list.isAutoSaveDailyRec': boolean
+      'artistDetail.albumViewMode': 'grid' | 'list'
       /**
        * 是否启用下载
        */

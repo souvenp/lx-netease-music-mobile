@@ -241,7 +241,7 @@ export const getOnlineOtherSourcePicByLocal = async (
 
 export const TRY_QUALITYS_LIST = ['master', 'atmos_plus', 'atmos', 'hires', 'flac', '320k'] as const
 type TryQualityType = (typeof TRY_QUALITYS_LIST)[number]
-const QUALITY_RANK: readonly LX.Quality[] = ['master', 'atmos_plus', 'atmos', 'hires', 'flac', '320k', '128k'];
+export const QUALITY_RANK: readonly LX.Quality[] = ['master', 'atmos_plus', 'atmos', 'hires', 'flac', '320k', '128k'];
 
 export const getPlayQuality = (
   preferredQuality: LX.Quality,

@@ -19,6 +19,7 @@ declare namespace LX {
       errorMsg?: string;
       createdAt: number;
       filePath?: string;
+      isForceCookie?: boolean;
     }
   }
 }

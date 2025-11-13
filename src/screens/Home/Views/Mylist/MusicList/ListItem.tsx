@@ -25,6 +25,7 @@ export default memo(
     rowInfo,
     isShowAlbumName,
     isShowInterval,
+    showCover,
   }: {
     item: LX.Music.MusicInfo
     index: number
@@ -40,6 +41,7 @@ export default memo(
     rowInfo: RowInfo
     isShowAlbumName: boolean
     isShowInterval: boolean
+    showCover: boolean
   }) => {
     const theme = useTheme()
 
@@ -62,7 +64,7 @@ export default memo(
     }
     const active = activeIndex == index
 
-    const singer = `${item.singer}${isShowAlbumName && item.meta.albumName ? ` · ${item.meta.albumName}` : ''}`
+    const singer = `${item.singer}${isShowAlbumName && item.meta.albumName ? `·${item.meta.albumName}` : ''}`
 
     return (
       <View
@@ -84,8 +86,16 @@ export default memo(
           }}
         >
 
-          <View style={styles.sn}>
-            <Image url={item.meta.picUrl} style={styles.albumArt} />
+
+
+          <View style={showCover ? styles.sn : styles.snIndex}>
+            {showCover ? (
+              <Image url={item.meta.picUrl} style={styles.albumArt} />
+            ) : (
+              <Text color={active ? theme['c-primary-font'] : theme['c-font']} size={12}>
+                {index + 1}
+              </Text>
+            )}
           </View>
           <View style={styles.itemInfo}>
             {/* <View style={styles.listItemTitle}> */}
@@ -96,6 +106,8 @@ export default memo(
             {/* </View> */}
             <View style={styles.listItemSingle}>
               <Badge>{item.source.toUpperCase()}</Badge>
+              {item.source !== 'local' && (item as LX.Music.MusicInfoOnline).meta.fee === 1 ? <Badge type="vip">VIP</Badge> : null}
+              {item.source === 'wy' && (item as LX.Music.MusicInfoOnline).meta.originCoverType === 2 ? <Badge type="normal">cover</Badge> : null}
               <Text
                 style={styles.listItemSingleText}
                 size={11}
@@ -108,7 +120,7 @@ export default memo(
           </View>
           {isShowInterval ? (
             <Text
-              size={12}
+              size={11}
               color={active ? theme['c-primary-alpha-400'] : theme['c-250']}
               numberOfLines={1}
             >
@@ -133,7 +145,8 @@ export default memo(
       prevProps.activeIndex != nextProps.index &&
       nextProps.activeIndex != nextProps.index &&
       nextProps.selectedList.includes(nextProps.item) ==
-        prevProps.selectedList.includes(nextProps.item)
+        prevProps.selectedList.includes(nextProps.item) &&
+      prevProps.showCover === nextProps.showCover
     )
   }
 )
@@ -157,6 +170,13 @@ const styles = createStyle({
   },
   sn: {
     width: 70,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingLeft: 5,
+    paddingRight: 5,
+  },
+  snIndex: {
+    width: 40,
     justifyContent: 'center',
     alignItems: 'center',
     paddingLeft: 5,
@@ -205,7 +225,7 @@ const styles = createStyle({
 
   moreButton: {
     height: '80%',
-    paddingLeft: 16,
+    paddingLeft: 10,
     paddingRight: 16,
     // paddingTop: 10,
     // paddingBottom: 10,

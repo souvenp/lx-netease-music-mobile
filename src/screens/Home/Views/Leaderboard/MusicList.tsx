@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react'
+import {forwardRef, useCallback, useEffect, useImperativeHandle, useRef} from 'react'
 import OnlineList, { type OnlineListType, type OnlineListProps } from '@/components/OnlineList'
 import {
   clearListDetail,
@@ -22,6 +22,11 @@ export interface MusicListType {
 export default forwardRef<MusicListType, {}>((props, ref) => {
   const listRef = useRef<OnlineListType>(null)
   const isUnmountedRef = useRef(false)
+  const handleListUpdate = useCallback((newList: LX.Music.MusicInfoOnline[]) => {
+    if (isUnmountedRef.current) return;
+    boardState.listDetailInfo.list = newList;
+  }, []);
+
   useImperativeHandle(
     ref,
     () => ({
@@ -110,6 +115,7 @@ export default forwardRef<MusicListType, {}>((props, ref) => {
       onPlayList={handlePlayList}
       onRefresh={handleRefresh}
       onLoadMore={handleLoadMore}
+      onListUpdate={handleListUpdate}
       checkHomePagerIdle
       rowType="medium"
     />

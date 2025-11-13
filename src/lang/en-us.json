@@ -219,6 +219,8 @@
   "search_hot_search": "Top Searches",
   "search_type_music": "Song",
   "search_type_songlist": "Playlist",
+  "search_type_singer": "Artist",
+  "search_type_album": "Album",
   "setting__other_dislike_list": "Dislike Song Rule",
   "setting__other_dislike_list_label": "Number of rules: {num}",
   "setting__other_dislike_list_saved_tip": "Saved",

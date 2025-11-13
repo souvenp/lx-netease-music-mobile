@@ -89,11 +89,11 @@ export default memo(() => {
 
 const styles = createStyle({
   content: {
-    marginTop: 10,
+    // marginTop: 10,
   },
   btnContainer: {
-    marginTop: 5,
-    paddingLeft: 25,
+    marginBottom: 5,
+    paddingLeft: 20,
     flexDirection: 'row',
   },
 });

@@ -1,4 +1,4 @@
-import { useRef, forwardRef, useImperativeHandle } from 'react'
+import {useRef, forwardRef, useImperativeHandle, useCallback} from 'react'
 import { View } from 'react-native'
 import List, { type ListProps, type ListType, type Status, type RowInfoType } from './List'
 import ListMenu, { type ListMenuType, type Position, type SelectInfo } from './ListMenu'
@@ -23,6 +23,7 @@ import MusicDownloadModal, {
   type MusicDownloadModalType,
 } from '@/screens/Home/Views/Mylist/MusicList/MusicDownloadModal'
 import { createStyle } from '@/utils/tools'
+import {batchDownload} from "@/core/download.ts";
 
 export interface OnlineListProps {
   onRefresh: ListProps['onRefresh']
@@ -30,11 +31,13 @@ export interface OnlineListProps {
   onPlayList?: ListProps['onPlayList']
   progressViewOffset?: ListProps['progressViewOffset']
   ListHeaderComponent?: ListProps['ListHeaderComponent']
+  ListFooterComponent?: ListProps['ListFooterComponent']
   checkHomePagerIdle?: boolean
   rowType?: RowInfoType
   listId?: string
   playingId?: string | null
   forcePlayList?: boolean
+  onListUpdate?: ListProps['onListUpdate']
 }
 export interface OnlineListType {
   setList: (list: LX.Music.MusicInfoOnline[], isAppend?: boolean, showSource?: boolean) => void
@@ -50,11 +53,13 @@ export default forwardRef<OnlineListType, OnlineListProps>(
       onPlayList,
       progressViewOffset,
       ListHeaderComponent,
+      ListFooterComponent,
       checkHomePagerIdle = false,
       rowType,
       listId,
       playingId,
       forcePlayList,
+      onListUpdate,
     },
     ref
   ) => {
@@ -90,6 +95,13 @@ export default forwardRef<OnlineListType, OnlineListProps>(
       multipleModeBarRef.current?.exitSelectMode()
       listRef.current?.setIsMultiSelectMode(false)
     }
+
+    const handleBatchDownload = useCallback(() => {
+      const selectedList = listRef.current?.getSelectedList() ?? [];
+      if (!selectedList.length) return;
+      void batchDownload(selectedList);
+      hancelExitSelect();
+    }, [hancelExitSelect]);
 
     const showMenu = (musicInfo: LX.Music.MusicInfoOnline, index: number, position: Position) => {
       listMenuRef.current?.show(
@@ -134,16 +146,19 @@ export default forwardRef<OnlineListType, OnlineListProps>(
             onPlayList={onPlayList}
             progressViewOffset={progressViewOffset}
             ListHeaderComponent={ListHeaderComponent}
+            ListFooterComponent={ListFooterComponent}
             checkHomePagerIdle={checkHomePagerIdle}
             rowType={rowType}
             playingId={playingId}
             forcePlayList={forcePlayList}
+            onListUpdate={onListUpdate}
           />
           <MultipleModeBar
             ref={multipleModeBarRef}
             onSwitchMode={hancelSwitchSelectMode}
             onSelectAll={(isAll) => listRef.current?.selectAll(isAll)}
             onExitSelectMode={hancelExitSelect}
+            onDownload={handleBatchDownload}
           />
           <MusicDownloadModal ref={musicDownloadModalRef} onDownloadInfo={(info) => {}} />
         </View>

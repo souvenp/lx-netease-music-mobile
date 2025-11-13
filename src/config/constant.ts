@@ -27,7 +27,8 @@ export enum COMPONENT_IDS {
   comment = 'comment',
   ARTIST_DETAIL = 'ARTIST_DETAIL',
   ALBUM_DETAIL_SCREEN = 'ALBUM_DETAIL_SCREEN',
-  DOWNLOAD_MANAGER = 'DOWNLOAD_MANAGER'
+  DOWNLOAD_MANAGER = 'DOWNLOAD_MANAGER',
+  SIMILAR_SONGS_SCREEN = 'SIMILAR_SONGS_SCREEN',
 }
 
 export enum NAV_SHEAR_NATIVE_IDS {
@@ -84,6 +85,7 @@ export const storageDataPrefix = {
   userApi: '@user_api__',
   downloadList: '@download_list',
   wyUidCache: '@wy_uid_cache__',
+  similarSongsCache: '@similar_songs_cache',
 } as const
 
 // v0.x.x 版本的 data keys
@@ -153,7 +155,7 @@ export const DEFAULT_SETTING = {
   search: {
     temp_source: 'wy' as LX.OnlineSource,
     source: 'wy' as LX.OnlineSource | 'wy',
-    type: 'music' as 'music' | 'songlist',
+    type: 'music' as 'music' | 'songlist' | 'singer' | 'album',
   },
 
   viewPrevState: {

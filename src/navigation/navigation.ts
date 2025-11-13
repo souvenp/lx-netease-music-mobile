@@ -5,6 +5,7 @@ import {
   HOME_SCREEN,
   PLAY_DETAIL_SCREEN,
   SONGLIST_DETAIL_SCREEN,
+  SIMILAR_SONGS_SCREEN,
   COMMENT_SCREEN, ARTIST_DETAIL_SCREEN, ALBUM_DETAIL_SCREEN, DOWNLOAD_MANAGER_SCREEN,
   // SETTING_SCREEN,
 } from './screenNames'
@@ -729,4 +730,51 @@ export function pushDownloadManagerScreen(componentId: string) {
       },
     },
   });
+}
+
+export function pushSimilarSongsScreen(componentId: string, similarSongs: LX.Music.MusicInfoOnline[]) {
+  const theme = themeState.theme
+  return Navigation.push(componentId, {
+    component: {
+      name: SIMILAR_SONGS_SCREEN,
+      passProps: {
+        similarSongs,
+      },
+      options: {
+        topBar: {
+          visible: false,
+          height: 0,
+        },
+        statusBar: {
+          drawBehind: true,
+          visible: true,
+          style: getStatusBarStyle(theme.isDark),
+          backgroundColor: 'transparent',
+        },
+        layout: {
+          componentBackgroundColor: theme['c-content-background'],
+        },
+        animations: {
+          push: {
+            content: {
+              translationX: {
+                from: windowSizeTools.getSize().width,
+                to: 0,
+                duration: 200,
+              },
+            },
+          },
+          pop: {
+            content: {
+              translationX: {
+                from: 0,
+                to: windowSizeTools.getSize().width,
+                duration: 200,
+              },
+            },
+          },
+        },
+      },
+    },
+  })
 }

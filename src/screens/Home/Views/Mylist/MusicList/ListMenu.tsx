@@ -16,15 +16,15 @@ const initSelectInfo = {}
 
 export interface ListMenuProps {
   // onPlay: (selectInfo: SelectInfo) => void
-  // onPlayLater: (selectInfo: SelectInfo) => void
+  onPlayLater: (selectInfo: SelectInfo) => void
   onAdd: (selectInfo: SelectInfo) => void
-  // onMove: (selectInfo: SelectInfo) => void
+  onMove: (selectInfo: SelectInfo) => void
   onEditMetadata: (selectInfo: SelectInfo) => void
   onDownload: (selectInfo: SelectInfo) => void
   onCopyName: (selectInfo: SelectInfo) => void
-  // onChangePosition: (selectInfo: SelectInfo) => void
+  onChangePosition: (selectInfo: SelectInfo) => void
   onToggleSource: (selectInfo: SelectInfo) => void
-  // onMusicSourceDetail: (selectInfo: SelectInfo) => void
+  onMusicSourceDetail: (selectInfo: SelectInfo) => void
   onArtistDetail: (selectInfo: SelectInfo) => void
   onAlbumDetail: (selectInfo: SelectInfo) => void
   onDislikeMusic: (selectInfo: SelectInfo) => void
@@ -65,15 +65,20 @@ export default forwardRef<ListMenuType, ListMenuProps>((props, ref) => {
     let edit_metadata = false
     const menu: Menus[number][] = [
       // { action: 'play', label: t('play') },
-      // { action: 'playLater', label: t('play_later') },
+      { action: 'playLater', label: t('play_later') },
       ...(settingState.setting['download.enable']
         ? [{ action: 'download', label: t('download') }]
         : []),
       { action: 'add', label: t('add_to') },
-      // { action: 'move', label: t('move_to') },
-      // { action: 'changePosition', label: t('change_position') },
+      { action: 'move', label: t('move_to') },
+      { action: 'changePosition', label: t('change_position') },
       { action: 'toggleSource', label: t('toggle_source') },
       { action: 'copyName', label: t('copy_name') },
+      {
+        action: 'musicSourceDetail',
+        disabled: musicInfo.source == 'local',
+        label: t('music_source_detail'),
+      },
     ]
 
     if (musicInfo.source === 'wy') {
@@ -119,17 +124,20 @@ export default forwardRef<ListMenuType, ListMenuProps>((props, ref) => {
     const selectInfo = selectInfoRef.current
     switch (action) {
       // case 'play': props.onPlay(selectInfo); break;
-      // case 'playLater': props.onPlayLater(selectInfo); break;
+      case 'playLater': props.onPlayLater(selectInfo); break;
       case 'download': props.onDownload(selectInfo); break
       case 'add': props.onAdd(selectInfo); break
-      // case 'move': props.onMove(selectInfo); break;
+      case 'move': props.onMove(selectInfo); break;
       case 'editMetadata': props.onEditMetadata(selectInfo); break
       case 'copyName': props.onCopyName(selectInfo); break
-      // case 'changePosition': props.onChangePosition(selectInfo); break;
+      case 'changePosition': props.onChangePosition(selectInfo); break;
       case 'toggleSource': props.onToggleSource(selectInfo); break
       case 'artistDetail': props.onArtistDetail(selectInfo); break
       case 'albumDetail': props.onAlbumDetail(selectInfo); break
       case 'dislike': props.onDislikeMusic(selectInfo); break
+      case 'musicSourceDetail':
+        props.onMusicSourceDetail(selectInfo)
+        break
       case 'remove': props.onRemove(selectInfo); break
       default:
         break

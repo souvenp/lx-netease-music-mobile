@@ -143,7 +143,7 @@ export default {
       }
       switch (privilege.maxbr) {
         case 999000:
-          size = null
+          size = item.sq ? sizeFormate(item.sq.size) : null;
           types.push({ type: 'flac', size })
           _types.flac = {
             size,

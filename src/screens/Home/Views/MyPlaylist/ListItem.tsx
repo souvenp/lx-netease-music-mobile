@@ -4,7 +4,7 @@ import Image from '@/components/common/Image'
 import Text from '@/components/common/Text'
 import { useTheme } from '@/store/theme/hook'
 import { createStyle } from '@/utils/tools'
-import { type ListInfoItem } from '@/store/songlist/state' // 导入类型
+import { type ListInfoItem } from '@/store/songlist/state'
 
 export default memo(({ item, onPress }: { item: any, onPress: (info: ListInfoItem) => void }) => {
   const theme = useTheme()
@@ -35,7 +35,7 @@ export default memo(({ item, onPress }: { item: any, onPress: (info: ListInfoIte
 
 const styles = createStyle({
   container: {
-    height: 120,
+    height: 100,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 15,
@@ -43,8 +43,8 @@ const styles = createStyle({
     borderBottomColor: 'rgba(0,0,0,0.05)',
   },
   artwork: {
-    width: 90,
-    height: 90,
+    width: 80,
+    height: 80,
     borderRadius: 8,
   },
   info: {

@@ -10,7 +10,8 @@ import downloadState from '@/store/download/state';
 import downloadActions from '@/store/download/action';
 import {filterFileName, sizeFormate} from "@/utils";
 import { getPicUrl } from '@/core/music/online'
-import DownloadTask = LX.Download.DownloadTask;
+import DownloadTask = LX.Download.DownloadTask
+import wySdk from '@/utils/musicSdk/wy'
 
 const taskQueue: DownloadTask[] = [];
 let isProcessing = false;
@@ -38,11 +39,36 @@ const processQueue = async () => {
 
 const startDownload = async (task: DownloadTask) => {
   downloadActions.updateTask(task.id, { status: 'downloading' });
-  const url = await getMusicUrl({ musicInfo: task.musicInfo, quality: task.quality, isRefresh: true });
+
+  let url: string;
+  if (task.isForceCookie && task.musicInfo.source === 'wy') {
+    const highQualityLevels: LX.Quality[] = ['flac', 'hires', 'master', 'atmos', 'atmos_plus'];
+    console.log(`[Batch Download] Forcing cookie for ${task.musicInfo.name}`);
+    try {
+      const result = await wySdk.cookie.getMusicUrl(task.musicInfo, task.quality).promise;
+      if (!result.url) throw new Error('Cookie 未能获取到URL');
+      if (result.level === 'exhigh' && highQualityLevels.includes(task.quality)) {
+        throw new Error(`请求的音质 ${task.quality} 不可用`);
+      }
+      url = result.url;
+    } catch (error: any) {
+      toast(`${task.musicInfo.name} 下载失败: ${error.message}`, 'short');
+      removeTask(task.id);
+      return;
+    }
+  } else {
+    url = await getMusicUrl({ musicInfo: task.musicInfo, quality: task.quality, isRefresh: true });
+  }
   const extension = getFileExtension(task.quality);
+
+  let finalSingerString = task.musicInfo.singer;
+  // 文件名过长的情况下，只取前6个歌手名
+  if (task.musicInfo.artists && task.musicInfo.artists.length > 6) {
+    finalSingerString = task.musicInfo.artists.slice(0, 6).map(artist => artist.name).join('、') + '...';
+  }
   let fileName = settingState.setting['download.fileName']
     .replace('歌名', task.musicInfo.name)
-    .replace('歌手', task.musicInfo.singer);
+    .replace('歌手', finalSingerString);
   fileName = filterFileName(fileName);
   const downloadDir = settingState.setting['download.path'] || (RNFetchBlob.fs.dirs.MusicDir + '/LX-N Music');
   const filePath = `${downloadDir}/${fileName}.${extension}`;
@@ -85,6 +111,12 @@ const startDownload = async (task: DownloadTask) => {
   currentJobId = null;
   downloadActions.updateTask(task.id, { filePath });
   await handleMetadata(task, filePath);
+  try {
+    await RNFetchBlob.fs.scanFile([{ path: filePath }]);
+    console.log(`[Download Manager] Media scan requested for: ${filePath}`);
+  } catch (scanError) {
+    console.error(`[Download Manager] Failed to request media scan for ${filePath}:`, scanError);
+  }
   downloadActions.updateTask(task.id, { status: 'completed', progress: { ...task.progress, percent: 1 } });
 
   toast(`${fileName} 下载完成!`, 'short');
@@ -242,7 +274,7 @@ export const retryTask = (taskId: string) => {
   }
 };
 
-export const addTask = (musicInfo: LX.Music.MusicInfo, quality: LX.Quality) => {
+export const addTask = (musicInfo: LX.Music.MusicInfo, quality: LX.Quality, isForceCookie: boolean = false) => {
   const task: DownloadTask = {
     id: toMD5(`${musicInfo.id}-${quality}`),
     musicInfo,
@@ -251,6 +283,7 @@ export const addTask = (musicInfo: LX.Music.MusicInfo, quality: LX.Quality) => {
     progress: { percent: 0, speed: '', downloaded: 0, total: 0 },
     metadataStatus: { cover: 'pending', lyric: 'pending', tags: 'pending' },
     createdAt: Date.now(),
+    isForceCookie,
   };
 
   if (downloadState.tasks.some(t => t.id === task.id)) {
@@ -289,4 +322,33 @@ export const removeTask = (id: string) => {
   downloadActions.removeTask(id);
   isProcessing = false;
   processQueue();
+};
+
+
+/**
+ * 批量下载任务 - 使用网易云源和Cookie，并间隔添加
+ * @param musicInfos 选中的歌曲列表
+ */
+export const batchDownload = async (musicInfos: LX.Music.MusicInfo[]) => {
+  const cookie = settingState.setting['common.wy_cookie'];
+  if (!cookie) {
+    toast('请先在设置中配置网易云 Cookie');
+    return;
+  }
+
+  const wyMusicInfos = musicInfos.filter(m => m.source === 'wy');
+  if (musicInfos.length > wyMusicInfos.length) {
+    toast('已自动过滤非网易云音源的歌曲');
+  }
+  if (!wyMusicInfos.length) {
+    toast('未选择任何网易云音源的歌曲');
+    return;
+  }
+
+  const quality = settingState.setting['player.playQuality'];
+  toast(`准备添加 ${wyMusicInfos.length} 首歌曲到下载队列...`);
+  for (const musicInfo of wyMusicInfos) {
+    addTask(musicInfo, quality, true);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
 };

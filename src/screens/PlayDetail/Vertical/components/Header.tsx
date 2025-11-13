@@ -1,11 +1,9 @@
-import { memo, useRef } from 'react'
-
-import { View, StyleSheet } from 'react-native'
-
-import { pop } from '@/navigation'
-import StatusBar from '@/components/common/StatusBar'
+import { memo, useRef, useCallback, useMemo } from 'react'
+import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native'
+import { Icon } from '@/components/common/Icon'
+import { pop, navigations } from '@/navigation'
 import { useTheme } from '@/store/theme/hook'
-import { usePlayerMusicInfo } from '@/store/player/hook'
+import { usePlayMusicInfo } from '@/store/player/hook'
 import Text from '@/components/common/Text'
 import { scaleSizeH } from '@/utils/pixelRatio'
 import { HEADER_HEIGHT as _HEADER_HEIGHT, NAV_SHEAR_NATIVE_IDS } from '@/config/constant'
@@ -14,38 +12,66 @@ import SettingPopup, { type SettingPopupType } from '../../components/SettingPop
 import { useStatusbarHeight } from '@/store/common/hook'
 import Btn from './Btn'
 import TimeoutExitBtn from './TimeoutExitBtn'
-import Marquee from './Marquee';
+import Marquee from './Marquee'
+import StatusBar from '@/components/common/StatusBar'
 
 export const HEADER_HEIGHT = scaleSizeH(_HEADER_HEIGHT)
 
 const Title = () => {
-  const theme = useTheme();
-  const musicInfo = usePlayerMusicInfo();
-  const titleText = `${musicInfo.name}${musicInfo.alias ? ` (${musicInfo.alias})` : ''}`;
+  const theme = useTheme()
+  const playMusicInfo = usePlayMusicInfo()
+  const musicInfo = 'progress' in playMusicInfo.musicInfo ? playMusicInfo.musicInfo.metadata.musicInfo : playMusicInfo.musicInfo
+
+  const handleArtistPress = useCallback((artist: { id: string | number, name: string }) => {
+    if (musicInfo.source !== 'wy' || !artist.id) return
+    navigations.pushArtistDetailScreen(commonState.componentIds.playDetail!, { id: String(artist.id), name: artist.name })
+  }, [musicInfo])
+
+  const titleText = musicInfo ? `${musicInfo.name}${musicInfo.alias ? ` (${musicInfo.alias})` : ''}` : ''
+
+  const singerRender = useMemo(() => {
+    if (!musicInfo || !musicInfo.artists?.length || musicInfo.source == 'local') {
+      return (
+        <Text numberOfLines={1} style={styles.title} size={12} color={theme['c-font']}>
+          {musicInfo?.singer}
+        </Text>
+      )
+    }
+
+    return (
+        <View style={styles.singerContainer}>
+          {musicInfo.artists.map((artist, index) => (
+            <TouchableOpacity key={artist.id || index} onPress={() => handleArtistPress(artist)}>
+              <Text style={styles.singerText} size={12} color={theme['c-font']}>
+                {artist.name}
+                {index < musicInfo.artists.length - 1 ? ' / ' : ''}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+    )
+  }, [musicInfo, theme, handleArtistPress])
 
   return (
     <View style={styles.titleContent}>
       <Marquee style={styles.title} size={16}>
         {titleText}
       </Marquee>
-      <Text numberOfLines={1} style={styles.title} size={12} color={theme['c-font']}>
-        {musicInfo.singer}
-      </Text>
+      {singerRender}
     </View>
-  );
-};
+  )
+}
+
 
 export default memo(() => {
   const popupRef = useRef<SettingPopupType>(null)
   const statusBarHeight = useStatusbarHeight()
-
   const back = () => {
     void pop(commonState.componentIds.playDetail!)
   }
   const showSetting = () => {
     popupRef.current?.show()
   }
-
   return (
     <View
       style={{ height: HEADER_HEIGHT + statusBarHeight, paddingTop: statusBarHeight }}
@@ -82,5 +108,9 @@ const styles = StyleSheet.create({
   icon: {
     paddingLeft: 4,
     paddingRight: 4,
+  },
+  singerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 })

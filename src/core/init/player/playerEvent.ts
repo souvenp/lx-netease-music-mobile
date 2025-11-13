@@ -5,15 +5,15 @@ import { isActive } from '@/utils/tools'
 import BackgroundTimer from 'react-native-background-timer'
 import playerState from '@/store/player/state'
 import { setNowPlayTime } from '@/core/player/progress'
+import { scrobbleLastSong, updateScrobbleInfo } from '@/core/player/scrobble' // [修改] 从新模块导入
 
 export default () => {
   let retryNum = 0
   let prevTimeoutId: string | null = null
-
   let loadingTimeout: number | null = null
   let delayNextTimeout: number | null = null
+
   const startLoadingTimeout = () => {
-    // console.log('start load timeout')
     clearLoadingTimeout()
     loadingTimeout = BackgroundTimer.setTimeout(() => {
       // if (global.lx.isPlayedStop) {
@@ -33,19 +33,19 @@ export default () => {
       }
     }, 25000)
   }
+
   const clearLoadingTimeout = () => {
     if (!loadingTimeout) return
-    // console.log('clear load timeout')
     BackgroundTimer.clearTimeout(loadingTimeout)
     loadingTimeout = null
   }
 
   const clearDelayNextTimeout = () => {
-    // console.log(this.delayNextTimeout)
     if (!delayNextTimeout) return
     BackgroundTimer.clearTimeout(delayNextTimeout)
     delayNextTimeout = null
   }
+
   const addDelayNextTimeout = () => {
     clearDelayNextTimeout()
     delayNextTimeout = BackgroundTimer.setTimeout(() => {
@@ -98,7 +98,6 @@ export default () => {
           if (position) setNowPlayTime(position)
         })
         .finally(() => {
-          // console.log(this.retryNum)
           if (playerState.playMusicInfo.musicInfo !== musicInfo) return
           retryNum++
           setMusicUrl(playerState.playMusicInfo.musicInfo, true)
@@ -106,6 +105,7 @@ export default () => {
         })
       return
     }
+
     global.lx.playerError = true
     if (!isEmpty()) void setStop()
 
@@ -121,16 +121,17 @@ export default () => {
   }
 
   const handleSetPlayInfo = () => {
+    scrobbleLastSong()
     retryNum = 0
     prevTimeoutId = null
     clearDelayNextTimeout()
     clearLoadingTimeout()
+    updateScrobbleInfo()
   }
 
-  // const handlePlayedStop = () => {
-  //   clearDelayNextTimeout()
-  //   clearLoadingTimeout()
-  // }
+  const handleStop = () => {
+    scrobbleLastSong()
+  }
 
   global.app_event.on('playerLoadstart', handleLoadstart)
   // global.app_event.on('playerLoadeddata', handleLoadeddata)
@@ -140,4 +141,5 @@ export default () => {
   global.app_event.on('playerEmptied', handleEmpied)
   global.app_event.on('playerError', handleError)
   global.app_event.on('musicToggled', handleSetPlayInfo)
+  global.app_event.on('stop', handleStop)
 }

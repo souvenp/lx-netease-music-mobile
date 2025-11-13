@@ -1,9 +1,114 @@
-// src/utils/musicSdk/wy/musicDetail.js
-
 import { httpFetch } from '../../request'
 import { weapi } from './utils/crypto'
-import {dateFormat, formatPlayTime, sizeFormate} from '../../index' // <--- 引入 sizeFormate
+import {dateFormat, formatPlayTime, sizeFormate} from '../../index'
 import { getBatchMusicQualityInfo } from './quality_detail'
+import { updateListMusics } from '@/core/list'
+import playerState from '@/store/player/state'
+import {allMusicList} from "@/utils/listManage";
+
+const fetchingDetails = new Set()
+
+/**
+ * 按需获取单首歌曲的详细音质信息，并补充到现有信息中
+ */
+export const fetchAndApplyDetailedQuality = async(musicInfo, retryNum = 0) => {
+  let latestMusicInfo = null
+  for (const list of allMusicList.values()) {
+    const found = list.find(item => item.id === musicInfo.id)
+    if (found) {
+      console.log("found", found)
+      latestMusicInfo = found
+      break
+    }
+  }
+  const currentMusicInfo = latestMusicInfo || musicInfo
+  console.log("found -> currentMusicInfo", currentMusicInfo)
+  if (currentMusicInfo.meta._full) return currentMusicInfo
+
+  const songId = currentMusicInfo.meta.songId
+  if (fetchingDetails.has(songId) && retryNum === 0) return currentMusicInfo
+  if (retryNum === 0) fetchingDetails.add(songId)
+
+  try {
+    const requestObj = httpFetch(`https://music.163.com/api/song/music/detail/get?songId=${songId}`, {
+      method: 'get',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36',
+        origin: 'https://music.163.com',
+      },
+    })
+    const { body, statusCode } = await requestObj.promise
+
+    if (statusCode !== 200 || !body || body.code !== 200) {
+      throw new Error('Failed to get song quality information from API')
+    }
+
+    const data = body.data
+
+    const newTypes = [...musicInfo.meta.qualitys]
+    const new_Types = { ...musicInfo.meta._qualitys }
+
+    if (data.jm && data.jm.size && !new_Types.master) {
+      const size = sizeFormate(data.jm.size)
+      newTypes.push({ type: 'master', size })
+      new_Types.master = { size }
+    }
+    if (data.db && data.db.size && !new_Types.atmos) {
+      const size = sizeFormate(data.db.size)
+      newTypes.push({ type: 'atmos', size })
+      new_Types.atmos = { size }
+    }
+
+    const updatedMusicInfo = {
+      ...musicInfo,
+      meta: {
+        ...musicInfo.meta,
+        qualitys: newTypes,
+        _qualitys: new_Types,
+        _full: true, // 标记为已获取完整信息
+      },
+    }
+
+    // 找到这首歌存在的所有列表ID
+    const listIdsToUpdate = [];
+    for (const [listId, list] of allMusicList.entries()) {
+      if (list.some(item => item.id === musicInfo.id)) {
+        listIdsToUpdate.push(listId);
+      }
+    }
+
+    // 在所有包含这首歌的列表中更新它的信息
+    if (listIdsToUpdate.length) {
+      console.log('updateListMusics');
+      void updateListMusics(listIdsToUpdate.map(id => ({ id, musicInfo: updatedMusicInfo })));
+    } else {
+      console.log('global.app_event.musicInfoUpdate');
+      global.app_event.musicInfoUpdate(updatedMusicInfo);
+    }
+
+    // 如果当前播放的就是这首歌，也需要更新播放器内的状态
+    if (playerState.playMusicInfo.musicInfo?.id === musicInfo.id) {
+      console.log('updatePlayMusicInfo');
+      playerState.playMusicInfo.musicInfo.meta = updatedMusicInfo.meta;
+    }
+
+    fetchingDetails.delete(songId)
+    return updatedMusicInfo
+
+  } catch (error) {
+    if (++retryNum > 2) {
+      console.error(`Failed to fetch details for ${musicInfo.name} after max retries:`, error)
+      fetchingDetails.delete(songId)
+      return { ...musicInfo, meta: { ...musicInfo.meta, _full: false } }
+    }
+
+    const delay = 200
+    console.log(`Retrying fetch details for ${musicInfo.name} in ${delay}ms... (Attempt ${retryNum})`)
+    await new Promise(resolve => setTimeout(resolve, delay))
+
+    return fetchAndApplyDetailedQuality(musicInfo, retryNum)
+  }
+}
 
 export default {
   getSinger(singers) {
@@ -129,6 +234,7 @@ export default {
             picUrl: item.al?.picUrl,
             qualitys: types,
             _qualitys: _types,
+            originCoverType: item.originCoverType,
           },
           releaseDate: item.publishTime ? dateFormat(item.publishTime, 'Y-M-D') : null,
           songmid: item.id,

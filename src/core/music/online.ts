@@ -9,8 +9,10 @@ import {
   handleGetOnlineLyricInfo,
   handleGetOnlineMusicUrl,
   handleGetOnlinePicUrl,
-  getCachedLyricInfo,
+  getCachedLyricInfo, QUALITY_RANK,
 } from './utils'
+import {toast} from "@/utils/tools.ts";
+import {fetchAndApplyDetailedQuality} from "@/utils/musicSdk/wy/musicDetail.js";
 
 /* export const setMusicUrl = ({ musicInfo, type, url }: {
   musicInfo: LX.Music.MusicInfo
@@ -56,8 +58,34 @@ export const getMusicUrl = async ({
 
   //   // return Promise.reject(new Error('该歌曲没有可播放的音频'))
   // }
-  const targetQuality =
-    quality ?? getPlayQuality(settingState.setting['player.playQuality'], musicInfo)
+
+  let currentMusicInfo = musicInfo;
+  const preferredQuality = settingState.setting['player.playQuality'];
+
+  // 检查是否需要获取详细音质
+  const isWySource = currentMusicInfo.source === 'wy';
+  const hasFullDetails = currentMusicInfo.meta._full;
+  console.log("播放：currentMusicInfo:", currentMusicInfo);
+
+  if (isWySource && !hasFullDetails) {
+    const availableQualities = Object.keys(currentMusicInfo.meta._qualitys);
+    const preferredQualityIndex = QUALITY_RANK.indexOf(preferredQuality);
+    const maxAvailableQualityIndex = Math.min(...availableQualities.map(q => QUALITY_RANK.indexOf(q)));
+
+    // 特殊情况：用户想要的音质比当前已知的最好音质还要高，此时需要等待获取
+    if (preferredQualityIndex < maxAvailableQualityIndex) {
+      console.log('用户想要的音质比当前已知的最好音质还要高，获取音质详情');
+      // 阻塞式获取
+      currentMusicInfo = await fetchAndApplyDetailedQuality(currentMusicInfo);
+    } else {
+      console.log('用户想要的音质比当前已知的最好音质还要低，无需获取音质详情');
+      // 默认情况：不阻塞播放，在后台异步获取
+      void fetchAndApplyDetailedQuality(currentMusicInfo);
+    }
+  }
+
+  const targetQuality = quality ?? getPlayQuality(preferredQuality, currentMusicInfo);
+
   const cachedUrl = await getStoreMusicUrl(musicInfo, targetQuality)
   if (cachedUrl && !isRefresh) return cachedUrl
 
@@ -86,13 +114,19 @@ export const getMusicUrl = async ({
       // 如果 API 失败且有 Cookie，则尝试 Cookie 作为备用方案
       if (musicInfo.source == 'wy' && settingState.setting['common.wy_cookie']) {
         try {
-          const { url } = await wySdk.cookie.getMusicUrl(musicInfo, targetQuality).promise;
+          const { url, level } = await wySdk.cookie.getMusicUrl(musicInfo, targetQuality).promise;
+          if (level === 'exhigh' && highQualityLevels.includes(targetQuality)) {
+            toast('非网易云会员，无法获取该音质', 'long')
+            throw new Error('自定义源获取失败，且非网易云会员，无法获取该音质')
+          }
+
           if (url) {
             void saveMusicUrl(musicInfo, targetQuality, url);
             return url;
           }
         } catch (cookieError) {
           console.log('Cookie request also failed', cookieError);
+          if (cookieError.message === '自定义源获取失败，且非网易云会员，无法获取该音质') throw cookieError;
         }
       }
       throw apiError; // 如果备用方案也失败，则抛出原始错误

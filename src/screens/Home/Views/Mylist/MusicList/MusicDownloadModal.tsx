@@ -7,6 +7,7 @@ import CheckBox from '@/components/common/CheckBox'
 import { handleDownload } from './listAction'
 import { getLastSelectQuality, saveLastSelectQuality } from '@/utils/data'
 import { addTask as addDownloadTask } from '@/core/download';
+import {fetchAndApplyDetailedQuality} from "@/utils/musicSdk/wy/musicDetail.js";
 
 interface TitleType {
   updateTitle: (musicInfo: LX.Music.MusicInfo) => void
@@ -106,7 +107,7 @@ export default forwardRef<MusicDownloadModalType, MusicDownloadModalProps>(
     }
 
     useImperativeHandle(ref, () => ({
-      show(info) {
+      async show(info) {
         selectedInfo.current = info
         titleRef.current?.updateTitle(info)
         // 先计算并触发音质列表状态更新
@@ -117,6 +118,16 @@ export default forwardRef<MusicDownloadModalType, MusicDownloadModalProps>(
           alertRef.current?.setVisible(true)
         } else {
           setVisible(true)
+        }
+
+        console.log("MusicDownloadModal show info:", info);
+        if (info.source === 'wy' && !info.meta._full) {
+          const detailedInfo = await fetchAndApplyDetailedQuality(info as LX.Music.MusicInfoOnline);
+
+          if (detailedInfo.meta._full) {
+            selectedInfo.current = detailedInfo;
+            calcQualitys(detailedInfo);
+          }
         }
       },
     }))

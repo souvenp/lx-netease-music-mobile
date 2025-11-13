@@ -35,13 +35,13 @@ export default forwardRef<ListMenuType, ListMenuProps>((props: ListMenuProps, re
   const t = useI18n()
   const [visible, setVisible] = useState(false)
   const menuRef = useRef<MenuType>(null)
-  const selectInfoRef = useRef<SelectInfo>(initSelectInfo as SelectInfo)
+  const [selectInfo, setSelectInfo] = useState<SelectInfo>(initSelectInfo as SelectInfo);
   const [isDislikeMusic, setDislikeMusic] = useState(false)
 
   useImperativeHandle(ref, () => ({
-    show(selectInfo, position) {
-      selectInfoRef.current = selectInfo
-      setDislikeMusic(hasDislike(selectInfo.musicInfo))
+    show(newSelectInfo, position) {
+      setSelectInfo(newSelectInfo);
+      setDislikeMusic(hasDislike(newSelectInfo.musicInfo))
       if (visible) menuRef.current?.show(position)
       else {
         setVisible(true)
@@ -53,41 +53,33 @@ export default forwardRef<ListMenuType, ListMenuProps>((props: ListMenuProps, re
   }))
 
   const menus = useMemo(() => {
-    const baseMenu = [
+    const menu = [
+      // { action: 'play', label: t('play') },
       { action: 'playLater', label: t('play_later') },
       ...(settingState.setting['download.enable']
         ? [{ action: 'download', label: t('download') }]
         : []),
       { action: 'add', label: t('add_to') },
       { action: 'copyName', label: t('copy_name') },
-      { action: 'artistDetail', label: t('artist_detail') },
-      { action: 'albumDetail', label: t('album_detail') },
-      // { action: 'musicSourceDetail', label: t('music_source_detail') },
+    ] as const;
+
+    const wyMenuItems =
+      selectInfo.musicInfo?.source === 'wy'
+        ? [
+          { action: 'artistDetail', label: t('artist_detail') },
+          { action: 'albumDetail', label: t('album_detail') },
+        ]
+        : [];
+
+    const remainingMenu = [
+      { action: 'musicSourceDetail', label: t('music_source_detail') },
       { action: 'dislike', label: t('dislike'), disabled: isDislikeMusic },
-    ] as const
+    ] as const;
 
-    if (props.listId === 'dailyrec_wy') {
-      return [
-        { action: 'like', label: '喜欢' }, // 新增的“喜欢”
-        ...baseMenu,
-      ]
-    }
-    // 网易云搜索结果
-    if (props.listId === 'search' && selectInfoRef.current.musicInfo?.source === 'wy') {
-      return [
-        { action: 'like', label: '喜欢' },
-        ...baseMenu,
-      ]
-    }
-
-    return [
-      { action: 'play', label: t('play') },
-      ...baseMenu,
-    ]
-  }, [t, isDislikeMusic, props.listId])
+    return [...menu, ...wyMenuItems, ...remainingMenu];
+  }, [t, isDislikeMusic, selectInfo]);
 
   const handleMenuPress = ({ action }: (typeof menus)[number]) => {
-    const selectInfo = selectInfoRef.current
     switch (action) {
       case 'play':
         props.onPlay(selectInfo)

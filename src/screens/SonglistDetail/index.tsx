@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { View, BackHandler } from 'react-native'
-
 import MusicList, { type MusicListType } from './MusicList'
 import { type ListInfoItem } from '@/store/songlist/state'
 import { ListInfoContext } from './state'
@@ -14,6 +13,11 @@ import { useTheme } from '@/store/theme/hook'
 import { BorderWidths } from '@/theme'
 import { pop } from '@/navigation'
 import commonState from '@/store/common/state'
+import ImageBackground from '@/components/common/ImageBackground'
+import { useWindowSize } from '@/utils/hooks'
+import { useBgPic } from '@/store/common/hook'
+import { useSettingValue } from '@/store/setting/hook'
+import { defaultHeaders } from '@/components/common/Image'
 
 export interface DetailInfo {
   name: string
@@ -24,7 +28,6 @@ export interface DetailInfo {
 
 const IMAGE_WIDTH = scaleSizeW(70)
 
-// 头部内容现在是一个普通的组件
 const ListHeader = ({ detailInfo, info, onBack }: { detailInfo: DetailInfo, info: ListInfoItem, onBack: () => void }) => {
   const theme = useTheme()
   return (
@@ -61,7 +64,6 @@ const ListHeader = ({ detailInfo, info, onBack }: { detailInfo: DetailInfo, info
   )
 }
 
-// **核心修改: 让 onBack 变为可选，并提供默认的 pop 行为**
 export default ({ info, onBack }: { info: ListInfoItem, onBack?: () => void }) => {
   const musicListRef = useRef<MusicListType>(null)
   const [detailInfo, setDetailInfo] = useState<DetailInfo>({
@@ -70,6 +72,15 @@ export default ({ info, onBack }: { info: ListInfoItem, onBack?: () => void }) =
     playCount: info.play_count || '',
     imgUrl: info.img,
   })
+
+  const theme = useTheme()
+  const windowSize = useWindowSize()
+  const dynamicPic = useBgPic()
+  const customBgPicPath = useSettingValue('theme.customBgPicPath')
+  const pic = customBgPicPath || dynamicPic
+  const picOpacity = useSettingValue('theme.picOpacity')
+  const blur = useSettingValue('theme.blur')
+  const BLUR_RADIUS = blur
 
   // 如果没有提供 onBack 函数，则默认使用 pop 导航返回
   const handleBack = onBack ?? (() => {
@@ -82,18 +93,17 @@ export default ({ info, onBack }: { info: ListInfoItem, onBack?: () => void }) =
       // 检查是否有 ArtistDetail 或 AlbumDetail 屏幕存在
       if (commonState.componentIds.ARTIST_DETAIL || commonState.componentIds.ALBUM_DETAIL_SCREEN) {
         // 如果有，则不处理该事件，让原生导航库来 pop
-        return false;
+        return false
       }
 
       // 否则，执行当前的返回逻辑
-      handleBack();
-      return true;
-    };
+      handleBack()
+      return true
+    }
 
-    const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-    return () => subscription.remove();
-  }, [handleBack]);
-
+    const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress)
+    return () => subscription.remove()
+  }, [handleBack])
 
   useEffect(() => {
     musicListRef.current?.loadList(info.source, info.id).then(setDetailInfo)
@@ -101,12 +111,71 @@ export default ({ info, onBack }: { info: ListInfoItem, onBack?: () => void }) =
 
   const ListHeaderComponent = useMemo(() => <ListHeader detailInfo={detailInfo} info={info} onBack={handleBack} />, [detailInfo, info, handleBack])
 
+  const pageContent = (
+    <ListInfoContext.Provider value={info}>
+      {ListHeaderComponent}
+      <MusicList ref={musicListRef} />
+    </ListInfoContext.Provider>
+  )
+
+  const themeComponent = useMemo(
+    () => (
+      <View style={{ flex: 1, overflow: 'hidden' }}>
+        <ImageBackground
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            height: windowSize.height,
+            width: windowSize.width,
+            backgroundColor: theme['c-content-background'],
+          }}
+          source={theme['bg-image']}
+          resizeMode="cover"
+        ></ImageBackground>
+        <View
+          style={{ flex: 1, flexDirection: 'column', backgroundColor: theme['c-main-background'] }}
+        >
+          {pageContent}
+        </View>
+      </View>
+    ),
+    [pageContent, theme, windowSize.height, windowSize.width]
+  )
+
+  const picComponent = useMemo(() => {
+    return (
+      <View style={{ flex: 1, overflow: 'hidden' }}>
+        <ImageBackground
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            height: windowSize.height,
+            width: windowSize.width,
+            backgroundColor: theme['c-content-background'],
+          }}
+          source={{ uri: pic!, headers: defaultHeaders }}
+          resizeMode="cover"
+          blurRadius={BLUR_RADIUS}
+        >
+          <View
+            style={{
+              flex: 1,
+              flexDirection: 'column',
+              backgroundColor: theme['c-content-background'],
+              opacity: picOpacity / 100,
+            }}
+          ></View>
+        </ImageBackground>
+        <View style={{ flex: 1, flexDirection: 'column' }}>{pageContent}</View>
+      </View>
+    )
+  }, [pageContent, pic, theme, windowSize.height, windowSize.width, BLUR_RADIUS, picOpacity])
+
   return (
     <View style={{ flex: 1 }}>
-      <ListInfoContext.Provider value={info}>
-        {ListHeaderComponent}
-        <MusicList ref={musicListRef} />
-      </ListInfoContext.Provider>
+      {pic ? picComponent : themeComponent}
     </View>
   )
 }

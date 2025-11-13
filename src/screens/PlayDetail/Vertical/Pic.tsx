@@ -22,7 +22,7 @@ export default memo(({ componentId }: { componentId: string }) => {
   const createAnimation = useCallback((value: number) => {
     return Animated.timing(spinValue, {
       toValue: 1,
-      duration: 20000 * (1 - value),
+      duration: 25000 * (1 - value),
       easing: Easing.linear,
       useNativeDriver: true,
     });

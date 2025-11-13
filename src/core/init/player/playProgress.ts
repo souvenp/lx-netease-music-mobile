@@ -9,6 +9,7 @@ import playerState from '@/store/player/state'
 import settingState from '@/store/setting/state'
 import { onScreenStateChange } from '@/utils/nativeModules/utils'
 import { AppState } from 'react-native'
+import { updateScrobblePlayTime, updateScrobbleTotalTime } from '@/core/player/scrobble' // [新增] 引入更新函数
 
 const delaySavePlayInfo = throttleBackgroundTimer(() => {
   void savePlayInfo({
@@ -23,7 +24,6 @@ export default () => {
   // const updateMusicInfo = useCommit('list', 'updateMusicInfo')
 
   let updateTimeout: number | null = null
-
   let isScreenOn = true
 
   const getCurrentTime = () => {
@@ -31,8 +31,9 @@ export default () => {
     void getPosition().then((position) => {
       if (!position || id != playerState.musicInfo.id) return
       setNowPlayTime(position)
-      if (!playerState.isPlay) return
+      updateScrobblePlayTime(position) // 实时更新打点记录的播放时间
 
+      if (!playerState.isPlay) return
       if (
         settingState.setting['player.isSavePlayTime'] &&
         !playerState.playMusicInfo.isTempPlay &&
@@ -42,16 +43,17 @@ export default () => {
       }
     })
   }
+
   const getMaxTime = async () => {
-    setMaxplayTime(await getDuration())
+    const duration = await getDuration()
+    setMaxplayTime(duration)
+    updateScrobbleTotalTime(duration)
 
     if (
       playerState.playMusicInfo.musicInfo &&
       'source' in playerState.playMusicInfo.musicInfo &&
       !playerState.playMusicInfo.musicInfo.interval
     ) {
-      // console.log(formatPlayTime2(playProgress.maxPlayTime))
-
       if (playerState.playMusicInfo.listId) {
         void updateListMusics([
           {
@@ -71,6 +73,7 @@ export default () => {
     BackgroundTimer.clearInterval(updateTimeout)
     updateTimeout = null
   }
+
   const startUpdateTimeout = () => {
     if (!isScreenOn) return
     clearUpdateTimeout()
@@ -82,13 +85,13 @@ export default () => {
 
   const setProgress = (time: number, maxTime?: number) => {
     if (!playerState.musicInfo.id) return
-    // console.log('setProgress', time, maxTime)
     setNowPlayTime(time)
+    updateScrobblePlayTime(time)
     void setCurrentTime(time)
-
-    if (maxTime != null) setMaxplayTime(maxTime)
-
-    // if (!isPlay) audio.play()
+    if (maxTime != null) {
+      setMaxplayTime(maxTime)
+      updateScrobbleTotalTime(maxTime)
+    }
   }
 
   const handlePlay = () => {
@@ -97,6 +100,7 @@ export default () => {
     // handleSetTaskBarState(playProgress.progress, prevProgressStatus)
     startUpdateTimeout()
   }
+
   const handlePause = () => {
     // prevProgressStatus = 'paused'
     // handleSetTaskBarState(playProgress.progress, prevProgressStatus)
@@ -184,6 +188,5 @@ export default () => {
   // global.app_event.on('playerEmptied', handleEmpied)
   global.app_event.on('musicToggled', handleSetPlayInfo)
   global.state_event.on('configUpdated', handleConfigUpdated)
-
   onScreenStateChange(handleScreenStateChanged)
 }

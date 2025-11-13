@@ -27,6 +27,7 @@ export interface ListProps {
   onShowMenu: (musicInfo: LX.Music.MusicInfo, index: number, position: Position) => void
   onMuiltSelectMode: () => void
   onSelectAll: (isAll: boolean) => void
+  showCover: boolean
 }
 export interface ListType {
   setIsMultiSelectMode: (isMultiSelectMode: boolean) => void
@@ -50,7 +51,7 @@ const usePlayIndex = () => {
 }
 
 const List = forwardRef<ListType, ListProps>(
-  ({ onShowMenu, onMuiltSelectMode, onSelectAll }, ref) => {
+  ({ onShowMenu, onMuiltSelectMode, onSelectAll, showCover }, ref) => {
     // const t = useI18n()
     const flatListRef = useRef<FlatList>(null)
     const [currentList, setList] = useState<LX.List.ListMusics>([])
@@ -65,6 +66,7 @@ const List = forwardRef<ListType, ListProps>(
     const rowInfo = useRef(getRowInfo())
     const isShowAlbumName = useSettingValue('list.isShowAlbumName')
     const isShowInterval = useSettingValue('list.isShowInterval')
+    const isShowSource = useSettingValue('list.isShowSource')
     // console.log('render music list')
 
     useImperativeHandle(ref, () => ({
@@ -285,6 +287,8 @@ const List = forwardRef<ListType, ListProps>(
             isShowAlbumName={isShowAlbumName}
             isShowInterval={isShowInterval}
             listId='dailyrec_wy' // 传入当前列表ID以显示爱心图标
+            showSource={isShowSource}
+            showCover={showCover}
           />
         );
       } else {
@@ -301,6 +305,7 @@ const List = forwardRef<ListType, ListProps>(
             rowInfo={rowInfo.current}
             isShowAlbumName={isShowAlbumName}
             isShowInterval={isShowInterval}
+            showCover={showCover}
           />
         );
       }

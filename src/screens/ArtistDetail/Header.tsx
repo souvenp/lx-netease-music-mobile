@@ -51,8 +51,8 @@ export default memo(({ artist, onFollow, componentId }) => {
   }
 
   const truncatedDesc = useMemo(() => {
-    if (description.length > 50) {
-      return description.substring(0, 50) + '...'
+    if (description.length > 75) {
+      return description.substring(0, 75) + '...'
     }
     return description
   }, [description])

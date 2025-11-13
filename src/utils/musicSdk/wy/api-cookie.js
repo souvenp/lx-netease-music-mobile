@@ -58,6 +58,7 @@ export const getMusicUrl = (songInfo, type) => {
     return {
       type,
       url: data.url,
+      level: data.level,
     }
   })
 

@@ -62,7 +62,7 @@ export const autoSaveDailyPlaylist = async(songList: LX.Music.MusicInfoOnline[])
     toast(`已自动更新每日推荐: ${playlistName}`);
   } else {
     const dailyPlaylists = listState.userList.filter(p => /\d{2}_\d{2}_daily/.test(p.name));
-    if (dailyPlaylists.length >= 30) {
+    if (dailyPlaylists.length >= 15) {
       dailyPlaylists.sort((a, b) => a.name.localeCompare(b.name));
       const oldestPlaylist = dailyPlaylists[0];
       if (oldestPlaylist) {

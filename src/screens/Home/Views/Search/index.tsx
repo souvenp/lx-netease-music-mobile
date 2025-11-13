@@ -1,5 +1,3 @@
-// 文件路径: src/screens/Home/Views/Search/index.tsx
-
 import { useRef, useEffect, useState, useCallback } from 'react'
 import { type LayoutChangeEvent, View, BackHandler } from 'react-native'
 import HeaderBar, { type HeaderBarProps, type HeaderBarType } from './HeaderBar'
@@ -7,7 +5,7 @@ import searchState, { type SearchType } from '@/store/search/state'
 import searchMusicState from '@/store/search/music/state'
 import searchSonglistState, { type ListInfoItem } from '@/store/search/songlist/state'
 import { getSearchSetting, saveSearchSetting } from '@/utils/data'
-import { createStyle } from '@/utils/tools'
+import {createStyle, toast} from '@/utils/tools'
 import TipList, { type TipListType } from './TipList'
 import List, { type ListType } from './List'
 import { addHistoryWord, setSearchText as setSearchState } from '@/core/search/search'
@@ -16,7 +14,7 @@ import SonglistDetail from '../../../SonglistDetail'
 interface SearchInfo {
   temp_source: LX.OnlineSource
   source: LX.OnlineSource | 'all'
-  searchType: 'music' | 'songlist'
+  searchType: 'music' | 'songlist' | 'singer' | 'album'
 }
 
 export default () => {
@@ -76,8 +74,10 @@ export default () => {
       searchInfo.current.searchType = info.type
       switch (info.type) {
         case 'music':
-          headerBarRef.current?.setSourceList(searchMusicState.sources, info.source)
-          break
+        case 'singer':
+        case 'album':
+          headerBarRef.current?.setSourceList(searchMusicState.sources, info.source);
+          break;
         case 'songlist':
           headerBarRef.current?.setSourceList(searchSonglistState.sources, info.source)
           break
@@ -96,6 +96,11 @@ export default () => {
       setSelectedList(null)
       searchInfo.current.searchType = type
       void saveSearchSetting({ type })
+
+      if ((type === 'singer' || type === 'album') && searchInfo.current.source !== 'wy') {
+        toast('歌手与专辑搜索目前仅支持网易云源')
+      }
+
       if (searchState.searchText) {
         listRef.current?.loadList(searchState.searchText, searchInfo.current.source, type)
       }

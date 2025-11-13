@@ -268,7 +268,7 @@ const fixTimeLabel = (lrc, tlrc, romalrc) => {
 }
 
 // https://github.com/Binaryify/NeteaseCloudMusicApi/blob/master/module/lyric_new.js
-export default (songmid) => {
+const getLyricWithRetry = (songmid, retryNum = 0) => {
   const requestObj = eapiRequest('/api/song/lyric/v1', {
     id: songmid,
     cp: false,
@@ -280,21 +280,46 @@ export default (songmid) => {
     ytv: 0,
     yrv: 0,
   })
-  requestObj.promise = requestObj.promise.then(({ body }) => {
-    // console.log(body)
-    if (body.code !== 200 || !body?.lrc?.lyric) return Promise.reject(new Error('Get lyric failed'))
-    const fixTimeLabelLrc = fixTimeLabel(body.lrc.lyric, body.tlyric?.lyric, body.romalrc?.lyric)
-    const info = parseTools.parse(
-      body.yrc?.lyric,
-      body.ytlrc?.lyric,
-      body.yromalrc?.lyric,
-      fixTimeLabelLrc.lrc,
-      fixTimeLabelLrc.tlrc,
-      fixTimeLabelLrc.romalrc
-    )
-    // console.log(info)
-    if (!info.lyric) return Promise.reject(new Error('Get lyric failed'))
-    return info
+
+  const promise = requestObj.promise.then(({ body }) => {
+    if (body.code !== 200) {
+      if (retryNum >= 2) {
+        console.error('获取歌词失败 (已达最大重试次数)');
+        return Promise.reject(new Error('Get lyric failed'));
+      }
+      console.log(`获取歌词失败，将在300ms后进行第 ${retryNum + 1} 次重试...`);
+      return new Promise(resolve => setTimeout(resolve, 300)).then(() => getLyricWithRetry(songmid, retryNum + 1));
+    }
+
+    if (body?.lrc?.lyric) {
+      const fixTimeLabelLrc = fixTimeLabel(body.lrc.lyric, body.tlyric?.lyric, body.romalrc?.lyric);
+      const info = parseTools.parse(
+        body.yrc?.lyric,
+        body.ytlrc?.lyric,
+        body.yromalrc?.lyric,
+        fixTimeLabelLrc.lrc,
+        fixTimeLabelLrc.tlrc,
+        fixTimeLabelLrc.romalrc,
+      );
+      return info;
+    }
+
+    return { lyric: '', tlyric: '', rlyric: '', lxlyric: '' };
+  }).catch(error => {
+    if (retryNum >= 2) {
+      console.error('获取歌词失败 (已达最大重试次数)', error)
+      return Promise.reject(new Error('Get lyric failed'))
+    }
+    console.log(`获取歌词请求异常，将在300ms后进行第 ${retryNum + 1} 次重试...`, error.message)
+    return new Promise(resolve => setTimeout(resolve, 300)).then(() => getLyricWithRetry(songmid, retryNum + 1))
   })
-  return requestObj
+
+  return {
+    promise,
+    cancelHttp: requestObj.cancelHttp,
+  }
+}
+
+export default (songmid) => {
+  return getLyricWithRetry(songmid)
 }

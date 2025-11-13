@@ -17,13 +17,15 @@ import { useSettingValue } from '@/store/setting/hook'
 export interface ActiveListProps {
   onShowSearchBar: () => void
   onScrollToTop: () => void
+  showCover: boolean
+  onToggleView: () => void
 }
 export interface ActiveListType {
   setVisibleBar: (visible: boolean) => void
 }
 
 export default forwardRef<ActiveListType, ActiveListProps>(
-  ({ onShowSearchBar, onScrollToTop }, ref) => {
+  ({ onShowSearchBar, onScrollToTop, showCover, onToggleView }, ref) => {
     const theme = useTheme()
     const currentListId = useActiveListId()
     const fetching = useListFetching(currentListId)
@@ -78,6 +80,9 @@ export default forwardRef<ActiveListType, ActiveListProps>(
         <Text style={styles.currentListText} numberOfLines={1} color={theme['c-button-font']}>
           {currentListName}
         </Text>
+        <TouchableOpacity style={styles.currentListBtns} onPress={onToggleView}>
+          <Icon color={theme['c-button-font']} name={showCover ? 'menu' : 'album'} />
+        </TouchableOpacity>
         <TouchableOpacity style={styles.currentListBtns} onPress={onShowSearchBar}>
           <Icon color={theme['c-button-font']} name="search-2" />
         </TouchableOpacity>

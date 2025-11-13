@@ -5,6 +5,7 @@ import type { Source as SongListSource } from '@/store/search/songlist/state'
 import MusicList, { type MusicListType } from './MusicList'
 import BlankView, { type BlankViewType } from './BlankView'
 import SonglistList from './SonglistList'
+import SearchResultList from "@/screens/Home/Views/Search/SearchResultList.tsx";
 
 interface ListProps {
   onSearch: (keyword: string) => void
@@ -45,11 +46,19 @@ export default forwardRef<ListType, ListProps>(({ onSearch, onOpenDetail }, ref)
     []
   )
 
-  return showBlankView ? (
-    <BlankView ref={blankViewRef} onSearch={onSearch} />
-  ) : listType == 'songlist' ? (
-    <SonglistList ref={listRef} onOpenDetail={onOpenDetail} />
-  ) : (
-    <MusicList ref={listRef} />
-  )
+  const renderList = () => {
+    switch (listType) {
+      case 'songlist':
+        return <SonglistList ref={listRef} onOpenDetail={onOpenDetail} />
+      case 'singer':
+        return <SearchResultList ref={listRef} searchType="singer" />
+      case 'album':
+        return <SearchResultList ref={listRef} searchType="album" />
+      case 'music':
+      default:
+        return <MusicList ref={listRef} />
+    }
+  }
+
+  return showBlankView ? <BlankView ref={blankViewRef} onSearch={onSearch} /> : renderList()
 })

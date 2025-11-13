@@ -48,6 +48,9 @@ export const toNewMusicInfo = (oldMusicInfo: any): LX.Music.MusicInfo => {
     meta.ext = oldMusicInfo.ext ?? /\.(\w+)$/.exec(meta.filePath as string)?.[1] ?? ''
   } else {
     meta.fee = oldMusicInfo.fee
+    if (oldMusicInfo.originCoverType || oldMusicInfo.meta?.originCoverType) {
+      meta.originCoverType = oldMusicInfo.originCoverType || oldMusicInfo.meta.originCoverType;
+    }
     meta.qualitys = oldMusicInfo.types
     meta._qualitys = oldMusicInfo._types
     meta.albumId = oldMusicInfo.albumId

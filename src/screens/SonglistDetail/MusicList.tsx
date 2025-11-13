@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react'
+import {forwardRef, useCallback, useEffect, useImperativeHandle, useRef} from 'react'
 import OnlineList, { type OnlineListType, type OnlineListProps } from '@/components/OnlineList'
 import { clearListDetail, getListDetail, setListDetail, setListDetailInfo } from '@/core/songlist'
 import songlistState from '@/store/songlist/state'
@@ -110,12 +110,18 @@ export default forwardRef<MusicListType, MusicListProps>((props, ref) => {
       })
   }
 
+  const handleListUpdate = useCallback((newList: LX.Music.MusicInfoOnline[]) => {
+    if (isUnmountedRef.current) return;
+    songlistState.listDetailInfo.list = newList;
+  }, []);
+
   return (
     <OnlineList
       ref={listRef}
       onPlayList={handlePlayList}
       onRefresh={handleRefresh}
       onLoadMore={handleLoadMore}
+      onListUpdate={handleListUpdate}
       forcePlayList={true}
       listId={`${info.source}__${info.id}`}
     />
