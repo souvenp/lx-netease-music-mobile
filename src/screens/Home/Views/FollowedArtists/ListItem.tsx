@@ -27,7 +27,7 @@ export default memo(({ artist, showFollowButton = false }: { artist: any, showFo
         const artistInfoForStore: FollowedArtistInfo = {
           id: artist.id,
           name: artist.name,
-          alias: artist.alias ? artist.alias.split(' / ') : null,
+          alias: artist.alias ? artist.alias[0] : null,
           albumSize: artist.albumSize,
           picUrl: artist.picUrl,
           img1v1Url: artist.picUrl,

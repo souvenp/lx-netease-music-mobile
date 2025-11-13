@@ -125,7 +125,9 @@ export default {
    * @param {string} id 歌手ID
    * @param {boolean} isFollow true为关注, false为取消关注
    */
-  async followSinger(id, isFollow) {
+  async followSinger(id, isFollow, retryNum = 0) {
+    const maxRetries = 3
+    const retryDelay = 200
     const cookie = settingState.setting['common.wy_cookie']
     if (!cookie) return Promise.reject(new Error('未设置Cookie'))
 
@@ -145,11 +147,20 @@ export default {
       }),
     })
 
-    const { body, statusCode } = await requestObj.promise
-    if (statusCode !== 200 || body.code !== 200) {
-      throw new Error((body && body.message) || '操作失败')
+    try {
+      const { body, statusCode } = await requestObj.promise
+      if (statusCode !== 200 || body.code !== 200) {
+        throw new Error((body && body.message) || '操作失败')
+      }
+      return body
+    } catch (error) {
+      if (retryNum < maxRetries - 1) {
+        await new Promise(resolve => setTimeout(resolve, retryDelay))
+        return this.followSinger(id, isFollow, retryNum + 1)
+      } else {
+        throw error
+      }
     }
-    return body
   },
 
   getSubAlbumList(limit = 100, offset = 0) {

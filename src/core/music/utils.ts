@@ -384,22 +384,6 @@ export const handleGetOnlineMusicUrl = async ({
       return { musicInfo, url, quality: type, isFromCache: false }
     })
     .catch(async (err: any) => {
-      // --- START: Cookie Fallback 逻辑 ---
-      if (musicInfo.source == 'wy' && settingState.setting['common.wy_cookie']) {
-        try {
-          console.log('Attempting fallback to Cookie API...');
-          const { url, type: quality } = await wySdk.cookie.getMusicUrl(toOldMusicInfo(musicInfo), targetQuality).promise;
-          if (url) {
-            console.log('Cookie API fallback successful.');
-            // 如果Cookie成功，直接返回结果，不再继续后续的换源流程
-            return { musicInfo, url, quality, isFromCache: false };
-          }
-        } catch (cookieError) {
-          console.log('Cookie API fallback also failed:', cookieError);
-        }
-      }
-      // --- END: Cookie Fallback 逻辑 ---
-
       if (!allowToggleSource || err.message == requestMsg.tooManyRequests) throw err
       onToggleSource()
 
