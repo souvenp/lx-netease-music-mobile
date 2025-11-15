@@ -5,37 +5,92 @@ import {toast, toMD5} from '@/utils/tools'
 import settingState from "@/store/setting/state";
 
 export default {
-  async getUid(cookie) {
-    if (!cookie) throw new Error('Cookie is required to get UID')
+  async getUid(cookie, retryNum = 0) {
+    if (!cookie) throw new Error('Cookie is required to get UID');
+    const maxRetries = 3;
+    const retryDelay = 200;
 
-    const hashedCookie = toMD5(cookie)
-    const cachedUid = await getWyUidCache(hashedCookie)
-    if (cachedUid) return cachedUid
+    try {
+      const hashedCookie = toMD5(cookie);
+      const cachedUid = await getWyUidCache(hashedCookie);
+      if (cachedUid) return cachedUid;
 
-    const csrfToken = (cookie.match(/_csrf=([^(;|$)]+)/) || [])[1]
-    const request = httpFetch('https://music.163.com/weapi/nuser/account/get', {
+      const csrfToken = (cookie.match(/_csrf=([^(;|$)]+)/) || [])[1];
+      const request = httpFetch('https://music.163.com/weapi/nuser/account/get', {
+        method: 'post',
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36 Edg/108.0.1462.54',
+          origin: 'https://music.163.com',
+          Referer: 'https://music.163.com',
+          cookie,
+        },
+        form: weapi({
+          csrf_token: csrfToken || '',
+        }),
+      });
+      const { body, statusCode } = await request.promise;
+
+      if (statusCode !== 200 || body.code !== 200) throw new Error('获取UID失败');
+      if (!body.account) {
+        toast('登录已过期或Cookie无效', 'long');
+        throw new Error('登录已过期或Cookie无效');
+      }
+
+      const uid = body.account.id;
+      await saveWyUidCache(hashedCookie, String(uid));
+      return uid;
+    } catch (error) {
+      if (retryNum < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        return this.getUid(cookie, retryNum + 1);
+      } else {
+        console.error('获取UID失败 (重试次数已达上限)', error);
+        throw error;
+      }
+    }
+  },
+
+  async likeSong(songId, like, retryNum = 0) {
+    const maxRetries = 3;
+    const retryDelay = 200;
+    const cookie = settingState.setting['common.wy_cookie'];
+    if (!cookie) return Promise.reject(new Error('未设置Cookie'));
+
+    const csrfToken = (cookie.match(/_csrf=([^(;|$)]+)/) || [])[1];
+    const data = {
+      trackId: songId,
+      like,
+      time: 3,
+      alg: 'itembased',
+      csrf_token: csrfToken || '',
+    };
+
+    const requestObj = httpFetch('https://music.163.com/weapi/song/like', {
       method: 'post',
       headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36 Edg/108.0.1462.54',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36 Edg/108.0.1462.54',
         origin: 'https://music.163.com',
         Referer: 'https://music.163.com',
         cookie,
       },
-      form: weapi({
-        csrf_token: csrfToken || '',
-      }),
-    })
+      form: weapi(data),
+    });
 
-    const { body, statusCode } = await request.promise
-    if (statusCode !== 200 || body.code !== 200) throw new Error('获取UID失败')
-    if (!body.account) {
-      toast('登录已过期或Cookie无效', 'long');
-      throw new Error('登录已过期或Cookie无效');
+    try {
+      const { body, statusCode } = await requestObj.promise;
+      if (statusCode !== 200 || body.code !== 200) {
+        throw new Error((body && body.message) || '操作失败');
+      }
+      return body;
+    } catch (error) {
+      if (retryNum < maxRetries - 1) {
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        return this.likeSong(songId, like, retryNum + 1);
+      } else {
+        throw error;
+      }
     }
-    const uid = body.account.id
-    await saveWyUidCache(hashedCookie, String(uid))
-    return uid
   },
 
   async getLikedSongList(uid, cookie, retryNum = 0) {
@@ -262,19 +317,56 @@ export default {
    * @param {number} limit
    * @param {number} offset
    */
-  getSublist(limit = 100, offset = 0) {
-    const requestObj = httpFetch('https://music.163.com/weapi/artist/sublist', {
-      method: 'post',
-      form: weapi({
-        limit,
-        offset,
-        total: true,
-      }),
-    })
-    return requestObj.promise.then(({ body }) => {
-      if (body.code !== 200) throw new Error('获取关注歌手列表失败')
-      return body.data
-    })
+  async getSublist(limit = 100, offset = 0, retryNum = 0) {
+    const maxRetries = 3;
+    const retryDelay = 200;
+    try {
+      const requestObj = httpFetch('https://music.163.com/weapi/artist/sublist', {
+        method: 'post',
+        form: weapi({
+          limit,
+          offset,
+          total: true,
+        }),
+      });
+      const { body } = await requestObj.promise;
+      if (body.code !== 200) throw new Error('获取关注歌手列表失败');
+      return body.data;
+    } catch (error) {
+      if (retryNum < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        return this.getSublist(limit, offset, retryNum + 1);
+      } else {
+        console.error('获取关注歌手列表失败 (重试次数已达上限)', error);
+        throw error;
+      }
+    }
+  },
+
+  async getSubAlbumList(limit = 100, offset = 0, retryNum = 0) {
+    const maxRetries = 3;
+    const retryDelay = 200;
+    try {
+      const requestObj = httpFetch('https://music.163.com/weapi/album/sublist', {
+        method: 'post',
+        form: weapi({
+          limit,
+          offset,
+          total: true,
+        }),
+      });
+      const { body } = await requestObj.promise;
+      if (body.code !== 200) throw new Error('获取收藏专辑列表失败');
+      return body.data;
+    } catch (error) {
+      if (retryNum < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        return this.getSubAlbumList(limit, offset, retryNum + 1);
+      } else {
+        console.error('获取收藏专辑列表失败 (重试次数已达上限)', error);
+        throw error;
+      }
+    }
   },
 
   /**
@@ -318,21 +410,6 @@ export default {
         throw error
       }
     }
-  },
-
-  getSubAlbumList(limit = 100, offset = 0) {
-    const requestObj = httpFetch('https://music.163.com/weapi/album/sublist', {
-      method: 'post',
-      form: weapi({
-        limit,
-        offset,
-        total: true,
-      }),
-    });
-    return requestObj.promise.then(({ body }) => {
-      if (body.code !== 200) throw new Error('获取收藏专辑列表失败');
-      return body.data;
-    });
   },
 
   async subAlbum(id, isSub, retryNum = 0) {

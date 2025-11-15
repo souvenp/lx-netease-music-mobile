@@ -16,6 +16,7 @@ import {weapi} from "@/utils/musicSdk/wy/utils/crypto.js";
 import {addWyLikedSong, removeWyLikedSong} from "@/store/user/action.ts";
 import {navigations} from "@/navigation";
 import commonState from '@/store/common/state'
+import wyApi from '@/utils/musicSdk/wy/user'
 
 export const handleShowAlbumDetail = (musicInfo: LX.Music.MusicInfoOnline) => {
   const albumId = musicInfo.meta.albumId
@@ -72,38 +73,16 @@ export const handleLikeMusic = async (musicInfo: LX.Music.MusicInfoOnline) => {
   const like = !isLiked
 
   try {
-    const requestObj = httpFetch('https://music.163.com/weapi/song/like', {
-      method: 'post',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36 Edg/108.0.1462.54',
-        origin: 'https://music.163.com',
-        Referer: 'https://music.163.com',
-        cookie,
-      },
-      form: weapi({
-        trackId: songId,
-        like,
-        time: 3,
-        alg: 'itembased',
-        csrf_token: (cookie.match(/_csrf=([^(;|$)]+)/) || [])[1] || '',
-      }),
-    })
-
-    const { body, statusCode } = await requestObj.promise
-
-    if (statusCode === 200 && body.code === 200) {
-      if (like) {
-        toast('喜欢成功')
-        addWyLikedSong(songId)
-      } else {
-        toast('取消喜欢成功')
-        removeWyLikedSong(songId)
-      }
+    await wyApi.likeSong(songId, like);
+    if (like) {
+      toast('喜欢成功');
+      addWyLikedSong(songId);
     } else {
-      throw new Error(body.message || '操作失败')
+      toast('取消喜欢成功');
+      removeWyLikedSong(songId);
     }
   } catch (error: any) {
-    toast(`操作失败: ${error.message}`)
+    toast(`操作失败: ${error.message}`);
   }
 }
 
