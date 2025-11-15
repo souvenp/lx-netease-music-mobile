@@ -68,6 +68,7 @@
     "react-native-svg": "^13.8.0",
     "react-native-track-player": "github:lyswhut/react-native-track-player#75c097a4a46bea19970540bbc1bd38527ea73cde",
     "react-native-vector-icons": "^10.2.0",
+    "react-native-video": "^6.17.0",
     "react-native-webview": "^13.16.0",
     "rn-fetch-blob": "^0.12.0",
     "webdav": "^5.8.0"
