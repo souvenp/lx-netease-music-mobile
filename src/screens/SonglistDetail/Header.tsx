@@ -81,6 +81,8 @@ export interface DetailInfo {
   desc: string
   playCount: string
   imgUrl?: string
+  userId?: string | number
+  total?: number
 }
 
 export default forwardRef<HeaderType, HeaderProps>(

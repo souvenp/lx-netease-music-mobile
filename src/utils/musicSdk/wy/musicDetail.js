@@ -235,6 +235,7 @@ export default {
             qualitys: types,
             _qualitys: _types,
             originCoverType: item.originCoverType,
+            mv: item.mv,
           },
           releaseDate: item.publishTime ? dateFormat(item.publishTime, 'Y-M-D') : null,
           songmid: item.id,

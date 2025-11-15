@@ -1,11 +1,10 @@
 import { memo, useState, useMemo, useEffect } from 'react'
-import { View, TouchableOpacity } from 'react-native'
+import { View, TouchableOpacity, ScrollView } from 'react-native'
 import ImageBackground from '@/components/common/ImageBackground'
 import Image from '@/components/common/Image'
 import Text from '@/components/common/Text'
-import Button from '@/components/common/Button'
 import { useTheme } from '@/store/theme/hook'
-import {createStyle, toast} from '@/utils/tools'
+import { createStyle, toast } from '@/utils/tools'
 import { useStatusbarHeight } from '@/store/common/hook'
 import { Icon } from '@/components/common/Icon'
 import wyApi from '@/utils/musicSdk/wy/user'
@@ -17,19 +16,18 @@ export default memo(({ artist, onFollow, componentId }) => {
   const theme = useTheme()
   const statusBarHeight = useStatusbarHeight()
   const [isDescExpanded, setDescExpanded] = useState(false)
-  const isFollowed = useIsWyArtistFollowed(artist.id) // 现在 artist.id 在首次渲染时就可用
+  const isFollowed = useIsWyArtistFollowed(artist.id)
 
   const artistName = artist?.name || ''
   const artistAlias = artist?.alias?.length ? ` ${artist.alias[0]}` : ''
   const description = artist?.briefDesc || ''
 
   const toggleFollow = () => {
-    if (!artist.albumSize) { // 使用一个详细信息才有的字段判断数据是否加载完毕
+    if (!artist.name) {
       toast('正在加载歌手信息，请稍后...')
       return
     }
     const newFollowState = !isFollowed
-
     wyApi.followSinger(String(artist.id), newFollowState).then(() => {
       toast(newFollowState ? '关注成功' : '取消关注成功')
       if (newFollowState) {
@@ -51,11 +49,11 @@ export default memo(({ artist, onFollow, componentId }) => {
   }
 
   const truncatedDesc = useMemo(() => {
-    if (description.length > 75) {
+    if (!isDescExpanded && description.length > 75) {
       return description.substring(0, 75) + '...'
     }
     return description
-  }, [description])
+  }, [description, isDescExpanded])
 
   return (
     <View style={{ paddingTop: statusBarHeight }}>
@@ -67,15 +65,20 @@ export default memo(({ artist, onFollow, componentId }) => {
               {artistName}
               {artistAlias ? <Text size={12} color="rgba(255,255,255,0.8)">{artistAlias}</Text> : null}
             </Text>
-            <TouchableOpacity onPress={() => setDescExpanded(!isDescExpanded)}>
-              <Text style={styles.desc} size={12} color="rgba(255,255,255,0.8)">
-                {isDescExpanded ? description : truncatedDesc}
-              </Text>
-            </TouchableOpacity>
+
+            <View style={styles.descWrapper}>
+              <ScrollView nestedScrollEnabled={true}>
+                <TouchableOpacity activeOpacity={0.8} onPress={() => setDescExpanded(!isDescExpanded)}>
+                  <Text size={12} color="rgba(255,255,255,0.8)">
+                    {truncatedDesc}
+                  </Text>
+                </TouchableOpacity>
+              </ScrollView>
+            </View>
+
           </View>
           <TouchableOpacity style={styles.followButton} onPress={toggleFollow}>
-            <Icon name={isFollowed ? 'love-filled' : 'love'}
-                  color={isFollowed ? theme['c-liked'] : '#fff'} size={18} />
+            <Icon name={isFollowed ? 'love-filled' : 'love'} color={isFollowed ? theme['c-liked'] : '#fff'} size={18} />
           </TouchableOpacity>
         </View>
       </ImageBackground>
@@ -104,12 +107,18 @@ const styles = createStyle({
   infoContainer: {
     flex: 1,
     marginLeft: 15,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    height: '100%',
+    paddingVertical: 10,
   },
   name: {
     fontWeight: 'bold',
+    marginBottom: 8,
   },
-  desc: {
-    marginTop: 8,
+  descWrapper: {
+    flexShrink: 1,
+    maxHeight: 90,
   },
   followButton: {
     paddingHorizontal: 15,
@@ -118,6 +127,6 @@ const styles = createStyle({
     backgroundColor: 'rgba(255,255,255,0.2)',
     marginLeft: 10,
     flexDirection: 'row',
-    alignItems: 'center'
+    alignItems: 'center',
   },
 })

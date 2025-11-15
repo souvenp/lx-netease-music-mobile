@@ -649,3 +649,15 @@ export const saveDailyRecCache = async(cache: DailyRecCache) => {
 export const clearDailyRecCache = async() => {
   await removeData(similarSongsCacheKey);
 };
+
+const playlistTypeKey = storageDataPrefix.playlistType
+let playlistType: 'local' | 'online'
+
+export const getPlaylistType = async(): Promise<string> => {
+  playlistType ??= await getData<'local' | 'online'>(playlistTypeKey) ?? 'local'
+  return playlistType
+}
+export const savePlaylistType = async(type: 'local' | 'online') => {
+  playlistType = type
+  await saveData(playlistTypeKey, type)
+}

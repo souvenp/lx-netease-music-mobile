@@ -1,36 +1,41 @@
 import { memo, useEffect, useState, useCallback, useRef } from 'react'
-import {View, FlatList, RefreshControl, BackHandler, StyleSheet, Keyboard} from 'react-native' // 导入 BackHandler
+import {View, FlatList, RefreshControl, BackHandler, StyleSheet, Keyboard} from 'react-native'
 import ListItem from './ListItem'
 import wyApi from '@/utils/musicSdk/wy/user'
+import { useWySubscribedPlaylists, useWyUid } from '@/store/user/hook.ts'
 import { useSettingValue } from '@/store/setting/hook'
 import { toast } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
 import Text from '@/components/common/Text'
-import SonglistDetail from '../../../SonglistDetail' // 导入详情页组件
+import SonglistDetail from '../../../SonglistDetail'
 import { type ListInfoItem } from '@/store/songlist/state'
 import commonState from '@/store/common/state'
+import {setWySubscribedPlaylists} from "@/store/user/action.ts"
 
 export default memo(() => {
-  const [playlists, setPlaylists] = useState([])
+  const playlists = useWySubscribedPlaylists()
+  const uid = useWyUid()
   const [loading, setLoading] = useState(true)
   const cookie = useSettingValue('common.wy_cookie')
   const theme = useTheme()
-  // 使用局部 state 来控制详情页显示
   const [selectedPlaylist, setSelectedPlaylist] = useState<ListInfoItem | null>(null)
   const selectedPlaylistRef = useRef(selectedPlaylist)
   selectedPlaylistRef.current = selectedPlaylist
 
-  const loadPlaylists = useCallback(() => {
-    if (!cookie) {
+  useEffect(() => {
+    if (!cookie || !uid) {
       setLoading(false)
-      setPlaylists([])
+      setWySubscribedPlaylists([])
+      return
+    }
+    if (playlists.length > 0) {
+      setLoading(false)
       return
     }
     setLoading(true)
-    wyApi.getUid(cookie)
-      .then(uid => wyApi.getUserPlaylists(uid, cookie))
-      .then(list => {
-        setPlaylists(list)
+    wyApi.getUserPlaylists(uid, cookie)
+      .then(playlists => {
+        setWySubscribedPlaylists(playlists)
       })
       .catch(err => {
         toast(`获取歌单失败: ${err.message}`)
@@ -38,11 +43,26 @@ export default memo(() => {
       .finally(() => {
         setLoading(false)
       })
-  }, [cookie])
+  }, [cookie, uid])
 
-  useEffect(() => {
-    loadPlaylists()
-  }, [loadPlaylists])
+  const onRefresh = useCallback(() => {
+    if (!cookie || !uid) {
+      setLoading(false)
+      setWySubscribedPlaylists([])
+      return
+    }
+    setLoading(true)
+    wyApi.getUserPlaylists(uid, cookie)
+      .then(playlists => {
+        setWySubscribedPlaylists(playlists)
+      })
+      .catch(err => {
+        toast(`刷新歌单失败: ${err.message}`)
+      })
+      .finally(() => {
+        setLoading(false)
+      })
+  }, [cookie, uid])
 
   // 处理物理返回键，仅在显示详情时触发
   useEffect(() => {
@@ -75,13 +95,6 @@ export default memo(() => {
     setSelectedPlaylist(playlistInfo)
   }, [])
 
-
-  // 条件渲染逻辑
-  // if (selectedPlaylist) {
-  //   // 传入 onBack 回调，用于关闭详情视图
-  //   return <SonglistDetail info={selectedPlaylist} onBack={() => setSelectedPlaylist(null)} />
-  // }
-
   if (!cookie) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -92,7 +105,6 @@ export default memo(() => {
 
   return (
     <View style={{ flex: 1 }}>
-      {/* 歌单列表页 - 始终渲染 */}
       <FlatList
         onScrollBeginDrag={Keyboard.dismiss}
         data={playlists}
@@ -102,17 +114,15 @@ export default memo(() => {
           <RefreshControl
             colors={[theme['c-primary']]}
             refreshing={loading}
-            onRefresh={loadPlaylists}
+            onRefresh={onRefresh}
           />
         }
       />
-
-      {/* 歌单详情页 - 条件渲染为覆盖层 */}
       {selectedPlaylist && (
         <View style={[StyleSheet.absoluteFillObject, { backgroundColor: theme['c-content-background'] }]}>
           <SonglistDetail info={selectedPlaylist} onBack={() => setSelectedPlaylist(null)} />
         </View>
       )}
     </View>
-  );
+  )
 })

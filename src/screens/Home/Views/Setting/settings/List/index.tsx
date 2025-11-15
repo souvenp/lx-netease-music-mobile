@@ -9,6 +9,7 @@ import IsAutoSaveDailyRec from './IsAutoSaveDailyRec';
 import IsShowMyListSubMenu from './IsShowMyListSubMenu';
 
 import { useI18n } from '@/lang'
+import MenuSettings from "@/screens/Home/Views/Setting/settings/List/MenuSettings.tsx";
 
 export default memo(() => {
   const t = useI18n()
@@ -21,6 +22,7 @@ export default memo(() => {
       <IsShowMyListSubMenu />
       <IsAutoSaveDailyRec />
       <AddMusicLocationType />
+      <MenuSettings />
     </Section>
   )
 })

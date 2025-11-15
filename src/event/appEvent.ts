@@ -230,6 +230,12 @@ export class AppEvent extends Event {
   show_download_ball() {
     this.emit('show_download_ball');
   }
+  showVideoPlayer(url: string) {
+    this.emit('showVideoPlayer', url);
+  }
+  playlist_updated(data: { source: string, listId: string }) {
+    this.emit('playlist_updated', data)
+  }
 }
 
 type EventMethods = Omit<EventType, keyof Event>

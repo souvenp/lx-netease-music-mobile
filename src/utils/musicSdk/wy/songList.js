@@ -56,6 +56,7 @@ export default {
     }
     return { id, cookie }
   },
+
   async getListDetail(rawId, page, tryNum = 0) {
     // 获取歌曲列表内的音乐
     if (tryNum > 2) return Promise.reject(new Error('try max num'))
@@ -63,31 +64,51 @@ export default {
     const { id, cookie } = await this.getListId(rawId)
     if (cookie) this.cookie = cookie
 
-    const requestObj_listDetail = httpFetch('https://music.163.com/api/linux/forward', {
+    // 将 linuxapi 调用替换为 weapi 调用
+    const requestObj_listDetail = httpFetch('https://music.163.com/weapi/v3/playlist/detail', {
       method: 'post',
       headers: {
         'User-Agent':
-          'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36',
-        Cookie: this.cookie,
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36 Edg/108.0.1462.54',
+        origin: 'https://music.163.com',
+        Referer: 'https://music.163.com',
+        cookie: this.cookie,
       },
-      credentials: 'omit',
-      cache: 'default',
-      form: linuxapi({
-        method: 'POST',
-        url: 'https://music.163.com/api/v3/playlist/detail',
-        params: {
-          id,
-          n: this.limit_song,
-          s: 8,
-        },
+      form: weapi({
+        id,
+        n: this.limit_song,
+        s: 8,
+        csrf_token: '',
       }),
     })
+
     const { statusCode, body } = await requestObj_listDetail.promise
-    if (statusCode !== 200 || body.code !== this.successCode)
-      return this.getListDetail(id, page, ++tryNum)
+    if (statusCode !== 200 || body.code !== this.successCode) {
+      if (body.code === 401) {
+        throw new Error(body.message || '该歌单为隐私歌单或需要登录')
+      }
+      return this.getListDetail(rawId, page, ++tryNum)
+    }
+    if (!body.playlist.trackIds || body.playlist.trackIds.length === 0) {
+      return {
+        list: [],
+        page: 1,
+        limit: this.limit_song,
+        total: 0,
+        source: 'wy',
+        info: {
+          play_count: formatPlayCount(body.playlist.playCount),
+          name: body.playlist.name,
+          img: body.playlist.coverImgUrl,
+          desc: body.playlist.description,
+          author: body.playlist.creator.nickname,
+          userId: body.playlist.userId,
+        },
+      }
+    }
+
     let limit = 1000
     let rangeStart = (page - 1) * limit
-    // console.log(body)
     let list
     if (body.playlist.trackIds.length == body.privileges.length) {
       list = this.filterListDetail(body)
@@ -103,11 +124,11 @@ export default {
         if (err.message == 'try max num') {
           throw err
         } else {
-          return this.getListDetail(id, page, ++tryNum)
+          return this.getListDetail(rawId, page, ++tryNum)
         }
       }
     }
-    // console.log(list)
+
     return {
       list,
       page,
@@ -120,8 +141,9 @@ export default {
         img: body.playlist.coverImgUrl,
         desc: body.playlist.description,
         author: body.playlist.creator.nickname,
+        userId: body.playlist.userId,
       },
-    }
+    };
   },
   filterListDetail({ playlist: { tracks }, privileges }) {
     // console.log(tracks, privileges)
@@ -198,6 +220,11 @@ export default {
           types,
           _types,
           typeUrl: {},
+          meta: {
+            fee: item.fee,
+            originCoverType: item.originCoverType,
+            mv: item.mv,
+          }
         })
       }
     })
@@ -243,6 +270,7 @@ export default {
       total: item.trackCount,
       desc: item.description,
       source: 'wy',
+      userId: item.userId,
     }))
   },
 

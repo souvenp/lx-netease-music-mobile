@@ -351,6 +351,18 @@ declare global {
 
       'list.isShowMyListSubMenu': boolean
       'list.isAutoSaveDailyRec': boolean
+
+      'menu.playLater': boolean
+      'menu.addTo': boolean
+      'menu.share': boolean
+      'menu.playMV': boolean
+      'menu.songDetail': boolean
+      'menu.dislike': boolean
+
+      'menu.moveTo': boolean
+      'menu.changePosition': boolean
+      'menu.changeSource': boolean
+
       'artistDetail.albumViewMode': 'grid' | 'list'
       /**
        * 是否启用下载
@@ -384,6 +396,7 @@ declare global {
        * 是否写入元数据
        */
       'download.writeMetadata': boolean
+      'download.writeAlias': boolean
 
       /**
        * 是否启用同步

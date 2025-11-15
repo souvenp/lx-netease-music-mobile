@@ -22,8 +22,13 @@ import {
 import MusicDownloadModal, {
   type MusicDownloadModalType,
 } from '@/screens/Home/Views/Mylist/MusicList/MusicDownloadModal'
-import { createStyle } from '@/utils/tools'
-import {batchDownload} from "@/core/download.ts";
+import {createStyle, toast} from '@/utils/tools'
+import wyApi from '@/utils/musicSdk/wy/user'
+import {batchDownload} from "@/core/download.ts"
+import {getMvUrl} from "@/utils/musicSdk/wy/mv.js"
+import {useI18n} from "@/lang";
+import {updateWySubscribedPlaylistTrackCount} from "@/store/user/action.ts";
+import {clearListDetailCache} from "@/core/songlist.ts";
 
 export interface OnlineListProps {
   onRefresh: ListProps['onRefresh']
@@ -38,6 +43,7 @@ export interface OnlineListProps {
   playingId?: string | null
   forcePlayList?: boolean
   onListUpdate?: ListProps['onListUpdate']
+  isCreator?: boolean
 }
 export interface OnlineListType {
   setList: (list: LX.Music.MusicInfoOnline[], isAppend?: boolean, showSource?: boolean) => void
@@ -60,6 +66,7 @@ export default forwardRef<OnlineListType, OnlineListProps>(
       playingId,
       forcePlayList,
       onListUpdate,
+      isCreator = false,
     },
     ref
   ) => {
@@ -69,6 +76,7 @@ export default forwardRef<OnlineListType, OnlineListProps>(
     const listMusicMultiAddRef = useRef<ListAddMultiType>(null)
     const listMenuRef = useRef<ListMenuType>(null)
     const musicDownloadModalRef = useRef<MusicDownloadModalType>(null)
+    const t = useI18n()
 
     useImperativeHandle(ref, () => ({
       setList(list, isAppend = false, showSource = false) {
@@ -132,6 +140,46 @@ export default forwardRef<OnlineListType, OnlineListProps>(
       handleShowAlbumDetail(info.musicInfo)
     }
 
+    const handlePlayMv = useCallback((info: SelectInfo) => {
+      const mvId = info.musicInfo.meta.mv;
+      if (!mvId) return;
+      getMvUrl(mvId).then(data => {
+        global.app_event.showVideoPlayer(data.url);
+      }).catch(err => {
+        toast(err.message || '获取MV失败');
+      });
+    }, []);
+
+
+    const handleMoveMusic = (info: SelectInfo) => {
+      if (info.selectedList.length) {
+        listMusicMultiAddRef.current?.show({ selectedList: info.selectedList, listId: listId!, isMove: true });
+      } else {
+        listMusicAddRef.current?.show({ musicInfo: info.musicInfo, listId: listId!, isMove: true });
+      }
+    };
+
+    const handleRemoveMusic = useCallback((info: SelectInfo) => {
+      if (!listId) return;
+      const playlistId = listId.replace('wy__', '');
+      const musicInfos = info.selectedList.length ? info.selectedList : [info.musicInfo];
+      const songIds = musicInfos.map(m => m.meta.songId);
+
+      wyApi.manipulatePlaylistTracks('del', playlistId, songIds).then(() => {
+        toast(t('list_edit_action_tip_remove_success'));
+        const currentList = listRef.current?.getList() ?? [];
+        const idsToRemove = new Set(musicInfos.map(m => m.id));
+        const newList = currentList.filter(m => !idsToRemove.has(m.id));
+        listRef.current?.setList(newList, false);
+        updateWySubscribedPlaylistTrackCount(playlistId, -songIds.length);
+        clearListDetailCache('wy', playlistId)
+        global.app_event.playlist_updated({ source: 'wy', listId: playlistId })
+        hancelExitSelect();
+      }).catch(err => {
+        toast('移除失败: ' + err.message);
+      });
+    }, [listId, hancelExitSelect, t]);
+
     return (
       <View style={styles.container}>
         <View style={{ flex: 1 }}>
@@ -164,19 +212,16 @@ export default forwardRef<OnlineListType, OnlineListProps>(
         </View>
         <ListMusicAdd
           ref={listMusicAddRef}
-          onAdded={() => {
-            hancelExitSelect()
-          }}
+          onAdded={hancelExitSelect}
         />
         <ListMusicMultiAdd
           ref={listMusicMultiAddRef}
-          onAdded={() => {
-            hancelExitSelect()
-          }}
+          onAdded={hancelExitSelect}
         />
         <ListMenu
           ref={listMenuRef}
           listId={listId}
+          isCreator={isCreator}
           onPlay={(info) => {
             handlePlay(info.musicInfo)
           }}
@@ -188,6 +233,8 @@ export default forwardRef<OnlineListType, OnlineListProps>(
             handleShare(info.musicInfo)
           }}
           onAdd={handleAddMusic}
+          onMove={handleMoveMusic}
+          onRemove={handleRemoveMusic}
           onArtistDetail={handleShowArtist}
           onAlbumDetail={handleShowAlbum}
           onMusicSourceDetail={(info) => {
@@ -200,6 +247,7 @@ export default forwardRef<OnlineListType, OnlineListProps>(
           onLike={(info) => {
             handleLikeMusic(info.musicInfo)
           }}
+          onPlayMv={handlePlayMv}
         />
         {}
       </View>

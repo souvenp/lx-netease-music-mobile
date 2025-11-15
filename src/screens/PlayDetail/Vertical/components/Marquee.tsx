@@ -1,9 +1,9 @@
-import { memo, useRef, useEffect, useState } from 'react';
+import React, { memo, useRef, useEffect, useState } from 'react';
 import { View, Animated, Easing, StyleSheet } from 'react-native';
 import Text, { type TextProps } from '@/components/common/Text';
 
 interface MarqueeProps extends TextProps {
-  children: string;
+  children: React.ReactNode
 }
 
 export default memo(({ children, style, ...props }: MarqueeProps) => {

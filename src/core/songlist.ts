@@ -252,3 +252,11 @@ export const getListDetailAll = async (
     })
     .then((list) => deduplicationList(list))
 }
+
+export const clearListDetailCache = (source: LX.OnlineSource, id: string) => {
+  const listKey = `sdetail__${source}__${id}`
+  if (cache.has(listKey)) {
+    cache.delete(listKey)
+    console.log(`[Cache Cleared] Songlist cache for ${listKey} has been cleared.`)
+  }
+}

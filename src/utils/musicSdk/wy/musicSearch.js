@@ -182,6 +182,7 @@ export default {
           _qualitys: _types,
           fee: item.fee,
           originCoverType: item.originCoverType,
+          mv: item.mv,
         },
       }
     })

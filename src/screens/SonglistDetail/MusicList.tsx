@@ -4,21 +4,24 @@ import { clearListDetail, getListDetail, setListDetail, setListDetailInfo } from
 import songlistState from '@/store/songlist/state'
 import { handlePlay } from './listAction'
 import { useListInfo } from './state'
-import type { DetailInfo } from './index'
+import {DetailInfo} from "@/screens/SonglistDetail/Header.tsx";
 
-export interface MusicListProps {}
-
-export interface MusicListType {
-  loadList: (source: LX.OnlineSource, listId: string) => Promise<DetailInfo>
+export interface MusicListProps {
+  isCreator: boolean
+  onListUpdate: OnlineListProps['onListUpdate']
 }
 
-export default forwardRef<MusicListType, MusicListProps>((props, ref) => {
+export interface MusicListType {
+  loadList: (source: LX.OnlineSource, listId: string, isRefresh?: boolean) => Promise<DetailInfo>
+}
+
+export default forwardRef<MusicListType, MusicListProps>(({ isCreator }, ref) => {
   const listRef = useRef<OnlineListType>(null)
   const isUnmountedRef = useRef(false)
   const info = useListInfo()
 
   useImperativeHandle(ref, () => ({
-    async loadList(source, id) {
+    async loadList(source, id, isRefresh = false) {
       clearListDetail()
       const listDetailInfo = songlistState.listDetailInfo
 
@@ -27,6 +30,8 @@ export default forwardRef<MusicListType, MusicListProps>((props, ref) => {
         desc: detail.desc || info.desc || '',
         playCount: info.play_count ?? detail.play_count ?? '',
         imgUrl: info.img ?? detail.img,
+        userId: info.userId || detail.userId,
+        total: listDetailInfo.total,
       })
 
       if (
@@ -44,7 +49,7 @@ export default forwardRef<MusicListType, MusicListProps>((props, ref) => {
       const page = 1
       setListDetailInfo(info.source, info.id)
 
-      return getListDetail(id, source, page)
+      return getListDetail(id, source, page, isRefresh)
         .then((listDetail) => {
           const result = setListDetail(listDetail, id, page)
           if (isUnmountedRef.current) return createDetailInfo(result.info)
@@ -124,6 +129,7 @@ export default forwardRef<MusicListType, MusicListProps>((props, ref) => {
       onListUpdate={handleListUpdate}
       forcePlayList={true}
       listId={`${info.source}__${info.id}`}
+      isCreator={isCreator}
     />
   )
 })

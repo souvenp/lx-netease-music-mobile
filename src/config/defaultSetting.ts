@@ -80,6 +80,17 @@ const defaultSetting: LX.AppSetting = {
   'list.isShowMyListSubMenu': true,
   'list.isAutoSaveDailyRec': true,
   'list.isShowCover': true,
+
+  'menu.playLater': true,
+  'menu.addTo': true,
+  'menu.share': true,
+  'menu.playMV': true,
+  'menu.songDetail': true,
+  'menu.dislike': true,
+
+  'menu.moveTo': true,
+  'menu.changePosition': true,
+  'menu.changeSource': true,
   'artistDetail.albumViewMode': 'grid',
 
   'download.enable': true,
@@ -90,6 +101,7 @@ const defaultSetting: LX.AppSetting = {
   'download.writeEmbedLyric': true,
   'download.writeMetadata': true,
   'download.writePicture': true,
+  'download.writeAlias': false,
 
   'sync.enable': false,
   'sync.webdav.enable': false,

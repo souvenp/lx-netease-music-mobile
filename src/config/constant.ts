@@ -81,6 +81,7 @@ export const storageDataPrefix = {
   remoteLyricTip: '@remote_lyric_tip',
 
   dislikeList: '@dislike_list',
+  playlistType: '@playlist_type',
 
   userApi: '@user_api__',
   downloadList: '@download_list',

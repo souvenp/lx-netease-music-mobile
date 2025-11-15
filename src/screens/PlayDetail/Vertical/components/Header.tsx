@@ -27,8 +27,6 @@ const Title = () => {
     navigations.pushArtistDetailScreen(commonState.componentIds.playDetail!, { id: String(artist.id), name: artist.name })
   }, [musicInfo])
 
-  const titleText = musicInfo ? `${musicInfo.name}${musicInfo.alias ? ` (${musicInfo.alias})` : ''}` : ''
-
   const singerRender = useMemo(() => {
     if (!musicInfo || !musicInfo.artists?.length || musicInfo.source == 'local') {
       return (
@@ -55,7 +53,8 @@ const Title = () => {
   return (
     <View style={styles.titleContent}>
       <Marquee style={styles.title} size={16}>
-        {titleText}
+        {musicInfo.name}
+        {musicInfo.alias ? <Text color={theme['c-font-label']}> ({musicInfo.alias})</Text> : null}
       </Marquee>
       {singerRender}
     </View>

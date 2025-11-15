@@ -339,6 +339,7 @@
   "setting_download_write_embed_lyric": "Write Embedded Lyrics",
   "setting_download_write_metadata": "Write Tags",
   "setting_download_write_picture": "Write Cover",
+  "setting_download_write_alias": "Write alias",
   "setting_download_history": "Download History",
   "setting_download_history_title": "Download History",
   "setting_download_history_empty": "No download history",

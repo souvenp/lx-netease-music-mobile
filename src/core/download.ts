@@ -127,8 +127,12 @@ const handleMetadata = async (task: DownloadTask, filePath: string) => {
   // 写入标签
   if (settingState.setting['download.writeMetadata']) {
     try {
+      const title = settingState.setting['download.writeAlias'] && task.musicInfo.alias
+        ? `${task.musicInfo.name} (${task.musicInfo.alias})`
+        : task.musicInfo.name;
+
       await writeMetadata(filePath, {
-        name: task.musicInfo.name,
+        name: title,
         singer: task.musicInfo.singer,
         albumName: task.musicInfo.meta.albumName,
       }, true);
@@ -194,8 +198,12 @@ export const retryMetadata = async (taskId: string) => {
   // 重试写入标签
   if (metadataStatus.tags === 'fail' && settingState.setting['download.writeMetadata']) {
     try {
+      const title = settingState.setting['download.writeAlias'] && task.musicInfo.alias
+      ? `${task.musicInfo.name} (${task.musicInfo.alias})`
+      : task.musicInfo.name;
+
       await writeMetadata(filePath, {
-        name: task.musicInfo.name,
+        name: title,
         singer: task.musicInfo.singer,
         albumName: task.musicInfo.meta.albumName,
       }, true);

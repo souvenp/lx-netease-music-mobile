@@ -13,11 +13,13 @@ export default memo(({ item, onPress }: { item: any, onPress: (info: ListInfoIte
     const playlistInfo: ListInfoItem = {
       id: String(item.id),
       name: item.name,
-      author: item.creator.nickname,
+      author: item.creator?.nickname,
       img: item.coverImgUrl,
       play_count: item.playCount,
       desc: item.description,
       source: 'wy',
+      userId: item.userId,
+      total: item.trackCount,
     }
     onPress(playlistInfo)
   }

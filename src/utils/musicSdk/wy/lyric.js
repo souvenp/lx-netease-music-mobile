@@ -281,38 +281,45 @@ const getLyricWithRetry = (songmid, retryNum = 0) => {
     yrv: 0,
   })
 
-  const promise = requestObj.promise.then(({ body }) => {
-    if (body.code !== 200) {
-      if (retryNum >= 2) {
-        console.error('获取歌词失败 (已达最大重试次数)');
-        return Promise.reject(new Error('Get lyric failed'));
-      }
-      console.log(`获取歌词失败，将在300ms后进行第 ${retryNum + 1} 次重试...`);
-      return new Promise(resolve => setTimeout(resolve, 300)).then(() => getLyricWithRetry(songmid, retryNum + 1));
-    }
+  const promise = new Promise((resolve, reject) => {
+    const attempt = (num) => {
+      requestObj.promise.then(({ body, statusCode }) => {
+        if (statusCode !== 200 || body.code !== 200) {
+          throw new Error('获取歌词响应码无效');
+        }
 
-    if (body?.lrc?.lyric) {
-      const fixTimeLabelLrc = fixTimeLabel(body.lrc.lyric, body.tlyric?.lyric, body.romalrc?.lyric);
-      const info = parseTools.parse(
-        body.yrc?.lyric,
-        body.ytlrc?.lyric,
-        body.yromalrc?.lyric,
-        fixTimeLabelLrc.lrc,
-        fixTimeLabelLrc.tlrc,
-        fixTimeLabelLrc.romalrc,
-      );
-      return info;
-    }
+        if (body?.lrc?.lyric) {
+          const fixTimeLabelLrc = fixTimeLabel(body.lrc.lyric, body.tlyric?.lyric, body.romalrc?.lyric);
+          const info = parseTools.parse(
+            body.yrc?.lyric,
+            body.ytlrc?.lyric,
+            body.yromalrc?.lyric,
+            fixTimeLabelLrc.lrc,
+            fixTimeLabelLrc.tlrc,
+            fixTimeLabelLrc.romalrc,
+          );
+          resolve(info);
+        } else {
+          resolve({ lyric: '', tlyric: '', rlyric: '', lxlyric: '' });
+        }
+      }).catch(error => {
+        if (num >= 2) {
+          console.error(`获取歌词失败 (已达最大重试次数): ${songmid}`, error);
+          reject(new Error('Get lyric failed'));
+        } else {
+          console.log(`获取歌词失败，将在200ms后进行第 ${num + 2} 次重试...`);
+          setTimeout(() => {
+            const nextRequest = eapiRequest('/api/song/lyric/v1', { id: songmid, cp: false, tv: 0, lv: 0, rv: 0, kv: 0, yv: 0, ytv: 0, yrv: 0 });
+            requestObj.promise = nextRequest.promise;
+            requestObj.cancelHttp = nextRequest.cancelHttp;
+            attempt(num + 1);
+          }, 200);
+        }
+      });
+    };
 
-    return { lyric: '', tlyric: '', rlyric: '', lxlyric: '' };
-  }).catch(error => {
-    if (retryNum >= 2) {
-      console.error('获取歌词失败 (已达最大重试次数)', error)
-      return Promise.reject(new Error('Get lyric failed'))
-    }
-    console.log(`获取歌词请求异常，将在300ms后进行第 ${retryNum + 1} 次重试...`, error.message)
-    return new Promise(resolve => setTimeout(resolve, 300)).then(() => getLyricWithRetry(songmid, retryNum + 1))
-  })
+    attempt(0);
+  });
 
   return {
     promise,

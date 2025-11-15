@@ -27,6 +27,10 @@ export class StateEvent extends Event {
   wySubscribedAlbumsChanged() {
     this.emit('wySubscribedAlbumsChanged');
   }
+  wySubscribedPlaylistsChanged() {
+    this.emit('wySubscribedPlaylistsChanged');
+  }
+
   languageChanged(locale: I18n['locale']) {
     this.emit('languageChanged', locale)
   }

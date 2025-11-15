@@ -43,6 +43,7 @@ declare namespace LX {
       albumId?: string | number
       originCoverType?: number
       _full?: boolean
+      mv?: number
     }
 
     interface MusicInfoMeta_local extends MusicInfoMetaBase {

@@ -10,6 +10,7 @@ import { useTheme } from '@/store/theme/hook'
 import { useI18n } from '@/lang'
 import { createStyle } from '@/utils/tools'
 import { scaleSizeW } from '@/utils/pixelRatio'
+import {useWySubscribedPlaylists, useWyUid} from "@/store/user/hook.ts";
 
 const styles = createStyle({
   list: {
@@ -25,7 +26,7 @@ const styles = createStyle({
 const MIN_WIDTH = scaleSizeW(150)
 const PADDING = styles.list.paddingLeft + styles.list.paddingRight
 
-const EditListItem = ({ itemWidth }: { itemWidth: number }) => {
+const EditListItem = ({ itemWidth, playlistType }: { itemWidth: number, playlistType: 'local' | 'online' }) => {
   const [isEdit, setEdit] = useState(false)
   const theme = useTheme()
   const t = useI18n()
@@ -57,6 +58,7 @@ const EditListItem = ({ itemWidth }: { itemWidth: number }) => {
           onHide={() => {
             setEdit(false)
           }}
+          playlistType={playlistType}
         />
       ) : null}
     </View>
@@ -66,12 +68,25 @@ const EditListItem = ({ itemWidth }: { itemWidth: number }) => {
 export default ({
   musicInfo,
   onPress,
+  playlistType,
 }: {
   musicInfo: LX.Music.MusicInfo
   onPress: (listInfo: LX.List.MyListInfo) => void
+  playlistType: 'local' | 'online'
 }) => {
   const windowSize = useWindowSize()
-  const allList = useMyList()
+
+  const localLists = useMyList()
+  const onlinePlaylists = useWySubscribedPlaylists()
+  const uid = useWyUid()
+
+  const allList = useMemo(() => {
+    if (playlistType === 'online') {
+      return onlinePlaylists.filter(p => String(p.userId) === String(uid))
+    }
+    return localLists
+  }, [playlistType, localLists, onlinePlaylists, uid])
+
   const itemWidth = useMemo(() => {
     let w = Math.floor(windowSize.width * 0.9 - PADDING)
     let n = Math.floor(w / MIN_WIDTH)
@@ -91,7 +106,7 @@ export default ({
             width={itemWidth}
           />
         ))}
-        <EditListItem itemWidth={itemWidth} />
+        <EditListItem itemWidth={itemWidth} playlistType={playlistType} />
       </View>
     </ScrollView>
   )

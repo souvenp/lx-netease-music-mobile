@@ -17,7 +17,7 @@ export const scrobbleLastSong = () => {
   const playedTime = Math.floor(accumulatedPlayedTime)
   scrobbleInfo = null
 
-  if (playedTime < 1 || (totalTime > 0 && playedTime < 60 && (playedTime / totalTime) < 0.4)) {
+  if (playedTime < 1 || (totalTime > 0 && playedTime < 120 && (playedTime / totalTime) < 0.5)) {
     console.log(`Scrobble skipped for song ${songId} (played: ${playedTime}s, total: ${totalTime.toFixed(0)}s)`)
     return
   }
@@ -29,7 +29,7 @@ export const scrobbleLastSong = () => {
 export const updateScrobbleInfo = () => {
   const musicInfo = playerState.playMusicInfo.musicInfo
   const listId = playerState.playMusicInfo.listId
-  if (!musicInfo || !listId || musicInfo.source !== 'wy') {
+  if (!musicInfo || musicInfo.source !== 'wy') {
     scrobbleInfo = null
     return
   }

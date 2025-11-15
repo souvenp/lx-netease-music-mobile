@@ -3,6 +3,7 @@ import { useI18n } from '@/lang'
 import settingState from '@/store/setting/state'
 import Menu, { type MenuType, type Position } from '@/components/common/Menu'
 import { hasDislike } from '@/core/dislikeList'
+import {useSettingValue} from "@/store/setting/hook.ts";
 
 export interface SelectInfo {
   musicInfo: LX.Music.MusicInfoOnline
@@ -23,7 +24,11 @@ export interface ListMenuProps {
   onArtistDetail: (selectInfo: SelectInfo) => void
   onAlbumDetail: (selectInfo: SelectInfo) => void
   onLike: (selectInfo: SelectInfo) => void
+  onPlayMv: (selectInfo: SelectInfo) => void
+  onMove?: (selectInfo: SelectInfo) => void
+  onRemove?: (selectInfo: SelectInfo) => void
   listId?: string
+  isCreator?: boolean
 }
 export interface ListMenuType {
   show: (selectInfo: SelectInfo, position: Position) => void
@@ -37,6 +42,15 @@ export default forwardRef<ListMenuType, ListMenuProps>((props: ListMenuProps, re
   const menuRef = useRef<MenuType>(null)
   const [selectInfo, setSelectInfo] = useState<SelectInfo>(initSelectInfo as SelectInfo);
   const [isDislikeMusic, setDislikeMusic] = useState(false)
+
+  const menuSetting = {
+    playLater: useSettingValue('menu.playLater'),
+    addTo: useSettingValue('menu.addTo'),
+    share: useSettingValue('menu.share'),
+    playMV: useSettingValue('menu.playMV'),
+    songDetail: useSettingValue('menu.songDetail'),
+    dislike: useSettingValue('menu.dislike'),
+  }
 
   useImperativeHandle(ref, () => ({
     show(newSelectInfo, position) {
@@ -53,31 +67,39 @@ export default forwardRef<ListMenuType, ListMenuProps>((props: ListMenuProps, re
   }))
 
   const menus = useMemo(() => {
-    const menu = [
-      // { action: 'play', label: t('play') },
-      { action: 'playLater', label: t('play_later') },
-      ...(settingState.setting['download.enable']
-        ? [{ action: 'download', label: t('download') }]
-        : []),
-      { action: 'add', label: t('add_to') },
-      { action: 'copyName', label: t('copy_name') },
-    ] as const;
+    const menu = []
+    if (menuSetting.playLater) menu.push({ action: 'playLater', label: t('play_later') });
+    menu.push({ action: 'download', label: t('download') });
+    // if (menuSetting.addTo) menu.push({ action: 'add', label: t('add_to') });
+    menu.push({ action: 'add', label: t('add_to') });
+    if (props.isCreator) {
+      menu.push({ action: 'move', label: t('move_to') });
+    }
+    if (menuSetting.share) menu.push({ action: 'copyName', label: t('copy_name') });
 
-    const wyMenuItems =
-      selectInfo.musicInfo?.source === 'wy'
-        ? [
-          { action: 'artistDetail', label: t('artist_detail') },
-          { action: 'albumDetail', label: t('album_detail') },
-        ]
-        : [];
+    const wyMenuItems = [];
+    if (selectInfo.musicInfo?.source === 'wy') {
+      wyMenuItems.push(
+        { action: 'artistDetail', label: t('artist_detail') },
+        { action: 'albumDetail', label: t('album_detail') },
+      );
+      if (selectInfo.musicInfo.meta.mv && menuSetting.playMV) {
+        wyMenuItems.push({ action: 'playMv', label: '播放MV' });
+      }
+    }
 
-    const remainingMenu = [
-      { action: 'musicSourceDetail', label: t('music_source_detail') },
-      { action: 'dislike', label: t('dislike'), disabled: isDislikeMusic },
-    ] as const;
+    const remainingMenu = []
+    if (menuSetting.songDetail)
+      remainingMenu.push({ action: 'musicSourceDetail', label: t('music_source_detail') })
+    if (menuSetting.dislike)
+      remainingMenu.push({ action: 'dislike', label: t('dislike'), disabled: isDislikeMusic })
+
+    if (props.isCreator) {
+      remainingMenu.push({ action: 'remove', label: t('delete') });
+    }
 
     return [...menu, ...wyMenuItems, ...remainingMenu];
-  }, [t, isDislikeMusic, selectInfo]);
+  }, [t, isDislikeMusic, selectInfo, menuSetting, props.isCreator]);
 
   const handleMenuPress = ({ action }: (typeof menus)[number]) => {
     switch (action) {
@@ -111,6 +133,15 @@ export default forwardRef<ListMenuType, ListMenuProps>((props: ListMenuProps, re
       case 'dislike':
         props.onDislikeMusic(selectInfo)
         break
+      case 'playMv':
+        props.onPlayMv(selectInfo);
+        break;
+      case 'move':
+        props.onMove?.(selectInfo);
+        break;
+      case 'remove':
+        props.onRemove?.(selectInfo);
+        break;
       default:
         break
     }

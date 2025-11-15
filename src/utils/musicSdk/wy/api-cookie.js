@@ -1,11 +1,15 @@
-// 文件路径: src/utils/musicSdk/wy/api-cookie.js (替换整个文件)
-
 import { httpFetch } from '../../request'
 import { weapi } from './utils/crypto'
 import settingState from '@/store/setting/state'
 
-export const getMusicUrl = (songInfo, type) => {
-  console.log(songInfo)
+export const getMusicUrl = (songInfo, type, retryNum = 0) => {
+  if (retryNum > 2) {
+    const requestObj = {}
+    requestObj.promise = Promise.reject(new Error('try max num'))
+    requestObj.cancelHttp = () => {}
+    return requestObj
+  }
+
   const songId = songInfo.songmid || songInfo.meta.songId
   const targetPrefer = {
     level: 'standard', // standard, higher, exhigh, lossless, hires, jyeffect, jymaster
@@ -47,7 +51,7 @@ export const getMusicUrl = (songInfo, type) => {
     form: weapi({
       ids: `[${songId}]`,
       level: targetPrefer.level,
-      encodeType: targetPrefer.encodeType
+      encodeType: targetPrefer.encodeType,
     }),
   })
 
@@ -60,6 +64,11 @@ export const getMusicUrl = (songInfo, type) => {
       url: data.url,
       level: data.level,
     }
+  }).catch(err => {
+    console.log('wy api-cookie getMusicUrl error, retrying...', retryNum + 1)
+    const newRequestObj = getMusicUrl(songInfo, type, retryNum + 1)
+    requestObj.cancelHttp = newRequestObj.cancelHttp
+    return newRequestObj.promise
   })
 
   return requestObj

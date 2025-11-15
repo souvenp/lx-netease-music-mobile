@@ -24,7 +24,6 @@ const Item = ({ id, name }: { id: LX.DownloadFileNameFormat; name: string }) => 
   // const isEnable = useSettingValue('download.enable')
   return (
     <CheckBox
-      marginRight={8}
       check={isActive}
       label={name}
       onChange={() => {

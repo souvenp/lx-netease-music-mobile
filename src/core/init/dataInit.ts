@@ -10,7 +10,13 @@ import { unlink } from '@/utils/fs'
 import { TEMP_FILE_PATH } from '@/utils/tools'
 // import { play, playList } from '../player/player'
 import wyUserApi from '@/utils/musicSdk/wy/user'
-import {setWyFollowedArtists, setWyLikedSongs, setWySubscribedAlbums} from '@/store/user/action.ts'
+import {
+  setWyFollowedArtists,
+  setWyLikedSongs,
+  setWySubscribedAlbums,
+  setWySubscribedPlaylists,
+  setWyUid
+} from '@/store/user/action.ts'
 import {getDownloadTasks} from "@/utils/data/download.ts";
 import downloadActions from '@/store/download/action';
 // const initPrevPlayInfo = async(appSetting: LX.AppSetting) => {
@@ -48,6 +54,7 @@ export default async (appSetting: LX.AppSetting) => {
     wyUserApi.getUid(wy_cookie)
       .then(uid =>
       {
+        setWyUid(uid)
         wyUserApi.getLikedSongList(uid, wy_cookie).then(ids => {
           setWyLikedSongs(ids)
           bootLog('Wy like list inited.')
@@ -63,6 +70,12 @@ export default async (appSetting: LX.AppSetting) => {
           bootLog('Wy liked albums inited.')
         }).catch(err => {
           bootLog(`Wy liked albums init failed: ${err.message}`)
+        })
+        wyUserApi.getUserPlaylists(uid, wy_cookie).then(playlists => {
+          setWySubscribedPlaylists(playlists)
+          bootLog('Wy subscribed playlists inited.')
+        }).catch(err => {
+          bootLog(`Wy subscribed playlists init failed: ${err.message}`)
         })
       })
       .catch(err => {
