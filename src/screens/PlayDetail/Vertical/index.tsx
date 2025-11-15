@@ -123,7 +123,7 @@ const styles = createStyle({
   },
   miniLyricContainer: {
     position: 'absolute',
-    bottom: '7%',
+    bottom: '6%',
     left: '10%',
     right: '10%',
     alignItems: 'flex-start',

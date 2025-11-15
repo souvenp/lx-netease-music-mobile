@@ -73,7 +73,7 @@ export default memo(({ componentId }: { componentId: string }) => {
   });
 
   const imageContainerStyle = useMemo(() => {
-    const imgWidth = Math.min(winWidth * 0.8, (winHeight - statusBarHeight - HEADER_HEIGHT) * 0.5);
+    const imgWidth = Math.min(winWidth * 0.85, (winHeight - statusBarHeight - HEADER_HEIGHT) * 0.5);
     return {
       width: imgWidth,
       height: imgWidth,
@@ -110,6 +110,7 @@ const styles = createStyle({
     flexShrink: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingBottom: '3%',
   },
   content: {
     backgroundColor: 'rgba(0,0,0,0)',

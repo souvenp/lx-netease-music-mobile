@@ -56,15 +56,28 @@ export const getMusicUrl = (songInfo, type, retryNum = 0) => {
   })
 
   requestObj.promise = requestObj.promise.then(({ body, statusCode }) => {
-    if (statusCode !== 200 || body.code !== 200) throw new Error('Cookie request failed')
+    if (statusCode !== 200 || body.code !== 200) {
+      throw new Error('Cookie request failed')
+    }
+
     const data = body.data[0]
-    if (!data.url) throw new Error('No url found in cookie request')
+    if (!data.url) {
+      if (data.fee === 1 || data.fee === 4) {
+        return Promise.reject(new Error('VIP 歌曲或无版权，无法通过 Cookie 获取'))
+      }
+      return Promise.reject(new Error('未能获取到播放链接'))
+    }
+
     return {
       type,
       url: data.url,
       level: data.level,
     }
   }).catch(err => {
+    if (err.message.includes('VIP') || err.message.includes('未能获取')) {
+      throw err
+    }
+
     console.log('wy api-cookie getMusicUrl error, retrying...', retryNum + 1)
     const newRequestObj = getMusicUrl(songInfo, type, retryNum + 1)
     requestObj.cancelHttp = newRequestObj.cancelHttp
