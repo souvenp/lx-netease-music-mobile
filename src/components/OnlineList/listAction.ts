@@ -18,7 +18,7 @@ import {navigations} from "@/navigation";
 import commonState from '@/store/common/state'
 import wyApi from '@/utils/musicSdk/wy/user'
 
-export const handleShowAlbumDetail = (musicInfo: LX.Music.MusicInfoOnline) => {
+export const handleShowAlbumDetail = (componentId: string, musicInfo: LX.Music.MusicInfoOnline) => {
   const albumId = musicInfo.meta.albumId
   if (!albumId) {
     toast('专辑信息不存在')
@@ -31,10 +31,10 @@ export const handleShowAlbumDetail = (musicInfo: LX.Music.MusicInfoOnline) => {
     img: musicInfo.meta.picUrl,
     source: 'wy', // 默认源为wy
   }
-  navigations.pushAlbumDetailScreen(commonState.componentIds.home!, albumInfo)
+  navigations.pushAlbumDetailScreen(componentId, albumInfo)
 }
 
-export const handleShowArtistDetail = async (musicInfo: LX.Music.MusicInfoOnline) => {
+export const handleShowArtistDetail = async (componentId: string, musicInfo: LX.Music.MusicInfoOnline) => {
   if (musicInfo.source !== 'wy') {
     toast('非网易云音源无法查看歌手详情')
     return
@@ -47,7 +47,7 @@ export const handleShowArtistDetail = async (musicInfo: LX.Music.MusicInfoOnline
   }
 
   const onSelect = (artist: { id: string | number, name: string }) => {
-    navigations.pushArtistDetailScreen(<string>commonState.componentIds.home, { id: String(artist.id), name: artist.name })
+    navigations.pushArtistDetailScreen(componentId, { id: String(artist.id), name: artist.name })
   }
 
   if (artists.length > 1) {

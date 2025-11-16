@@ -21,12 +21,7 @@ export default memo(({ albumInfo, componentId }) => {
   const isSubscribed = useIsWyAlbumSubscribed(albumInfo.id);
 
   const handleArtistPress = (artist) => {
-    // 避免重复进入同一个页面
-    if (commonState.componentIds.ARTIST_DETAIL) {
-      pop(componentId);
-    } else {
-      navigations.pushArtistDetailScreen(commonState.componentIds.home, { id: String(artist.id), name: artist.name });
-    }
+    navigations.pushArtistDetailScreen(componentId, { id: String(artist.id), name: artist.name });
   };
 
   const toggleSubscribe = () => {

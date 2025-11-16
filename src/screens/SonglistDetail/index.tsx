@@ -22,9 +22,10 @@ import { Icon } from '@/components/common/Icon'
 import {useIsWyPlaylistSubscribed, useWySubscribedPlaylists, useWyUid} from '@/store/user/hook'
 import wyApi from '@/utils/musicSdk/wy/user'
 import { addWySubscribedPlaylist, removeWySubscribedPlaylist } from '@/store/user/action'
+import { COMPONENT_IDS } from '@/config/constant'
 import Menu, { type MenuType } from '@/components/common/Menu'
 import PlaylistEditModal, { type PlaylistEditModalType } from '../Home/Views/MyPlaylist/PlaylistEditModal'
-import {DetailInfo} from "@/screens/SonglistDetail/Header.tsx";
+import {DetailInfo} from "@/screens/SonglistDetail/Header.tsx"
 
 const IMAGE_WIDTH = scaleSizeW(70)
 
@@ -46,7 +47,6 @@ const ListHeader = ({ detailInfo, info, onBack }: { detailInfo: DetailInfo, info
   const showSubscribeButton = useMemo(() => {
     return info.source === 'wy' && !isCreator
   }, [info.source, isCreator])
-
 
   const toggleSubscribe = useCallback(() => {
     const newSubState = !isSubscribed
@@ -106,6 +106,7 @@ const ListHeader = ({ detailInfo, info, onBack }: { detailInfo: DetailInfo, info
     }
   }
 
+
   return (
     <>
       <View style={{ ...styles.listHeaderContainer, borderBottomColor: theme['c-border-background'] }}>
@@ -141,7 +142,6 @@ const ListHeader = ({ detailInfo, info, onBack }: { detailInfo: DetailInfo, info
                 </TouchableOpacity>
               )}
             </View>
-
           </View>
         </View>
         <ActionBar onBack={onBack} />
@@ -158,6 +158,7 @@ const ListHeader = ({ detailInfo, info, onBack }: { detailInfo: DetailInfo, info
     </>
   )
 }
+
 
 export default ({ info, onBack }: { info: ListInfoItem, onBack?: () => void }) => {
   const musicListRef = useRef<MusicListType>(null)
@@ -200,7 +201,6 @@ export default ({ info, onBack }: { info: ListInfoItem, onBack?: () => void }) =
         refreshList(true)
       }
     }
-
     global.app_event.on('playlist_updated', handlePlaylistUpdate)
     return () => {
       global.app_event.off('playlist_updated', handlePlaylistUpdate)
@@ -209,25 +209,32 @@ export default ({ info, onBack }: { info: ListInfoItem, onBack?: () => void }) =
 
   useEffect(() => {
     const onBackPress = () => {
-      if (commonState.componentIds.ARTIST_DETAIL || commonState.componentIds.ALBUM_DETAIL_SCREEN) {
+      // 获取状态管理中记录的最后一个（即最顶层）屏幕信息
+      const lastScreen = commonState.componentIds[commonState.componentIds.length - 1]
+
+      // 如果最顶层的屏幕不是 Home 屏幕，则意味着有其他屏幕（如歌手详情页）被 push 到栈顶
+      // 此时不应处理返回事件，应交由 react-native-navigation 默认处理（即 pop 顶层屏幕）
+      if (lastScreen && lastScreen.name !== COMPONENT_IDS.home) {
         return false
       }
+
+      // 否则，处理返回事件，关闭当前的歌单详情浮层
       handleBack()
       return true
     }
     const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress)
+
     return () => subscription.remove()
   }, [handleBack])
 
   useEffect(() => {
     if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
+      isInitialMount.current = false
+      return
     }
-    const updatedPlaylist = playlists.find(p => String(p.id) === String(info.id));
-
+    const updatedPlaylist = playlists.find(p => String(p.id) === String(info.id))
     if (!updatedPlaylist) {
-      return;
+      return
     }
 
     if (updatedPlaylist.name !== detailInfo.name || updatedPlaylist.description !== detailInfo.desc) {
@@ -239,6 +246,7 @@ export default ({ info, onBack }: { info: ListInfoItem, onBack?: () => void }) =
       }))
     }
   }, [playlists, handleBack, info.id, detailInfo.name, detailInfo.desc])
+
 
   const ListHeaderComponent = useMemo(() => <ListHeader detailInfo={detailInfo} info={info} onBack={handleBack} />, [detailInfo, info, handleBack])
 
@@ -252,8 +260,8 @@ export default ({ info, onBack }: { info: ListInfoItem, onBack?: () => void }) =
     setDetailInfo(prev => ({
       ...prev,
       total: newList.length,
-    }));
-  }, []);
+    }))
+  }, [])
 
   const pageContent = (
     <ListInfoContext.Provider value={info}>
@@ -316,6 +324,7 @@ export default ({ info, onBack }: { info: ListInfoItem, onBack?: () => void }) =
       </View>
     )
   }, [pageContent, pic, theme, windowSize.height, windowSize.width, BLUR_RADIUS, picOpacity])
+
   return (
     <View style={{ flex: 1 }}>
       {pic ? picComponent : themeComponent}

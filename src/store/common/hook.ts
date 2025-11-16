@@ -42,7 +42,7 @@ export const useComponentIds = () => {
 }
 
 const hasVisible = (visibleNames: COMPONENT_IDS[], ids: InitState['componentIds']) => {
-  const names = Object.keys(ids)
+  const names = ids.map(item => item.name)
   return names.length == visibleNames.length ? visibleNames.every((n) => names.includes(n)) : false
 }
 export const usePageVisible = (

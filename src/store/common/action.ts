@@ -12,16 +12,15 @@ export default {
     global.state_event.statusbarHeightUpdated(size)
   },
   setComponentId(name: COMPONENT_IDS, id: string) {
-    state.componentIds[name] = id
-    global.state_event.componentIdsUpdated({ ...state.componentIds })
+    state.componentIds.push({ name, id })
+    global.state_event.componentIdsUpdated([...state.componentIds])
   },
   removeComponentId(id: string) {
-    const name = (Object.entries(state.componentIds) as Array<[COMPONENT_IDS, string]>).find(
-      (kv) => kv[1] == id
-    )?.[0]
-    if (!name) return
-    delete state.componentIds[name]
-    global.state_event.componentIdsUpdated({ ...state.componentIds })
+    const initialLength = state.componentIds.length
+    state.componentIds = state.componentIds.filter(item => item.id !== id)
+    if (state.componentIds.length < initialLength) {
+      global.state_event.componentIdsUpdated([...state.componentIds])
+    }
   },
   setNavActiveId(id: InitState['navActiveId']) {
     state.navActiveId = id

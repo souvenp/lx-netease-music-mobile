@@ -3,6 +3,9 @@ import state, {FollowedArtistInfo, SubscribedAlbumInfo, SubscribedPlaylistInfo} 
 export const setWyUid = (uid: string) => {
   state.wy_uid = uid
 }
+export const setWyVipType = (type: number) => {
+  state.wy_vip_type = type
+}
 export const setWyLikedSongs = (ids: (string | number)[]) => {
   state.wy_liked_song_ids = new Set(ids.map(String))
   global.state_event.wyLikedListChanged()

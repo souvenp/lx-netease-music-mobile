@@ -42,7 +42,7 @@ export default memo(({ artist, showFollowButton = false }: { artist: any, showFo
   }
 
   const handlePress = () => {
-    navigations.pushArtistDetailScreen(commonState.componentIds.home, { id: String(artist.id), name: artist.name });
+    navigations.pushArtistDetailScreen(commonState.componentIds[commonState.componentIds.length - 1]?.id, { id: String(artist.id), name: artist.name });
   }
   const alias = artist.alias && artist.alias.length ? ` ${artist.alias[0]}` : ''
 

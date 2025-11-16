@@ -9,7 +9,6 @@ import PlayerBar from '@/components/player/PlayerBar';
 import { playOnlineList } from '@/core/list';
 import { usePlayerMusicInfo } from '@/store/player/hook';
 
-
 export default memo(({ componentId, similarSongs: initialSimilarSongs }: { componentId: string, similarSongs: LX.Music.MusicInfoOnline[] }) => {
   const listRef = useRef<OnlineListType>(null);
   const playerMusicInfo = usePlayerMusicInfo();
@@ -41,7 +40,7 @@ export default memo(({ componentId, similarSongs: initialSimilarSongs }: { compo
     <PageContent>
       <View style={styles.container}>
         <Header componentId={componentId} title="相似歌曲推荐" />
-        <OnlineList
+        <OnlineList componentId={componentId}
           ref={listRef}
           listId="dailyrec_wy"
           forcePlayList={true}
@@ -51,7 +50,7 @@ export default memo(({ componentId, similarSongs: initialSimilarSongs }: { compo
           onRefresh={() => {}}
           onListUpdate={handleListUpdate}
         />
-        <PlayerBar />
+        <PlayerBar componentId={componentId} />
       </View>
     </PageContent>
   );

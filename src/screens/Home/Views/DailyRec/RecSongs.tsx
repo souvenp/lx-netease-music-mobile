@@ -217,7 +217,7 @@ export default memo(() => {
     }
 
     const uniqueSongs = Array.from(new Map(allSimilarSongs.map(song => [song.id, song])).values())
-    navigations.pushSimilarSongsScreen(commonState.componentIds.home!, uniqueSongs)
+    navigations.pushSimilarSongsScreen(commonState.componentIds[commonState.componentIds.length - 1]?.id!, uniqueSongs)
   }
 
   const ListFooter = () => {

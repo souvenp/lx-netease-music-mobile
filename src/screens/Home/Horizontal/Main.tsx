@@ -7,6 +7,8 @@ import Setting from '../Views/Setting'
 import commonState, { type InitState as CommonState } from '@/store/common/state'
 import DailyRec from '../Views/DailyRec'
 import MyPlaylist from '../Views/MyPlaylist'
+import SubscribedAlbums from "@/screens/Home/Views/SubscribedAlbums";
+import FollowedArtists from "@/screens/Home/Views/FollowedArtists";
 
 const Main = () => {
   const [id, setId] = useState(commonState.navActiveId)
@@ -33,6 +35,10 @@ const Main = () => {
         return <SongList />
       case 'nav_top':
         return <Leaderboard />
+      case 'nav_followed_artists':
+        return <FollowedArtists />
+      case 'nav_subscribed_albums':
+        return <SubscribedAlbums />
       case 'nav_love':
         return <Mylist />
       case 'nav_setting':

@@ -249,7 +249,7 @@ export default memo(() => {
 
   const handleDownloadPress = () => {
     global.app_event.changeMenuVisible(false);
-    navigations.pushDownloadManagerScreen(commonState.componentIds.home!);
+    navigations.pushDownloadManagerScreen(commonState.componentIds[commonState.componentIds.length - 1]?.id!);
   };
   const filteredNavMenus = useMemo(() => {
     return NAV_MENUS.filter(

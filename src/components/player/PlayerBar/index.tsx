@@ -13,10 +13,9 @@ import { navigations } from '@/navigation'
 import commonState from '@/store/common/state'
 import { usePlayerMusicInfo } from '@/store/player/hook'
 import PlayerPlaylist, { PlayerPlaylistType } from '@/components/player/PlayerPlaylist.tsx'
-import MiniProgressBar from "@/components/player/PlayerBar/components/MiniProgressBar.tsx";
+import MiniProgressBar from "@/components/player/PlayerBar/components/MiniProgressBar.tsx"
 
-
-export default memo(({ isHome = false }: { isHome?: boolean }) => {
+export default memo(({ componentId, isHome = false }: { isHome?: boolean }) => {
   const { keyboardShown } = useKeyboard()
   const theme = useTheme()
   const autoHidePlayBar = useSettingValue('common.autoHidePlayBar')
@@ -26,7 +25,8 @@ export default memo(({ isHome = false }: { isHome?: boolean }) => {
 
   const handleNavigate = () => {
     if (!musicInfo.id) return
-    navigations.pushPlayDetailScreen(commonState.componentIds.home!)
+    const currentComponentId = commonState.componentIds[commonState.componentIds.length - 1]?.id!
+    navigations.pushPlayDetailScreen(currentComponentId)
   }
 
   const handleShowPlaylist = () => {
@@ -38,7 +38,6 @@ export default memo(({ isHome = false }: { isHome?: boolean }) => {
     PanResponder.create({
       onMoveShouldSetPanResponder: (evt, gestureState) => {
         const { dx, dy } = gestureState
-        // 优先判断手势的主方向
         if (Math.abs(dx) > Math.abs(dy) * 1.5) { // 水平滑动为主
           if (drawerLayoutPosition === 'left' && dx > 10) {
             gestureAction.current = 'drawer'
@@ -58,7 +57,6 @@ export default memo(({ isHome = false }: { isHome?: boolean }) => {
       },
       onPanResponderRelease: (evt, gestureState) => {
         const { dx, dy } = gestureState
-        // 根据已确定的手势类型执行操作
         if (gestureAction.current === 'drawer') {
           if (drawerLayoutPosition === 'left' && dx > 50) {
             global.app_event.changeMenuVisible(true)
@@ -68,7 +66,6 @@ export default memo(({ isHome = false }: { isHome?: boolean }) => {
         } else if (gestureAction.current === 'playlist' && dy < -50) {
           handleShowPlaylist()
         }
-        // 重置手势状态
         gestureAction.current = null
       },
       onPanResponderTerminate: (evt, gestureState) => {

@@ -17,7 +17,7 @@ import settingState from '@/store/setting/state'
 import {getMvUrl} from "@/utils/musicSdk/wy/mv.js";
 
 
-export default memo(() => {
+export default memo(({ componentId }: { componentId: string }) => {
   const menuRef = useRef<PlayDetailMenuType>(null);
   const moreBtnRef = useRef<TouchableOpacity>(null);
   const musicAddModalRef = useRef<MusicAddModalType>(null);
@@ -73,13 +73,13 @@ export default memo(() => {
 
   const onArtistDetail = (info: SelectInfo) => {
     if (info.musicInfo.source !== 'local') {
-      handleShowArtistDetail(info.musicInfo);
+      handleShowArtistDetail(componentId, info.musicInfo);
     }
   };
 
   const onAlbumDetail = (info: SelectInfo) => {
     if (info.musicInfo.source !== 'local') {
-      handleShowAlbumDetail(info.musicInfo);
+      handleShowAlbumDetail(componentId, info.musicInfo);
     }
   };
 

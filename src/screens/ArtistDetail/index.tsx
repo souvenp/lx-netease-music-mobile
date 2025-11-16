@@ -190,6 +190,7 @@ export default memo(({ componentId, artistInfo }: { componentId: string, artistI
       <View style={styles.container}>
         <Header artist={displayArtist} componentId={componentIdRef.current} />
         <SongList
+          componentId={componentId}
           songs={songs}
           albums={albums}
           activeTab={activeTab}
@@ -202,7 +203,7 @@ export default memo(({ componentId, artistInfo }: { componentId: string, artistI
           onAlbumViewModeChange={handleAlbumViewModeChange}
           onSongListUpdate={handleSongListUpdate}
         />
-        <PlayerBar />
+        <PlayerBar componentId={componentId} />
       </View>
     </PageContent>
   );

@@ -29,6 +29,7 @@ export interface InitState {
   wy_followed_artists: FollowedArtistInfo[]
   wy_subscribed_albums: SubscribedAlbumInfo[]
   wy_subscribed_playlists: SubscribedPlaylistInfo[]
+  wy_vip_type: number
 }
 const state: InitState = {
   wy_uid: null,
@@ -36,6 +37,7 @@ const state: InitState = {
   wy_followed_artists: [],
   wy_subscribed_albums: [],
   wy_subscribed_playlists: [],
+  wy_vip_type: 0,
 }
 
 export default state

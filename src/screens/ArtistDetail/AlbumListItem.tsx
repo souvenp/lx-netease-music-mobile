@@ -13,7 +13,7 @@ import wyApi from '@/utils/musicSdk/wy/user'
 import { addWySubscribedAlbum, removeWySubscribedAlbum } from '@/store/user/action'
 import { type SubscribedAlbumInfo } from '@/store/user/state'
 
-export default memo(({ item, width, viewMode }: { item: any, width: number, viewMode: 'grid' | 'list' }) => {
+export default memo(({ componentId, item, width, viewMode }: { componentId: string, item: any, width: number, viewMode: 'grid' | 'list' }) => {
   const theme = useTheme()
   const isSubscribed = useIsWyAlbumSubscribed(item.id)
 
@@ -31,7 +31,7 @@ export default memo(({ item, width, viewMode }: { item: any, width: number, view
       size: item.size,
       publishTime: item.publishTime,
     }
-    navigations.pushAlbumDetailScreen(commonState.componentIds.home!, albumInfo)
+    navigations.pushAlbumDetailScreen(componentId, albumInfo)
   }
 
   const toggleSubscribe = (event: any) => {
@@ -61,7 +61,7 @@ export default memo(({ item, width, viewMode }: { item: any, width: number, view
   // 列表视图模式
   if (viewMode === 'list') {
     return (
-      <TouchableOpacity style={listStyles.container} onPress={handlePress}>
+      <TouchableOpacity style={[listStyles.container, { width }]} onPress={handlePress}>
         <Image url={item.picUrl} style={listStyles.artwork} />
         <View style={listStyles.info}>
           <Text style={listStyles.name} numberOfLines={1}>{item.name}</Text>
@@ -129,7 +129,6 @@ const gridStyles = createStyle({
 
 const listStyles = createStyle({
   container: {
-    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 8,
@@ -151,6 +150,6 @@ const listStyles = createStyle({
   },
   time: {},
   likeButton: {
-    paddingHorizontal: 15,
+    paddingHorizontal: 25,
   },
 })

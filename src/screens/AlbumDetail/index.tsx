@@ -56,20 +56,20 @@ export default memo(({ componentId, albumInfo }: { componentId: string; albumInf
   return (
     <PageContent>
       <View style={styles.container}>
-        <OnlineList
+        <Header albumInfo={albumDetail.info || albumInfo} componentId={componentId} />
+        <OnlineList componentId={componentId}
           ref={listRef}
           listId='album'
           forcePlayList={true}
-          ListHeaderComponent={<Header albumInfo={albumDetail.info || albumInfo} componentId={componentId} />}
           onPlayList={onPlayList}
           onLoadMore={() => {}}
           onRefresh={onRefresh}
           onListUpdate={handleListUpdate}
         />
-        <PlayerBar />
+        <PlayerBar componentId={componentId} />
       </View>
     </PageContent>
-  );
+  )
 });
 
 const styles = createStyle({

@@ -10,7 +10,7 @@ import { BorderWidths } from '@/theme'
 import { Icon } from '@/components/common/Icon.tsx'
 import PagerView, { type PagerViewOnPageSelectedEvent } from 'react-native-pager-view'
 
-export default memo(({
+export default memo(({componentId,
                        songs, albums, activeTab, onTabChange,
                        onLoadMoreSongs, onLoadMoreAlbums,
                        onSortChange, onRefresh,
@@ -126,6 +126,7 @@ export default memo(({
         </View>
         <View key="2" style={{ flex: 1 }}>
           <AlbumList
+            componentId={componentId}
             albums={albums.list}
             loading={albums.loading}
             hasMore={albums.hasMore}

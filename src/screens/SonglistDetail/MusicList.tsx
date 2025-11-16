@@ -7,6 +7,7 @@ import { useListInfo } from './state'
 import {DetailInfo} from "@/screens/SonglistDetail/Header.tsx";
 
 export interface MusicListProps {
+  componentId: string
   isCreator: boolean
   onListUpdate: OnlineListProps['onListUpdate']
 }
@@ -15,7 +16,7 @@ export interface MusicListType {
   loadList: (source: LX.OnlineSource, listId: string, isRefresh?: boolean) => Promise<DetailInfo>
 }
 
-export default forwardRef<MusicListType, MusicListProps>(({ isCreator }, ref) => {
+export default forwardRef<MusicListType, MusicListProps>(({componentId, isCreator }, ref) => {
   const listRef = useRef<OnlineListType>(null)
   const isUnmountedRef = useRef(false)
   const info = useListInfo()
@@ -121,7 +122,7 @@ export default forwardRef<MusicListType, MusicListProps>(({ isCreator }, ref) =>
   }, []);
 
   return (
-    <OnlineList
+    <OnlineList componentId={componentId}
       ref={listRef}
       onPlayList={handlePlayList}
       onRefresh={handleRefresh}

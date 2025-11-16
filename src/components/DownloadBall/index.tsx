@@ -91,7 +91,7 @@ export default memo(() => {
       setIsVisible(false);
       setActiveTasks(new Map()); // 清空状态以便下次出现
     });
-    navigations.pushDownloadManagerScreen(commonState.componentIds.home!);
+    navigations.pushDownloadManagerScreen(commonState.componentIds[commonState.componentIds.length - 1]?.id!);
   };
 
   if (!isVisible) return null;

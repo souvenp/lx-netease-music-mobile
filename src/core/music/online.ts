@@ -11,8 +11,9 @@ import {
   handleGetOnlinePicUrl,
   getCachedLyricInfo, QUALITY_RANK,
 } from './utils'
-import {toast} from "@/utils/tools.ts";
-import {fetchAndApplyDetailedQuality} from "@/utils/musicSdk/wy/musicDetail.js";
+import {toast} from "@/utils/tools.ts"
+import {fetchAndApplyDetailedQuality} from "@/utils/musicSdk/wy/musicDetail.js"
+import userState from '@/store/user/state'
 
 /* export const setMusicUrl = ({ musicInfo, type, url }: {
   musicInfo: LX.Music.MusicInfo
@@ -92,8 +93,11 @@ export const getMusicUrl = async ({
   // 定义高音质列表
   const highQualityLevels: LX.Quality[] = ['flac', 'hires', 'master', 'atmos', 'atmos_plus'];
 
-  // 检查是否优先使用 API (下载场景或高音质播放场景)
-  const preferApi = prefer === 'api' || (musicInfo.source == 'wy' && highQualityLevels.includes(targetQuality));
+  const isWyVipSong = musicInfo.source === 'wy' && musicInfo.meta.fee === 1;
+  const isNonVipUser = userState.wy_vip_type === 0;
+
+  // 检查是否优先使用 API (下载场景或高音质播放场景或VIP歌曲)
+  const preferApi = prefer === 'api' || (isWyVipSong && isNonVipUser) || (musicInfo.source == 'wy' && highQualityLevels.includes(targetQuality));
 
   if (preferApi) {
     try {

@@ -29,6 +29,7 @@ import {
 } from "@/components/OnlineList/listAction";
 import { handleShare } from '@/screens/Home/Views/Mylist/MusicList/listAction';
 import settingState from '@/store/setting/state';
+import commonState from '@/store/common/state';
 
 export interface PlayerPlaylistType {
   show: () => void;
@@ -191,16 +192,16 @@ export default forwardRef<PlayerPlaylistType, {}>((props, ref) => {
   };
 
   const onArtistDetail = (info: SelectInfo) => {
-    panelRef.current?.setVisible(false);
     requestAnimationFrame(() => {
-      handleShowArtistDetail(info.musicInfo);
+      handleShowArtistDetail(commonState.componentIds[commonState.componentIds.length - 1]?.id!, info.musicInfo);
+      panelRef.current?.setVisible(false);
     });
   };
 
   const onAlbumDetail = (info: SelectInfo) => {
-    panelRef.current?.setVisible(false);
     requestAnimationFrame(() => {
-      handleShowAlbumDetail(info.musicInfo);
+      handleShowAlbumDetail(commonState.componentIds[commonState.componentIds.length - 1]?.id!, info.musicInfo);
+      panelRef.current?.setVisible(false);
     });
   };
 

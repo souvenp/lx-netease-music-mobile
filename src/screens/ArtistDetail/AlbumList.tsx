@@ -1,7 +1,7 @@
 import { memo, useMemo } from 'react'
 import { FlatList, View, RefreshControl } from 'react-native'
 import AlbumListItem from './AlbumListItem'
-import { useLayout } from '@/utils/hooks'
+import {useHorizontalMode, useLayout} from '@/utils/hooks'
 import { useTheme } from '@/store/theme/hook'
 import { useI18n } from '@/lang'
 import { scaleSizeW } from '@/utils/pixelRatio'
@@ -11,30 +11,36 @@ import { createStyle } from '@/utils/tools'
 const MIN_WIDTH = scaleSizeW(120);
 const HORIZONTAL_SPACING = 24;
 
-export default memo(({ albums, loading, hasMore, onLoadMore, onRefresh, ListHeaderComponent, viewMode }) => {
+export default memo(({ componentId,  albums, loading, hasMore, onLoadMore, onRefresh, ListHeaderComponent, viewMode }) => {
   const { onLayout, width } = useLayout()
   const theme = useTheme()
   const t = useI18n()
+  const isHorizontal = useHorizontalMode()
 
   const rowInfo = useMemo(() => {
     if (width === 0) return { num: 3, itemWidth: 0 }
-    if (viewMode === 'list') return { num: 1, itemWidth: width }
+    if (viewMode === 'list') {
+      const num = isHorizontal ? 2 : 1
+      const totalSpacing = HORIZONTAL_SPACING * (num - 1)
+      const itemWidth = Math.floor((width - totalSpacing) / num)
+      return { num, itemWidth }
+    }
     const num = Math.max(Math.floor((width + HORIZONTAL_SPACING) / (MIN_WIDTH + HORIZONTAL_SPACING)), 3)
     const totalSpacing = HORIZONTAL_SPACING * (num - 1)
     const itemWidth = Math.floor((width - totalSpacing) / num)
     return { num, itemWidth }
-  }, [width, viewMode])
+  }, [width, viewMode, isHorizontal])
 
   const renderItem = ({ item }: { item: any }) => {
     if (item.id.toString().startsWith('white__')) {
       return <View style={{ width: rowInfo.itemWidth }} />
     }
-    return <AlbumListItem item={item} width={rowInfo.itemWidth} viewMode={viewMode} />
+    return <AlbumListItem componentId={componentId} item={item} width={rowInfo.itemWidth} viewMode={viewMode} />
   }
 
   const list = useMemo(() => {
     const list = [...albums]
-    if (viewMode === 'list') return list
+    if (rowInfo.num <= 1) return list
     if (rowInfo.num === 0) return list // Avoid division by zero
     let whiteItemNum = list.length % rowInfo.num
     if (whiteItemNum > 0) whiteItemNum = rowInfo.num - whiteItemNum
@@ -42,7 +48,7 @@ export default memo(({ albums, loading, hasMore, onLoadMore, onRefresh, ListHead
       list.push({ id: `white__${i}` })
     }
     return list
-  }, [albums, rowInfo.num, viewMode])
+  }, [albums, rowInfo.num])
 
   const ListFooterComponent = () => {
     let text = ''
@@ -75,7 +81,7 @@ export default memo(({ albums, loading, hasMore, onLoadMore, onRefresh, ListHead
               onRefresh={onRefresh}
             />
           }
-          columnWrapperStyle={viewMode === 'grid' ? styles.row : undefined}
+          columnWrapperStyle={rowInfo.num > 1 ? styles.row : undefined}
         />
       )}
     </View>

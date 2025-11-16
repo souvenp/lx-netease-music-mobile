@@ -32,7 +32,7 @@ export default memo(({ item, showSubscribeButton = false }: { item: any, showSub
       size: item.size,
       publishTime: item.publishTime,
     }
-    navigations.pushAlbumDetailScreen(commonState.componentIds.home!, albumInfo)
+    navigations.pushAlbumDetailScreen(commonState.componentIds[commonState.componentIds.length - 1]?.id!, albumInfo)
   }
 
   const toggleSubscribe = useCallback((event) => {

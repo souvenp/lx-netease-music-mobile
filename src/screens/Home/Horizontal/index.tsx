@@ -3,6 +3,7 @@ import Aside from './Aside'
 import PlayerBar from '@/components/player/PlayerBar'
 import StatusBar from '@/components/common/StatusBar'
 import Header from './Header'
+import commonState from '@/store/common/state'
 import Main from './Main'
 import { createStyle } from '@/utils/tools'
 
@@ -17,7 +18,7 @@ const styles = createStyle({
   },
 })
 
-export default () => {
+export default ({ componentId }: { componentId: string }) => {
   return (
     <>
       <StatusBar />
@@ -26,7 +27,7 @@ export default () => {
         <View style={styles.content}>
           <Header />
           <Main />
-          <PlayerBar isHome />
+          <PlayerBar componentId={componentId} isHome />
         </View>
       </View>
     </>

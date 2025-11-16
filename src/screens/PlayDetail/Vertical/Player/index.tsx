@@ -8,12 +8,12 @@ import ControlBtn from './components/ControlBtn'
 import { createStyle } from '@/utils/tools'
 import { NAV_SHEAR_NATIVE_IDS } from '@/config/constant'
 
-export default memo(() => {
+export default memo(({ componentId }: { componentId: string }) => {
   return (
     <View style={styles.container} nativeID={NAV_SHEAR_NATIVE_IDS.playDetail_player}>
       <PlayInfo />
       <ControlBtn />
-      <MoreBtn />
+      <MoreBtn componentId={componentId} />
     </View>
   )
 })

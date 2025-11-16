@@ -49,9 +49,8 @@ export default ({ componentId }: Props) => {
 
   useBackHandler(
     useCallback(() => {
-      // 如果有其他页面在 Home 之上（如播放详情页），则不处理返回事件
-      if (Object.keys(commonState.componentIds).length > 1) {
-        return false
+      if (commonState.componentIds.length > 1) {
+        return false;
       }
 
       // 如果当前在设置页面，让设置页面的返回逻辑优先处理
@@ -73,7 +72,7 @@ export default ({ componentId }: Props) => {
 
   return (
     <>
-      <PageContent>{isHorizontalMode ? <Horizontal /> : <Vertical />}</PageContent>
+      <PageContent>{isHorizontalMode ? <Horizontal componentId={componentId} /> : <Vertical componentId={componentId} />}</PageContent>
       <ArtistSelectorManager />
       <WebLoginManager />
       {/*<YouTubeLoginManager />*/}

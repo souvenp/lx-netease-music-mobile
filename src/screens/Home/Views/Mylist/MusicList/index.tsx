@@ -20,7 +20,7 @@ import ListMusicAdd, {
 import ListMusicMultiAdd, {
   type MusicMultiAddModalType as ListAddMultiType,
 } from '@/components/MusicMultiAddModal'
-import { createStyle } from '@/utils/tools'
+import {createStyle, toast} from '@/utils/tools'
 import { type LayoutChangeEvent, View } from 'react-native'
 import ActiveList, { type ActiveListType } from './ActiveList'
 import MultipleModeBar, { type SelectMode, type MultipleModeBarType } from './MultipleModeBar'
@@ -36,6 +36,8 @@ import MusicToggleModal, { type MusicToggleModalType } from './MusicToggleModal'
 import {handleShowAlbumDetail, handleShowArtistDetail} from "@/components/OnlineList/listAction.ts";
 import {useSettingValue} from "@/store/setting/hook.ts";
 import {updateSetting} from "@/core/common.ts";
+import {getMvUrl} from "@/utils/musicSdk/wy/mv.js";
+import commonState from '@/store/common/state';
 
 export default () => {
   const activeListRef = useRef<ActiveListType>(null)
@@ -88,14 +90,24 @@ export default () => {
   }, [])
   const handleShowArtist = useCallback((info: SelectInfo) => {
     if (info.musicInfo.source !== 'local') {
-      void handleShowArtistDetail(info.musicInfo);
+      void handleShowArtistDetail(commonState.componentIds[commonState.componentIds.length - 1]?.id!, info.musicInfo);
     }
   }, []);
 
   const handleShowAlbum = useCallback((info: SelectInfo) => {
     if (info.musicInfo.source !== 'local') {
-      handleShowAlbumDetail(info.musicInfo);
+      handleShowAlbumDetail(commonState.componentIds[commonState.componentIds.length - 1]?.id!, info.musicInfo);
     }
+  }, []);
+
+  const handlePlayMv = useCallback((info: SelectInfo) => {
+    const mvId = info.musicInfo.meta.mv;
+    if (!mvId) return;
+    getMvUrl(mvId).then(data => {
+      global.app_event.showVideoPlayer(data.url);
+    }).catch(err => {
+      toast(err.message || '获取MV失败');
+    });
   }, []);
 
   const showMenu = useCallback(
@@ -261,6 +273,7 @@ export default () => {
         onToggleSource={(info) => musicToggleModalRef.current?.show(info)}
         onArtistDetail={handleShowArtist}
         onAlbumDetail={handleShowAlbum}
+        onPlayMv={handlePlayMv}
       />
       <MetadataEditModal ref={metadataEditTypeRef} onUpdate={handleUpdateMetadata} />
       <MusicToggleModal ref={musicToggleModalRef} />

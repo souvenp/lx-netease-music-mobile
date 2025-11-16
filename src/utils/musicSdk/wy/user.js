@@ -3,6 +3,7 @@ import { weapi } from './utils/crypto'
 import { getWyUidCache, saveWyUidCache } from '@/utils/data'
 import {toast, toMD5} from '@/utils/tools'
 import settingState from "@/store/setting/state";
+import {setWyVipType} from "@/store/user/action";
 
 export default {
   async getUid(cookie, retryNum = 0) {
@@ -38,6 +39,7 @@ export default {
       }
 
       const uid = body.account.id;
+      setWyVipType(body.account.vipType);
       await saveWyUidCache(hashedCookie, String(uid));
       return uid;
     } catch (error) {
