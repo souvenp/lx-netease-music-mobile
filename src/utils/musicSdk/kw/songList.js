@@ -415,47 +415,48 @@ export default {
       for (let info of infoArr) {
         info = info.match(this.regExps.mInfo)
         if (info) {
+          const size = info[4] ? info[4].toLocaleUpperCase() : null
           switch (info[2]) {
             case '20900':
-              types.push({ type: 'master', size: info[4] })
+              types.push({ type: 'master', size })
               _types.master = {
-                size: info[4].toLocaleUpperCase(),
+                size
               }
               break
             case '20501':
-              types.push({ type: 'atmos_plus', size: info[4] })
+              types.push({ type: 'atmos_plus', size })
               _types.atmos_plus = {
-                size: info[4].toLocaleUpperCase(),
+                size
               }
               break
             case '20201':
-              types.push({ type: 'atmos', size: info[4] })
+              types.push({ type: 'atmos', size })
               _types.atmos = {
-                size: info[4].toLocaleUpperCase(),
+                size
               }
               break
             case '4000':
-              types.push({ type: 'hires', size: info[4] })
+              types.push({ type: 'hires', size })
               _types.hires = {
-                size: info[4].toLocaleUpperCase(),
+                size
               }
               break
             case '2000':
-              types.push({ type: 'flac', size: info[4] })
+              types.push({ type: 'flac', size })
               _types.flac = {
-                size: info[4].toLocaleUpperCase(),
+                size
               }
               break
             case '320':
-              types.push({ type: '320k', size: info[4] })
+              types.push({ type: '320k', size })
               _types['320k'] = {
-                size: info[4].toLocaleUpperCase(),
+                size
               }
               break
             case '128':
-              types.push({ type: '128k', size: info[4] })
+              types.push({ type: '128k', size })
               _types['128k'] = {
-                size: info[4].toLocaleUpperCase(),
+                size
               }
               break
           }
