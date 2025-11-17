@@ -8,33 +8,38 @@ export default {
   async getList(cookie, retryNum = 0) {
     if (this._requestObj) this._requestObj.cancelHttp()
     if (retryNum > 2) return Promise.reject(new Error('try max num'))
-    const csrfToken = (cookie.match(/_csrf=([^(;|$)]+)/) || [])[1];
 
-    const _requestObj = httpFetch('https://music.163.com/weapi/v3/discovery/recommend/songs', {
-      method: 'post',
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Edg/124.0.0.0',
-        origin: 'https://music.163.com',
-        Referer: 'https://music.163.com',
-        cookie,
-      },
-      form: weapi({
-        offset: 0,
-        total: true,
-        limit: 50,
-        csrf_token: csrfToken || '',
-      }),
-    })
+    try {
+      const csrfToken = (cookie.match(/_csrf=([^(;|$)]+)/) || [])[1]
+      const _requestObj = httpFetch('https://music.163.com/weapi/v3/discovery/recommend/songs', {
+        method: 'post',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Edg/124.0.0.0',
+          origin: 'https://music.163.com',
+          Referer: 'https://music.163.com',
+          cookie,
+        },
+        form: weapi({
+          offset: 0,
+          total: true,
+          limit: 50,
+          csrf_token: csrfToken || '',
+        }),
+      })
+      const { body, statusCode } = await _requestObj.promise
 
-    const { body, statusCode } = await _requestObj.promise
-    if (statusCode !== 200 || body.code !== 200) throw new Error('获取每日推荐失败')
+      if (statusCode !== 200 || body.code !== 200 || !body.data) {
+        throw new Error('获取每日推荐失败或返回数据无效');
+      }
 
-    const filteredList = await musicDetailApi.filterList({ songs: body.data.dailySongs, privileges: [] })
-
-    return {
-      list: filteredList,
-      source: 'wy',
+      const filteredList = await musicDetailApi.filterList({ songs: body.data.dailySongs, privileges: [] });
+      return {
+        list: filteredList,
+        source: 'wy',
+      }
+    } catch (error) {
+      console.log(`获取日推失败，正在进行第 ${retryNum + 1} 次重试...`, error.message)
+      return this.getList(cookie, retryNum + 1)
     }
   },
 
