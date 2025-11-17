@@ -1,32 +1,48 @@
 import { memo, useRef } from 'react'
 import { View, TouchableOpacity } from 'react-native'
 import { LIST_ITEM_HEIGHT } from '@/config/constant'
-// import { BorderWidths } from '@/theme'
 import { Icon } from '@/components/common/Icon'
 import { createStyle, type RowInfo } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
 import { useAssertApiSupport } from '@/store/common/hook'
 import { scaleSizeH } from '@/utils/pixelRatio'
 import Text from '@/components/common/Text'
-import Badge from '@/components/common/Badge'
-import Image from '@/components/common/Image';
+import Badge, { type BadgeType } from '@/components/common/Badge'
+import Image from '@/components/common/Image'
+import { useI18n } from '@/lang'
 
 export const ITEM_HEIGHT = scaleSizeH(LIST_ITEM_HEIGHT)
 
+const useQualityTag = (musicInfo: LX.Music.MusicInfoOnline) => {
+  const t = useI18n()
+  let info: { type: BadgeType | null; text: string } = { type: null, text: '' }
+  if (musicInfo.meta._qualitys.hires) {
+    info.type = 'secondary'
+    info.text = t('quality_lossless_24bit')
+  } else if (musicInfo.meta._qualitys.flac) {
+    info.type = 'sq'
+    info.text = t('quality_lossless')
+  } else if (musicInfo.meta._qualitys['320k']) {
+    info.type = 'tertiary'
+    info.text = t('quality_high_quality')
+  }
+  return info
+}
+
 export default memo(
   ({
-    item,
-    index,
-    activeIndex,
-    onPress,
-    onShowMenu,
-    onLongPress,
-    selectedList,
-    rowInfo,
-    isShowAlbumName,
-    isShowInterval,
-    showCover,
-  }: {
+     item,
+     index,
+     activeIndex,
+     onPress,
+     onShowMenu,
+     onLongPress,
+     selectedList,
+     rowInfo,
+     isShowAlbumName,
+     isShowInterval,
+     showCover,
+   }: {
     item: LX.Music.MusicInfo
     index: number
     activeIndex: number
@@ -44,15 +60,15 @@ export default memo(
     showCover: boolean
   }) => {
     const theme = useTheme()
-
     const isSelected = selectedList.includes(item)
-    // console.log(item.name, selectedList, selectedList.includes(item))
     const isSupported = useAssertApiSupport(item.source)
     const moreButtonRef = useRef<TouchableOpacity>(null)
+
+    const tagInfo = item.source === 'local' ? { type: null, text: '' } : useQualityTag(item as LX.Music.MusicInfoOnline)
+
     const handleShowMenu = () => {
       if (moreButtonRef.current?.measure) {
         moreButtonRef.current.measure((fx, fy, width, height, px, py) => {
-          // console.log(fx, fy, width, height, px, py)
           onShowMenu(item, index, {
             x: Math.ceil(px),
             y: Math.ceil(py),
@@ -62,8 +78,8 @@ export default memo(
         })
       }
     }
-    const active = activeIndex == index
 
+    const active = activeIndex == index
     const singer = `${item.singer}${isShowAlbumName && item.meta.albumName ? `·${item.meta.albumName}` : ''}`
 
     return (
@@ -106,6 +122,7 @@ export default memo(
             {/* </View> */}
             <View style={styles.listItemSingle}>
               <Badge>{item.source.toUpperCase()}</Badge>
+              {tagInfo.type ? <Badge type={tagInfo.type}>{tagInfo.text}</Badge> : null}
               {item.source !== 'local' && (item as LX.Music.MusicInfoOnline).meta.fee === 1 ? <Badge type="vip">VIP</Badge> : null}
               {item.source === 'wy' && (item as LX.Music.MusicInfoOnline).meta.originCoverType === 2 ? <Badge type="normal">cover</Badge> : null}
               <Text
@@ -145,7 +162,7 @@ export default memo(
       prevProps.activeIndex != nextProps.index &&
       nextProps.activeIndex != nextProps.index &&
       nextProps.selectedList.includes(nextProps.item) ==
-        prevProps.selectedList.includes(nextProps.item) &&
+      prevProps.selectedList.includes(nextProps.item) &&
       prevProps.showCover === nextProps.showCover
     )
   }
