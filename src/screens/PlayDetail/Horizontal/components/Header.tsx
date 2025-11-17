@@ -22,7 +22,7 @@ const Title = () => {
 
   const handleArtistPress = useCallback((artist: { id: string | number, name: string }) => {
     if (musicInfo.source !== 'wy' || !artist.id) return
-    navigations.pushArtistDetailScreen(commonState.componentIds.playDetail!, { id: String(artist.id), name: artist.name })
+    navigations.pushArtistDetailScreen(commonState.componentIds[commonState.componentIds.length - 1]?.id!, { id: String(artist.id), name: artist.name })
   }, [musicInfo])
 
 
@@ -65,7 +65,7 @@ const Title = () => {
 export default memo(() => {
   const popupRef = useRef<SettingPopupType>(null)
   const back = () => {
-    void pop(commonState.componentIds.playDetail!)
+    void pop(commonState.componentIds[commonState.componentIds.length - 1]?.id!)
   }
   const showSetting = () => {
     popupRef.current?.show()
