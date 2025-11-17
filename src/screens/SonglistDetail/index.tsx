@@ -7,25 +7,20 @@ import ActionBar from './ActionBar'
 import Image from '@/components/common/Image'
 import Text from '@/components/common/Text'
 import { NAV_SHEAR_NATIVE_IDS } from '@/config/constant'
-import {confirmDialog, createStyle, toast} from '@/utils/tools'
+import { confirmDialog, createStyle, toast } from '@/utils/tools'
 import { scaleSizeW } from '@/utils/pixelRatio'
 import { useTheme } from '@/store/theme/hook'
 import { BorderWidths } from '@/theme'
 import { pop } from '@/navigation'
 import commonState from '@/store/common/state'
-import ImageBackground from '@/components/common/ImageBackground'
-import { useWindowSize } from '@/utils/hooks'
-import { useBgPic } from '@/store/common/hook'
-import { useSettingValue } from '@/store/setting/hook'
-import { defaultHeaders } from '@/components/common/Image'
 import { Icon } from '@/components/common/Icon'
-import {useIsWyPlaylistSubscribed, useWySubscribedPlaylists, useWyUid} from '@/store/user/hook'
+import { useIsWyPlaylistSubscribed, useWySubscribedPlaylists, useWyUid } from '@/store/user/hook'
 import wyApi from '@/utils/musicSdk/wy/user'
 import { addWySubscribedPlaylist, removeWySubscribedPlaylist } from '@/store/user/action'
 import { COMPONENT_IDS } from '@/config/constant'
 import Menu, { type MenuType } from '@/components/common/Menu'
 import PlaylistEditModal, { type PlaylistEditModalType } from '../Home/Views/MyPlaylist/PlaylistEditModal'
-import {DetailInfo} from "@/screens/SonglistDetail/Header.tsx"
+import { type DetailInfo } from "@/screens/SonglistDetail/Header.tsx"
 
 const IMAGE_WIDTH = scaleSizeW(70)
 
@@ -106,7 +101,6 @@ const ListHeader = ({ detailInfo, info, onBack }: { detailInfo: DetailInfo, info
     }
   }
 
-
   return (
     <>
       <View style={{ ...styles.listHeaderContainer, borderBottomColor: theme['c-border-background'] }}>
@@ -131,6 +125,7 @@ const ListHeader = ({ detailInfo, info, onBack }: { detailInfo: DetailInfo, info
                   {detailInfo.desc}
                 </Text>
               </View>
+
               {showSubscribeButton && (
                 <TouchableOpacity style={styles.subscribeButton} onPress={toggleSubscribe}>
                   <Icon name={isSubscribed ? 'love-filled' : 'love'} color={isSubscribed ? theme['c-liked'] : theme['c-font-label']} size={20} />
@@ -159,7 +154,6 @@ const ListHeader = ({ detailInfo, info, onBack }: { detailInfo: DetailInfo, info
   )
 }
 
-
 export default ({ info, onBack }: { info: ListInfoItem, onBack?: () => void }) => {
   const musicListRef = useRef<MusicListType>(null)
   const [detailInfo, setDetailInfo] = useState<DetailInfo>({
@@ -172,19 +166,12 @@ export default ({ info, onBack }: { info: ListInfoItem, onBack?: () => void }) =
   })
   const playlists = useWySubscribedPlaylists()
   const isInitialMount = useRef(true)
-  const theme = useTheme()
-  const windowSize = useWindowSize()
-  const dynamicPic = useBgPic()
-  const customBgPicPath = useSettingValue('theme.customBgPicPath')
-  const pic = customBgPicPath || dynamicPic
-  const picOpacity = useSettingValue('theme.picOpacity')
-  const blur = useSettingValue('theme.blur')
-  const BLUR_RADIUS = blur
   const loggedInUserId = useWyUid()
 
-  const handleBack = onBack ?? (() => {
-    void pop(commonState.componentIds.songlistDetail!)
-  })
+  const handleBack = onBack
+  // const handleBack = onBack ?? (() => {
+  //   void pop(commonState.componentIds.songlistDetail!)
+  // })
 
   const refreshList = useCallback((isRefresh = false) => {
     musicListRef.current?.loadList(info.source, info.id, isRefresh).then(setDetailInfo)
@@ -247,7 +234,6 @@ export default ({ info, onBack }: { info: ListInfoItem, onBack?: () => void }) =
     }
   }, [playlists, handleBack, info.id, detailInfo.name, detailInfo.desc])
 
-
   const ListHeaderComponent = useMemo(() => <ListHeader detailInfo={detailInfo} info={info} onBack={handleBack} />, [detailInfo, info, handleBack])
 
   const isCreator = useMemo(() => {
@@ -263,71 +249,12 @@ export default ({ info, onBack }: { info: ListInfoItem, onBack?: () => void }) =
     }))
   }, [])
 
-  const pageContent = (
-    <ListInfoContext.Provider value={info}>
-      {ListHeaderComponent}
-      <MusicList ref={musicListRef} isCreator={isCreator} onListUpdate={handleListUpdate} />
-    </ListInfoContext.Provider>
-  )
-
-  const themeComponent = useMemo(
-    () => (
-      <View style={{ flex: 1, overflow: 'hidden' }}>
-        <ImageBackground
-          style={{
-            position: 'absolute',
-            left: 0,
-            top: 0,
-            height: windowSize.height,
-            width: windowSize.width,
-            backgroundColor: theme['c-content-background'],
-          }}
-          source={theme['bg-image']}
-          resizeMode="cover"
-        ></ImageBackground>
-        <View
-          style={{ flex: 1, flexDirection: 'column', backgroundColor: theme['c-main-background'] }}
-        >
-          {pageContent}
-        </View>
-      </View>
-    ),
-    [pageContent, theme, windowSize.height, windowSize.width],
-  )
-
-  const picComponent = useMemo(() => {
-    return (
-      <View style={{ flex: 1, overflow: 'hidden' }}>
-        <ImageBackground
-          style={{
-            position: 'absolute',
-            left: 0,
-            top: 0,
-            height: windowSize.height,
-            width: windowSize.width,
-            backgroundColor: theme['c-content-background'],
-          }}
-          source={{ uri: pic!, headers: defaultHeaders }}
-          resizeMode="cover"
-          blurRadius={BLUR_RADIUS}
-        >
-          <View
-            style={{
-              flex: 1,
-              flexDirection: 'column',
-              backgroundColor: theme['c-content-background'],
-              opacity: picOpacity / 100,
-            }}
-          ></View>
-        </ImageBackground>
-        <View style={{ flex: 1, flexDirection: 'column' }}>{pageContent}</View>
-      </View>
-    )
-  }, [pageContent, pic, theme, windowSize.height, windowSize.width, BLUR_RADIUS, picOpacity])
-
   return (
     <View style={{ flex: 1 }}>
-      {pic ? picComponent : themeComponent}
+      <ListInfoContext.Provider value={info}>
+        {ListHeaderComponent}
+        <MusicList ref={musicListRef} componentId={commonState.componentIds[commonState.componentIds.length - 1]?.id} isCreator={isCreator} onListUpdate={handleListUpdate} />
+      </ListInfoContext.Provider>
     </View>
   )
 }

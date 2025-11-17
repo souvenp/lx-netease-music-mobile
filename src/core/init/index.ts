@@ -28,6 +28,16 @@ const handlePushedHomeScreen = async () => {
     if (isFirstPush) isFirstPush = false
     showPactModal()
   }
+
+  setTimeout(() => {
+    void initSync(settingState.setting);
+    bootLog('Sync service started with a delay.');
+  }, 3000)
+  if (settingState.setting['version.autoCheckUpdate']) {
+    void checkUpdate(false)
+  } else {
+    void checkUpdate(true)
+  }
 }
 
 let isInited = false
@@ -40,13 +50,13 @@ export default async () => {
   bootLog('Setting inited.')
   // console.log(setting)
 
-  await initTheme(setting)
-  bootLog('Theme inited.')
-  await initI18n(setting)
-  bootLog('I18n inited.')
-
-  await initUserApi(setting)
-  bootLog('User Api inited.')
+  // 将没有相互依赖的初始化任务并行化
+  await Promise.all([
+    initTheme(setting),
+    initI18n(setting),
+    initUserApi(setting),
+  ])
+  bootLog('Theme, I18n, UserApi inited.')
 
   setApiSource(setting['common.apiSource'])
   bootLog('Api inited.')
@@ -59,15 +69,6 @@ export default async () => {
   bootLog('Data inited.')
   await initCommonState(setting)
   bootLog('Common State inited.')
-
-  void initSync(setting)
-  bootLog('Sync inited.')
-  if (setting['version.autoCheckUpdate']) {
-    void checkUpdate(false);
-  } else {
-    void checkUpdate(true);
-  }
-  // syncSetting()
 
   isInited ||= true
 

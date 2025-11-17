@@ -10,11 +10,10 @@ import { BorderWidths } from '@/theme'
 import SonglistDetail from '../../../SonglistDetail'
 import { type ListInfoItem } from '@/store/songlist/state'
 import commonState from '@/store/common/state'
-import { NAV_MENUS } from '@/config/constant'
+import { COMPONENT_IDS, NAV_MENUS } from '@/config/constant'
 import { useSettingValue } from '@/store/setting/hook'
 import { useNavActiveId } from '@/store/common/hook'
 import { setNavActiveId } from '@/core/common'
-
 
 const Tabs = ({ activeTab, onTabChange }: { activeTab: 'songs' | 'playlists', onTabChange: (tab: 'songs' | 'playlists') => void }) => {
   const theme = useTheme()
@@ -47,9 +46,7 @@ export default memo(() => {
   const selectedPlaylistRef = useRef(selectedPlaylist)
   selectedPlaylistRef.current = selectedPlaylist
   const theme = useTheme()
-
   const isHomePageScrollEnabled = useSettingValue('common.homePageScroll')
-
   const navStatus = useSettingValue('common.navStatus')
   const visibleNavs = useMemo(() => {
     return NAV_MENUS.filter(
@@ -67,11 +64,9 @@ export default memo(() => {
       onPanResponderRelease: (evt, gestureState) => {
         const { dx } = gestureState
         const currentIndex = visibleNavs.findIndex(nav => nav.id === activeNavId)
-
         if (activeTab === 'songs' && dx > 50 && currentIndex > 0) {
           setNavActiveId(visibleNavs[currentIndex - 1].id)
         }
-
         if (activeTab === 'playlists' && dx < -50 && currentIndex < visibleNavs.length - 1) {
           setNavActiveId(visibleNavs[currentIndex + 1].id)
         }
@@ -96,6 +91,10 @@ export default memo(() => {
     setSelectedPlaylist(playlistInfo)
   }, [])
 
+  const handleCloseDetail = useCallback(() => {
+    setSelectedPlaylist(null)
+  }, [])
+
   useEffect(() => {
     const onBackPress = () => {
       if (selectedPlaylistRef.current) {
@@ -103,13 +102,18 @@ export default memo(() => {
           return false
         }
         setSelectedPlaylist(null)
-        return true
+        return true // 消费事件，防止退出应用
       }
       return false
     }
+
     const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress)
     return () => subscription.remove()
   }, [])
+
+  if (selectedPlaylist) {
+    return <SonglistDetail info={selectedPlaylist} onBack={handleCloseDetail} />
+  }
 
   return (
     <View style={{ flex: 1 }} {...(isHomePageScrollEnabled ? panResponder.panHandlers : {})}>
@@ -117,7 +121,7 @@ export default memo(() => {
       <PagerView
         ref={pagerViewRef}
         style={{ flex: 1 }}
-        initialPage={0}
+        initialPage={activeTab === 'songs' ? 0 : 1} // <-- 核心修改在这里
         onPageSelected={onPageSelected}
         scrollEnabled={!isHomePageScrollEnabled}
       >
@@ -125,14 +129,9 @@ export default memo(() => {
           {(activeTab === 'songs') && <RecSongs />}
         </View>
         <View key="2">
-          {activeTab === 'playlists' && <RecPlaylists onOpenDetail={handleOpenDetail} />}
+          <RecPlaylists onOpenDetail={handleOpenDetail} />
         </View>
       </PagerView>
-      {selectedPlaylist && (
-        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: theme['c-content-background'] }]}>
-          <SonglistDetail info={selectedPlaylist} onBack={() => setSelectedPlaylist(null)} />
-        </View>
-      )}
     </View>
   )
 })

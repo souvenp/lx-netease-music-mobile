@@ -17,12 +17,15 @@ import {
   saveDailyRecCache,
   clearDailyRecCache,
 } from '@/utils/data'
+import { getDailyRecSongsCache, setDailyRecSongsCache, clearDailyRecSongsCache } from '@/core/cache'
+
 
 const BATCH_SIZE = 8
 const similarSongsFetcher = {
   isFetching: false,
   currentDailyRecId: null as string | null,
 }
+
 
 export default memo(() => {
   const listRef = useRef<OnlineListType>(null)
@@ -44,125 +47,122 @@ export default memo(() => {
       return
     }
 
-    setIsLoading(true)
-    listRef.current?.setStatus('loading')
-    wyApi.dailyRec.getList(cookie).then(async result => {
-      listRef.current?.setList(result.list)
+    const cachedSongs = getDailyRecSongsCache()
+    if (cachedSongs) {
+      listRef.current?.setList(cachedSongs)
       listRef.current?.setStatus('idle')
-      if (!result.list || result.list.length === 0) {
-        setIsLoading(false)
-        return
-      }
-
-      void autoSaveDailyPlaylist(result.list)
-      const currentDailyRecId = result.list[0].id
-
-      if (similarSongsFetcher.isFetching) {
-        console.log('后台任务已在运行，本次加载跳过')
-        return
-      }
-
-      similarSongsFetcher.isFetching = true
-      similarSongsFetcher.currentDailyRecId = currentDailyRecId
-
-      console.log(`开始处理日推相似歌曲获取任务，日推ID: ${currentDailyRecId}`)
-      let cache = await getDailyRecCache()
-
-      if (!cache || cache.dailyRecId !== currentDailyRecId) {
-        console.log('缓存不存在或日推ID已变更，重新获取')
-        await clearDailyRecCache()
-        cache = {
-          dailyRecId: currentDailyRecId,
-          items: result.list.map(song => ({
-            dailySong: song,
-            similarSongs: [],
-            fetchStatus: 'pending',
-          })),
+      setIsLoading(false)
+    } else {
+      setIsLoading(true)
+      listRef.current?.setStatus('loading')
+      wyApi.dailyRec.getList(cookie).then(async result => {
+        listRef.current?.setList(result.list)
+        listRef.current?.setStatus('idle')
+        setDailyRecSongsCache(result.list)
+        if (!result.list || result.list.length === 0) {
+          setIsLoading(false)
+          return
         }
-        await saveDailyRecCache(cache)
-      }
 
-      const songsToFetch = cache.items.filter(item => item.fetchStatus === 'pending').map(item => item.dailySong)
+        void autoSaveDailyPlaylist(result.list)
+        const currentDailyRecId = result.list[0].id
 
-      if (songsToFetch.length === 0) {
-        console.log('所有相似歌曲均已获取，无需操作')
-        setIsAllSimilarSongsFetched(true)
-        similarSongsFetcher.isFetching = false
-        setIsLoading(false)
-        return
-      }
+        if (similarSongsFetcher.isFetching) {
+          console.log('后台任务已在运行，本次加载跳过')
+          return
+        }
+        similarSongsFetcher.isFetching = true
+        similarSongsFetcher.currentDailyRecId = currentDailyRecId
+        console.log(`开始处理日推相似歌曲获取任务，日推ID: ${currentDailyRecId}`)
 
-      console.log(`发现 ${songsToFetch.length} 首歌曲的相似推荐未获取，开始后台任务...`)
-      setIsAllSimilarSongsFetched(false)
+        let cache = await getDailyRecCache()
+        if (!cache || cache.dailyRecId !== currentDailyRecId) {
+          console.log('缓存不存在或日推ID已变更，重新获取')
+          await clearDailyRecCache()
+          cache = {
+            dailyRecId: currentDailyRecId,
+            items: result.list.map(song => ({
+              dailySong: song,
+              similarSongs: [],
+              fetchStatus: 'pending',
+            })),
+          }
+          await saveDailyRecCache(cache)
+        }
 
-      const allDailySongIds = new Set(result.list.map(s => s.id))
+        const songsToFetch = cache.items.filter(item => item.fetchStatus === 'pending').map(item => item.dailySong)
 
-      const processQueue = async () => {
-        const batch = songsToFetch.splice(0, BATCH_SIZE)
-        if (batch.length === 0) {
+        if (songsToFetch.length === 0) {
+          console.log('所有相似歌曲均已获取，无需操作')
           setIsAllSimilarSongsFetched(true)
           similarSongsFetcher.isFetching = false
-          console.log('所有相似歌曲批次处理完成。')
+          setIsLoading(false)
           return
         }
+        console.log(`发现 ${songsToFetch.length} 首歌曲的相似推荐未获取，开始后台任务...`)
+        setIsAllSimilarSongsFetched(false)
 
-        // 检查任务是否中途被重置
-        if (similarSongsFetcher.currentDailyRecId !== currentDailyRecId) {
-          console.log("日推ID已变更，终止旧的后台任务。")
-          similarSongsFetcher.isFetching = false
-          return
-        }
+        const allDailySongIds = new Set(result.list.map(s => s.id))
 
-        const promises = batch.map(song => wyApi.dailyRec.getSimilarSongs(song.meta.songId).catch(() => []))
-        const results = await Promise.all(promises)
+        const processQueue = async () => {
+          const batch = songsToFetch.splice(0, BATCH_SIZE)
+          if (batch.length === 0) {
+            setIsAllSimilarSongsFetched(true)
+            similarSongsFetcher.isFetching = false
+            console.log('所有相似歌曲批次处理完成。')
+            return
+          }
 
-        const currentCache = await getDailyRecCache()
-        if (!currentCache || currentCache.dailyRecId !== currentDailyRecId) return
+          if (similarSongsFetcher.currentDailyRecId !== currentDailyRecId) {
+            console.log("日推ID已变更，终止旧的后台任务。")
+            similarSongsFetcher.isFetching = false
+            return
+          }
 
-        for (let i = 0; i < batch.length; i++) {
-          const dailySong = batch[i]
-          const similarSongsRaw = results[i]
+          const promises = batch.map(song => wyApi.dailyRec.getSimilarSongs(song.meta.songId).catch(() => []))
+          const results = await Promise.all(promises)
+          const currentCache = await getDailyRecCache()
+          if (!currentCache || currentCache.dailyRecId !== currentDailyRecId) return
 
-          const cacheItem = currentCache.items.find(item => item.dailySong.id === dailySong.id)
-          if (!cacheItem) continue
+          for (let i = 0; i < batch.length; i++) {
+            const dailySong = batch[i]
+            const similarSongsRaw = results[i]
+            const cacheItem = currentCache.items.find(item => item.dailySong.id === dailySong.id)
+            if (!cacheItem) continue
 
-          if (similarSongsRaw.length > 0) {
-            const uniqueSimilarSongs = similarSongsRaw.filter(s => !allDailySongIds.has(s.id))
-            uniqueSimilarSongs.forEach(ns => allDailySongIds.add(ns.id))
-
-            if (uniqueSimilarSongs.length > 0) {
-              const detailedSongs = await musicDetailApi.filterList({ songs: uniqueSimilarSongs, privileges: [] })
-              const existingSimilarIds = new Set(cacheItem.similarSongs.map(s => s.id))
-              const songsToAppend = detailedSongs.filter(s => !existingSimilarIds.has(s.id))
-              if (songsToAppend.length > 0) {
-                cacheItem.similarSongs.push(...songsToAppend)
+            if (similarSongsRaw.length > 0) {
+              const uniqueSimilarSongs = similarSongsRaw.filter(s => !allDailySongIds.has(s.id))
+              uniqueSimilarSongs.forEach(ns => allDailySongIds.add(ns.id))
+              if (uniqueSimilarSongs.length > 0) {
+                const detailedSongs = await musicDetailApi.filterList({ songs: uniqueSimilarSongs, privileges: [] })
+                const existingSimilarIds = new Set(cacheItem.similarSongs.map(s => s.id))
+                const songsToAppend = detailedSongs.filter(s => !existingSimilarIds.has(s.id))
+                if (songsToAppend.length > 0) {
+                  cacheItem.similarSongs.push(...songsToAppend)
+                }
               }
             }
+            cacheItem.fetchStatus = 'fetched'
           }
-          cacheItem.fetchStatus = 'fetched'
+          await saveDailyRecCache(currentCache)
+          console.log(`批次完成，已更新 ${batch.length} 首歌曲的相似推荐缓存。`)
+          if (songsToFetch.length > 0) {
+            setTimeout(processQueue, 2000)
+          } else {
+            setIsAllSimilarSongsFetched(true)
+            similarSongsFetcher.isFetching = false
+            console.log('所有相似歌曲批次处理完成。')
+          }
         }
-
-        await saveDailyRecCache(currentCache)
-        console.log(`批次完成，已更新 ${batch.length} 首歌曲的相似推荐缓存。`)
-
-        if (songsToFetch.length > 0) {
-          setTimeout(processQueue, 2000)
-        } else {
-          setIsAllSimilarSongsFetched(true)
-          similarSongsFetcher.isFetching = false
-          console.log('所有相似歌曲批次处理完成。')
-        }
-      }
-
-      await processQueue()
-    }).catch(err => {
-      console.error(err)
-      toast(t('load_failed'), 'long')
-      listRef.current?.setStatus('error')
-    }).finally(() => {
-      setIsLoading(false)
-    })
-
+        await processQueue()
+      }).catch(err => {
+        console.error(err)
+        toast(t('load_failed'), 'long')
+        listRef.current?.setStatus('error')
+      }).finally(() => {
+        setIsLoading(false)
+      })
+    }
   }, [t, cookie])
 
   useEffect(() => {
@@ -192,9 +192,11 @@ export default memo(() => {
       listRef.current?.setStatus('idle')
       return
     }
+    clearDailyRecSongsCache()
     listRef.current?.setStatus('refreshing')
     wyApi.dailyRec.getList(cookie).then(result => {
       listRef.current?.setList(result.list)
+      setDailyRecSongsCache(result.list)
       if (result.list && result.list.length > 0) {
         void autoSaveDailyPlaylist(result.list)
       }
@@ -210,19 +212,16 @@ export default memo(() => {
   const handleFindMore = async() => {
     const cache = await getDailyRecCache()
     const allSimilarSongs = cache?.items.flatMap(item => item.similarSongs) ?? []
-
     if (allSimilarSongs.length === 0) {
       toast('暂无相似歌曲推荐')
       return
     }
-
     const uniqueSongs = Array.from(new Map(allSimilarSongs.map(song => [song.id, song])).values())
     navigations.pushSimilarSongsScreen(commonState.componentIds[commonState.componentIds.length - 1]?.id!, uniqueSongs)
   }
 
   const ListFooter = () => {
     if (isLoading || !isAllSimilarSongsFetched) return null
-
     return (
       <View style={{ alignItems: 'center', padding: 20 }}>
         <TouchableOpacity onPress={handleFindMore}>
@@ -231,6 +230,7 @@ export default memo(() => {
       </View>
     )
   }
+
 
   return (
     <View style={{ flex: 1 }}>

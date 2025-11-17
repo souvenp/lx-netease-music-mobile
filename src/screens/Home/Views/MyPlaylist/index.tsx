@@ -102,6 +102,9 @@ export default memo(() => {
       </View>
     )
   }
+  if (selectedPlaylist) {
+    return <SonglistDetail info={selectedPlaylist} onBack={() => setSelectedPlaylist(null)} />;
+  }
 
   return (
     <View style={{ flex: 1 }}>
@@ -118,11 +121,6 @@ export default memo(() => {
           />
         }
       />
-      {selectedPlaylist && (
-        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: theme['c-content-background'] }]}>
-          <SonglistDetail info={selectedPlaylist} onBack={() => setSelectedPlaylist(null)} />
-        </View>
-      )}
     </View>
   )
 })
