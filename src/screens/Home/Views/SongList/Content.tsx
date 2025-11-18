@@ -33,7 +33,7 @@ export default () => {
       // 检查当前是否正在显示歌单详情页
       if (selectedListRef.current) {
         // 检查是否有其他原生屏幕（如歌手/专辑详情页）在Home屏幕之上
-        if (Object.keys(commonState.componentIds).length > 1) {
+        if (commonState.componentIds.length > 1) {
           // 有其他原生屏幕在顶部，不处理返回事件，让原生导航库来 pop
           return false;
         }

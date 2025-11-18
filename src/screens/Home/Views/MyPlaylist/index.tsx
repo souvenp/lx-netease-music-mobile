@@ -72,7 +72,7 @@ export default memo(() => {
         // 检查是否有其他原生屏幕（如歌手/专辑详情页C）在Home屏幕之上
         // 当只有Home屏幕时，componentIds的长度为1。
         // 当有其他屏幕被push时，长度会大于1。
-        if (Object.keys(commonState.componentIds).length > 1) {
+        if (commonState.componentIds.length > 1) {
           // 有其他原生屏幕在顶部，让原生导航处理返回事件
           return false;
         }

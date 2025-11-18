@@ -98,7 +98,7 @@ export default memo(() => {
   useEffect(() => {
     const onBackPress = () => {
       if (selectedPlaylistRef.current) {
-        if (Object.keys(commonState.componentIds).length > 1) {
+        if (commonState.componentIds.length > 1) {
           return false
         }
         setSelectedPlaylist(null)

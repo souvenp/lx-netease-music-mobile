@@ -1,5 +1,5 @@
 name: ✨ 功能请求
-description: 为这个项目提出一个想法，请先查看常见问题及搜索 Issue 列表中有无你要提的问题。
+description: 为这个项目提出一个想法，请先查看常见问题、置顶说明、及搜索本仓库及原仓库 Issue 列表中有无你要提的问题。
 title: '[Feature]: '
 body:
   - type: checkboxes
@@ -10,7 +10,13 @@ body:
       options:
         - label: 我已阅读 [常见问题](https://lyswhut.github.io/lx-music-doc/mobile/faq)，但没有找到解决方案。
           required: true
-        - label: 我已搜索 [Issue 列表](https://github.com/souvenp/lx-netease-music-mobile/issues?q=is%3Aissue+)，但没有发现类似的问题。
+        - label: 我已搜索 [本仓库Issue 列表](https://github.com/souvenp/lx-netease-music-mobile/issues?q=is%3Aissue+) 和 [原仓库Issue 列表](https://github.com/lyswhut/lx-music-mobile/issues)，但没有发现类似的问题。
+          required: true
+        - label: 我已阅读 [说明](https://github.com/souvenp/lx-netease-music-mobile/issues/50)。
+          required: true
+        - label: 我已浏览了全部设置，并尝试调整相关选项，但问题仍然存在。
+          required: true
+        - label: 我确认我正在使用的是最新版本的 App。
           required: true
   - type: textarea
     id: problem-description
@@ -23,14 +29,14 @@ body:
     id: proposed-solution
     attributes:
       label: 描述你想要的解决方案
-      description: 简洁明了地描述你要发生的事情。
+      description: 清晰详细地描述你要发生的事情，不具体说明无法处理。
     validations:
       required: true
   - type: textarea
     id: alternatives-considered
     attributes:
       label: 描述你考虑过的替代方案
-      description: 对你考虑过的所有替代解决方案或功能的简洁明了的描述。
+      description: 对你考虑过的所有替代解决方案或功能的清晰详细的描述，不具体说明无法处理。
     validations:
       required: false
   - type: textarea
