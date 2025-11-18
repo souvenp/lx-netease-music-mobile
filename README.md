@@ -3,10 +3,9 @@
 <h1 align="center">LX-N Music 移动版</h1>
 
 <p align="center">
-  <a href="https://github.com/souvenp/lx-netease-music-mobile/releases"><img src="https://img.shields.io/github/release/lyswhut/lx-music-mobile" alt="Release version"></a>
-  <a href="https://github.com/souvenp/lx-netease-music-mobile/actions/workflows/release.yml"><img src="https://github.com/lyswhut/lx-music-mobile/workflows/Build/badge.svg" alt="Build status"></a>
-  <a href="https://github.com/souvenp/lx-netease-music-mobile/actions/workflows/beta-pack.yml"><img src="https://github.com/lyswhut/lx-music-mobile/workflows/Build%20Beta/badge.svg" alt="Build status"></a>
-  <a href="https://github.com/facebook/react-native"><img src="https://img.shields.io/github/package-json/dependency-version/lyswhut/lx-music-mobile/react-native/master" alt="React native version"></a>
+  <a href="https://github.com/souvenp/lx-netease-music-mobile/releases"><img src="https://img.shields.io/github/release/souvenp/lx-netease-music-mobile" alt="Release version"></a>
+  <a href="https://github.com/souvenp/lx-netease-music-mobile/actions/workflows/release.yml"><img src="https://github.com/souvenp/lx-netease-music-mobile/workflows/Build/badge.svg" alt="Build status"></a>
+  <a href="https://github.com/facebook/react-native"><img src="https://img.shields.io/github/package-json/dependency-version/souvenp/lx-netease-music-mobile/react-native/master" alt="React native version"></a>
 </p>
 
 <p align="center">一个基于 React Native 开发的音乐软件</p>
@@ -19,7 +18,7 @@
 
 ### 1.8.75
 
-##### 新增
+#### 新增
 - 日推缓存增加
 #### 修复、优化
 - 解决歌单详情的背景问题
@@ -46,7 +45,7 @@
 #### 修复、优化
 - 打点触发，修改为播放2分钟或50%以上
 ---
-### 1.8.70 更新
+### 1.8.70
 
 #### 新增
 - 搜索类型：歌手、专辑，仅支持wy源
@@ -62,7 +61,7 @@
 - 统一我关注的歌手、收藏的专辑、歌单的展示效果
 - 歌手详情内部专辑列表可以切换网格、列表显示
 ---
-### 1.8.60 更新
+### 1.8.60
 - webdav支持（歌单支持自动同步，设置和音源手动同步）
 - 下载管理器
 - 顶部滑动可以弹出菜单抽屉
