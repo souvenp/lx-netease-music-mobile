@@ -1,5 +1,5 @@
 name: 🐞 报告错误
-description: 报告一个错误（Bug），请先查看常见问题及搜索 Issue 列表中有无你要提的问题。
+description: 报告一个错误（Bug），请先查看常见问题、置顶说明、及搜索本仓库及原仓库 Issue 列表中有无你要提的问题。
 title: '[Bug]: '
 body:
   - type: checkboxes
@@ -10,28 +10,26 @@ body:
       options:
         - label: 我已阅读 [常见问题](https://lyswhut.github.io/lx-music-doc/mobile/faq)，但没有找到解决方案。
           required: true
-        - label: 我已搜索 [Issue 列表](https://github.com/souvenp/lx-netease-music-mobile/issues?q=is%3Aissue+)，但没有发现类似的问题。
+        - label: 我已搜索 [本仓库Issue 列表](https://github.com/souvenp/lx-netease-music-mobile/issues?q=is%3Aissue+)和 [原仓库Issue 列表](https://github.com/lyswhut/lx-music-mobile/issues)，但没有发现类似的问题。
+          required: true
+        - label: 我已阅读 [说明](https://github.com/souvenp/lx-netease-music-mobile/issues/50)。
+          required: true
+        - label: 我已浏览了全部设置，并尝试调整相关选项，但问题仍然存在。
+          required: true
+        - label: 我确认我正在使用的是最新版本的 App。
           required: true
   - type: textarea
     id: expected-behavior
     attributes:
       label: 预期行为
-      description: 对期望发生的事情的清晰简明描述。
+      description: 对期望发生的事情的清晰详细描述，不具体说明无法处理。
     validations:
       required: true
   - type: textarea
     id: actual-behavior
     attributes:
       label: 实际行为
-      description: 对实际发生的事情的清晰简明描述。
-    validations:
-      required: true
-  - type: input
-    id: version
-    attributes:
-      label: LX-N Music 版本
-      description: 你使用什么版本的 LX-N Music？
-      placeholder: 例如 1.6.0 arm64-v8a
+      description: 对实际发生的事情的清晰详细描述，必要时附上截图，不具体说明无法处理。
     validations:
       required: true
   - type: input
