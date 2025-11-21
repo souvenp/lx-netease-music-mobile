@@ -1,7 +1,5 @@
 import {useMemo, useRef, useState, forwardRef, useImperativeHandle, useEffect} from 'react'
 import {FlatList, type FlatListProps, Keyboard, RefreshControl, View} from 'react-native'
-
-// import { useMusicList } from '@/store/list/hook'
 import ListItem, { ITEM_HEIGHT } from './ListItem'
 import { createStyle, getRowInfo, type RowInfoType } from '@/utils/tools'
 import type { Position } from './ListMenu'
@@ -14,8 +12,8 @@ import Text from '@/components/common/Text'
 import { handlePlay } from './listAction'
 import { useSettingValue } from '@/store/setting/hook'
 
+const wait = async (time = 50) => new Promise((resolve) => setTimeout(resolve, time))
 type FlatListType = FlatListProps<LX.Music.MusicInfoOnline>
-
 export type { RowInfoType }
 
 export interface ListProps {
@@ -27,11 +25,11 @@ export interface ListProps {
   onPlayList?: (index: number) => void
   progressViewOffset?: number
   ListHeaderComponent?: FlatListType['ListEmptyComponent']
-  ListFooterComponent?: FlatListType['ListFooterComponent'];
+  ListFooterComponent?: FlatListType['ListFooterComponent']
   checkHomePagerIdle: boolean
   rowType?: RowInfoType
   forcePlayList?: boolean
-  playingId?: string | null;
+  playingId?: string | null
   listId?: string
   onListUpdate?: (list: LX.Music.MusicInfoOnline[]) => void
 }
@@ -44,7 +42,9 @@ export interface ListType {
   getSelectedList: () => LX.Music.MusicInfoOnline[]
   getList: () => LX.Music.MusicInfoOnline[]
   setStatus: (val: Status) => void
+  scrollToInfo: (info: LX.Music.MusicInfoOnline) => void
 }
+
 export type Status = 'loading' | 'refreshing' | 'end' | 'error' | 'idle'
 
 const List = forwardRef<ListType, ListProps>(
@@ -66,9 +66,8 @@ const List = forwardRef<ListType, ListProps>(
       playingId,
       onListUpdate,
     },
-    ref
+    ref,
   ) => {
-    // const t = useI18n()
     const theme = useTheme()
     const flatListRef = useRef<FlatList>(null)
     const [currentList, setList] = useState<LX.Music.MusicInfoOnline[]>([])
@@ -83,8 +82,6 @@ const List = forwardRef<ListType, ListProps>(
     const rowInfo = useRef(getRowInfo(rowType))
     const isShowAlbumName = useSettingValue('list.isShowAlbumName')
     const isShowInterval = useSettingValue('list.isShowInterval')
-    // const currentListIdRef = useRef('')
-    // console.log('render music list')
 
     useImperativeHandle(ref, () => ({
       setList(list, isAppend, showSource) {
@@ -124,27 +121,37 @@ const List = forwardRef<ListType, ListProps>(
       setStatus(val) {
         setStatus(val)
       },
+      scrollToInfo(info) {
+        const index = currentList.findIndex(item => item.id === info.id)
+        if (index > -1) {
+          flatListRef.current?.scrollToIndex({
+            index: Math.floor(index / (rowInfo.current.rowNum ?? 1)),
+            viewPosition: 0.3,
+            animated: true,
+          })
+        }
+      },
     }))
-
 
     useEffect(() => {
       const handleMusicInfoUpdate = (musicInfo: LX.Music.MusicInfo) => {
         setList(currentList => {
-          const index = currentList.findIndex(item => item.id === musicInfo.id);
+          const index = currentList.findIndex(item => item.id === musicInfo.id)
           if (index > -1) {
-            const newList = [...currentList];
-            newList[index] = musicInfo as LX.Music.MusicInfoOnline;
+            const newList = [...currentList]
+            newList[index] = musicInfo as LX.Music.MusicInfoOnline
             onListUpdate?.(newList)
-            return newList;
+            return newList
           }
-          return currentList;
-        });
-      };
-      global.app_event.on('musicInfoUpdate', handleMusicInfoUpdate);
+          return currentList
+        })
+      }
+
+      global.app_event.on('musicInfoUpdate', handleMusicInfoUpdate)
       return () => {
-        global.app_event.off('musicInfoUpdate', handleMusicInfoUpdate);
-      };
-    }, []);
+        global.app_event.off('musicInfoUpdate', handleMusicInfoUpdate)
+      }
+    }, [])
 
     const handleUpdateSelectedList = (newList: LX.Music.MusicInfoOnline[]) => {
       if (selectedListRef.current.length && newList.length == currentList.length) onSelectAll(true)
@@ -152,6 +159,7 @@ const List = forwardRef<ListType, ListProps>(
       selectedListRef.current = newList
       setSelectedList(newList)
     }
+
     const handleSelect = (item: LX.Music.MusicInfoOnline, pressIndex: number) => {
       let newList: LX.Music.MusicInfoOnline[]
       if (selectModeRef.current == 'single') {
@@ -180,7 +188,6 @@ const List = forwardRef<ListType, ListProps>(
           prevSelectIndexRef.current = pressIndex
         }
       }
-
       handleUpdateSelectedList(newList)
     }
 
@@ -193,7 +200,6 @@ const List = forwardRef<ListType, ListProps>(
           if ((forcePlayList || settingState.setting['list.isClickPlayList']) && onPlayList != null) {
             onPlayList(index)
           } else {
-            // console.log(currentList[index])
             handlePlay(currentList[index])
           }
         }
@@ -232,17 +238,18 @@ const List = forwardRef<ListType, ListProps>(
     const getItemLayout: FlatListType['getItemLayout'] = (data, index) => {
       return { length: ITEM_HEIGHT, offset: ITEM_HEIGHT * index, index }
     }
+
     const refreshControl = useMemo(
       () => (
         <RefreshControl
           colors={[theme['c-primary']]}
-          // progressBackgroundColor={theme.primary}
           refreshing={status == 'refreshing'}
           onRefresh={onRefresh}
         />
       ),
-      [status, onRefresh, theme]
+      [status, onRefresh, theme],
     )
+
     const footerComponent = useMemo(() => {
       if (ListFooterComponent) return ListFooterComponent
       let label: FooterLabel
@@ -270,9 +277,11 @@ const List = forwardRef<ListType, ListProps>(
         </View>
       )
     }, [onLoadMore, status, visibleMultiSelect, ListFooterComponent])
+
     const handleScrollBeginDrag = () => {
-       if (listId !== 'search') Keyboard.dismiss()
+      if (listId !== 'search') Keyboard.dismiss()
     }
+
     return (
       <FlatList
         ref={flatListRef}
@@ -280,9 +289,9 @@ const List = forwardRef<ListType, ListProps>(
         data={currentList}
         numColumns={rowInfo.current.rowNum}
         horizontal={false}
-        maxToRenderPerBatch={4}
+        maxToRenderPerBatch={6}
         // updateCellsBatchingPeriod={80}
-        windowSize={8}
+        windowSize={10}
         removeClippedSubviews={true}
         initialNumToRender={12}
         renderItem={renderItem}
@@ -299,11 +308,11 @@ const List = forwardRef<ListType, ListProps>(
         ListFooterComponent={footerComponent}
       />
     )
-  }
+  },
 )
 
 type FooterLabel = 'list_loading' | 'list_end' | 'list_error' | null
-const Footer = ({ label, onLoadMore }: { label: FooterLabel; onLoadMore: () => void }) => {
+const Footer = ({ label, onLoadMore }: { label: FooterLabel, onLoadMore: () => void }) => {
   const theme = useTheme()
   const t = useI18n()
   const handlePress = () => {
@@ -318,7 +327,6 @@ const Footer = ({ label, onLoadMore }: { label: FooterLabel; onLoadMore: () => v
     </View>
   ) : null
 }
-
 const styles = createStyle({
   container: {
     flex: 1,

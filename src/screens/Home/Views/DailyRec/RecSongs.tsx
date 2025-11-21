@@ -18,14 +18,17 @@ import {
   clearDailyRecCache,
 } from '@/utils/data'
 import { getDailyRecSongsCache, setDailyRecSongsCache, clearDailyRecSongsCache } from '@/core/cache'
+import playerState from '@/store/player/state'
+import listState from '@/store/list/state'
+import { LIST_IDS } from '@/config/constant'
 
 
 const BATCH_SIZE = 8
+
 const similarSongsFetcher = {
   isFetching: false,
   currentDailyRecId: null as string | null,
 }
-
 
 export default memo(() => {
   const listRef = useRef<OnlineListType>(null)
@@ -37,44 +40,67 @@ export default memo(() => {
   const [isAllSimilarSongsFetched, setIsAllSimilarSongsFetched] = useState(false)
 
   useEffect(() => {
+    const handleJumpPosition = () => {
+      const listId = playerState.playMusicInfo.listId === LIST_IDS.TEMP
+        ? listState.tempListMeta.id
+        : playerState.playMusicInfo.listId
+
+      if (!listId?.startsWith('dailyrec_wy')) return
+
+      const musicInfo = playerState.playMusicInfo.musicInfo
+      if (musicInfo) {
+        listRef.current?.scrollToInfo(musicInfo as LX.Music.MusicInfoOnline)
+      }
+    }
+
+    global.app_event.on('jumpListPosition', handleJumpPosition)
+    return () => {
+      global.app_event.off('jumpListPosition', handleJumpPosition)
+    }
+  }, [])
+
+
+  useEffect(() => {
     if (!cookie) {
       if (isLoading) {
         toast('请先设置网易云 Cookie')
         setIsLoading(false)
       }
-      listRef.current?.setList([])
+      listRef.current?.setList([], false)
       listRef.current?.setStatus('idle')
       return
     }
 
     const cachedSongs = getDailyRecSongsCache()
     if (cachedSongs) {
-      listRef.current?.setList(cachedSongs)
+      listRef.current?.setList(cachedSongs, false)
       listRef.current?.setStatus('idle')
       setIsLoading(false)
     } else {
       setIsLoading(true)
       listRef.current?.setStatus('loading')
       wyApi.dailyRec.getList(cookie).then(async result => {
-        listRef.current?.setList(result.list)
+        listRef.current?.setList(result.list, false)
         listRef.current?.setStatus('idle')
         setDailyRecSongsCache(result.list)
+
         if (!result.list || result.list.length === 0) {
           setIsLoading(false)
           return
         }
 
         void autoSaveDailyPlaylist(result.list)
+
         const currentDailyRecId = result.list[0].id
 
         if (similarSongsFetcher.isFetching) {
           console.log('后台任务已在运行，本次加载跳过')
           return
         }
+
         similarSongsFetcher.isFetching = true
         similarSongsFetcher.currentDailyRecId = currentDailyRecId
         console.log(`开始处理日推相似歌曲获取任务，日推ID: ${currentDailyRecId}`)
-
         let cache = await getDailyRecCache()
         if (!cache || cache.dailyRecId !== currentDailyRecId) {
           console.log('缓存不存在或日推ID已变更，重新获取')
@@ -99,9 +125,9 @@ export default memo(() => {
           setIsLoading(false)
           return
         }
+
         console.log(`发现 ${songsToFetch.length} 首歌曲的相似推荐未获取，开始后台任务...`)
         setIsAllSimilarSongsFetched(false)
-
         const allDailySongIds = new Set(result.list.map(s => s.id))
 
         const processQueue = async () => {
@@ -121,6 +147,7 @@ export default memo(() => {
 
           const promises = batch.map(song => wyApi.dailyRec.getSimilarSongs(song.meta.songId).catch(() => []))
           const results = await Promise.all(promises)
+
           const currentCache = await getDailyRecCache()
           if (!currentCache || currentCache.dailyRecId !== currentDailyRecId) return
 
@@ -128,6 +155,7 @@ export default memo(() => {
             const dailySong = batch[i]
             const similarSongsRaw = results[i]
             const cacheItem = currentCache.items.find(item => item.dailySong.id === dailySong.id)
+
             if (!cacheItem) continue
 
             if (similarSongsRaw.length > 0) {
@@ -144,6 +172,7 @@ export default memo(() => {
             }
             cacheItem.fetchStatus = 'fetched'
           }
+
           await saveDailyRecCache(currentCache)
           console.log(`批次完成，已更新 ${batch.length} 首歌曲的相似推荐缓存。`)
           if (songsToFetch.length > 0) {
@@ -154,6 +183,7 @@ export default memo(() => {
             console.log('所有相似歌曲批次处理完成。')
           }
         }
+
         await processQueue()
       }).catch(err => {
         console.error(err)
@@ -177,9 +207,10 @@ export default memo(() => {
         } else {
           newList.splice(index, 1)
         }
-        listRef.current?.setList(newList)
+        listRef.current?.setList(newList, false, false)
       }
     }
+
     global.list_event.on('daily_rec_music_replace', handleReplaceMusic)
     return () => {
       global.list_event.off('daily_rec_music_replace', handleReplaceMusic)
@@ -195,7 +226,7 @@ export default memo(() => {
     clearDailyRecSongsCache()
     listRef.current?.setStatus('refreshing')
     wyApi.dailyRec.getList(cookie).then(result => {
-      listRef.current?.setList(result.list)
+      listRef.current?.setList(result.list, false)
       setDailyRecSongsCache(result.list)
       if (result.list && result.list.length > 0) {
         void autoSaveDailyPlaylist(result.list)
@@ -212,11 +243,14 @@ export default memo(() => {
   const handleFindMore = async() => {
     const cache = await getDailyRecCache()
     const allSimilarSongs = cache?.items.flatMap(item => item.similarSongs) ?? []
+
     if (allSimilarSongs.length === 0) {
       toast('暂无相似歌曲推荐')
       return
     }
+
     const uniqueSongs = Array.from(new Map(allSimilarSongs.map(song => [song.id, song])).values())
+
     navigations.pushSimilarSongsScreen(commonState.componentIds[commonState.componentIds.length - 1]?.id!, uniqueSongs)
   }
 
@@ -230,7 +264,6 @@ export default memo(() => {
       </View>
     )
   }
-
 
   return (
     <View style={{ flex: 1 }}>

@@ -1,4 +1,4 @@
-import { memo, useMemo, useRef } from 'react'
+import {memo, useCallback, useMemo, useRef} from 'react'
 import { PanResponder, View, TouchableOpacity } from 'react-native'
 import { useKeyboard } from '@/utils/hooks'
 import Pic from './components/Pic'
@@ -14,16 +14,30 @@ import commonState from '@/store/common/state'
 import { usePlayerMusicInfo } from '@/store/player/hook'
 import PlayerPlaylist, { PlayerPlaylistType } from '@/components/player/PlayerPlaylist.tsx'
 import MiniProgressBar from "@/components/player/PlayerBar/components/MiniProgressBar.tsx"
+import playerState from '@/store/player/state'
+import { LIST_IDS } from '@/config/constant'
 
 export default memo(({ componentId, isHome = false }: { isHome?: boolean }) => {
   const { keyboardShown } = useKeyboard()
   const theme = useTheme()
   const autoHidePlayBar = useSettingValue('common.autoHidePlayBar')
   const musicInfo = usePlayerMusicInfo()
+  const longPressedRef = useRef(false)
   const playlistRef = useRef<PlayerPlaylistType>(null)
   const drawerLayoutPosition = useSettingValue('common.drawerLayoutPosition')
 
+  const handleLongPress = useCallback(() => {
+    longPressedRef.current = true
+    const listId = playerState.playMusicInfo.listId
+    if (!listId || listId == LIST_IDS.DOWNLOAD) return
+    global.app_event.jumpListPosition()
+  }, [])
+
   const handleNavigate = () => {
+    if (longPressedRef.current) {
+      longPressedRef.current = false
+      return
+    }
     if (!musicInfo.id) return
     const currentComponentId = commonState.componentIds[commonState.componentIds.length - 1]?.id!
     navigations.pushPlayDetailScreen(currentComponentId)
@@ -80,7 +94,7 @@ export default memo(({ componentId, isHome = false }: { isHome?: boolean }) => {
             {...panResponder.panHandlers}>
         <MiniProgressBar />
 
-        <TouchableOpacity style={styles.left} onPress={handleNavigate} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.left} onPress={handleNavigate} onLongPress={handleLongPress} activeOpacity={0.8}>
           <Pic isHome={isHome} />
           <View style={styles.center}>
             <Title isHome={isHome} />

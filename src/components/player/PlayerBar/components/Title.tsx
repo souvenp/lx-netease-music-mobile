@@ -9,14 +9,20 @@ import playerState from '@/store/player/state'
 import Text from '@/components/common/Text'
 import { LIST_IDS } from '@/config/constant'
 import { createStyle } from '@/utils/tools'
+import {useRef} from "react";
 
 export default ({ isHome }: { isHome: boolean }) => {
   // const { t } = useTranslation()
   const musicInfo = usePlayerMusicInfo()
   const downloadFileName = useSettingValue('download.fileName')
   const theme = useTheme()
+  const longPressedRef = useRef(false)
 
   const handlePress = () => {
+    if (longPressedRef.current) {
+      longPressedRef.current = false
+      return
+    }
     // console.log('')
     // console.log(playMusicInfo)
     if (!musicInfo.id) return
@@ -25,6 +31,7 @@ export default ({ isHome }: { isHome: boolean }) => {
   }
 
   const handleLongPress = () => {
+    longPressedRef.current = true
     const listId = playerState.playMusicInfo.listId
     if (!listId || listId == LIST_IDS.DOWNLOAD) return
     global.app_event.jumpListPosition()

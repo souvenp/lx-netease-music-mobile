@@ -10,11 +10,32 @@ import PlayerBar from '@/components/player/PlayerBar'
 import { createStyle } from '@/utils/tools'
 import { type ListInfoItem } from '@/store/songlist/state'
 import { playOnlineList } from '@/core/list'
-import {COMPONENT_IDS} from "@/config/constant.ts";
+import {COMPONENT_IDS, LIST_IDS} from "@/config/constant.ts"
+import playerState from '@/store/player/state'
+import listState from '@/store/list/state'
+import {usePlayerMusicInfo} from "@/store/player/hook.ts";
 
 export default memo(({ componentId, albumInfo }: { componentId: string; albumInfo: ListInfoItem }) => {
-  const [albumDetail, setAlbumDetail] = useState({ info: null, list: [] });
-  const listRef = useRef<OnlineListType>(null);
+  const [albumDetail, setAlbumDetail] = useState({ info: null, list: [] })
+  const listRef = useRef<OnlineListType>(null)
+  const playerMusicInfo = usePlayerMusicInfo()
+
+  useEffect(() => {
+    const handleJumpPosition = () => {
+      let listId = playerState.playMusicInfo.listId
+      if (listId === LIST_IDS.TEMP) listId = listState.tempListMeta.id
+      if (listId !== `album_${albumInfo.id}`) return
+
+      const musicInfo = playerState.playMusicInfo.musicInfo
+      if (musicInfo) {
+        listRef.current?.scrollToInfo(musicInfo as LX.Music.MusicInfoOnline)
+      }
+    }
+    global.app_event.on('jumpListPosition', handleJumpPosition)
+    return () => {
+      global.app_event.off('jumpListPosition', handleJumpPosition)
+    }
+  }, [albumInfo.id])
 
   useEffect(() => {
     setComponentId(COMPONENT_IDS.ALBUM_DETAIL_SCREEN, componentId);
@@ -65,6 +86,7 @@ export default memo(({ componentId, albumInfo }: { componentId: string; albumInf
           onLoadMore={() => {}}
           onRefresh={onRefresh}
           onListUpdate={handleListUpdate}
+          playingId={playerMusicInfo.id}
         />
         <PlayerBar componentId={componentId} />
       </View>

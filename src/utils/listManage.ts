@@ -245,6 +245,28 @@ export const listMusicAdd = async (
   return [id];
 };
 
+
+export const listMusicAddAtPosition = async (
+  id: string,
+  musicInfos: LX.Music.MusicInfo[],
+  position: number,
+): Promise<string[]> => {
+  const targetList = await getListMusics(id);
+  const listSet = new Set<string>();
+  for (const item of targetList) listSet.add(item.id);
+
+  musicInfos = musicInfos.filter((item) => {
+    if (listSet.has(item.id)) return false;
+    listSet.add(item.id);
+    return true;
+  });
+
+  arrPushByPosition(targetList, musicInfos, position);
+
+  setMusicList(id, targetList);
+  return [id];
+};
+
 export const listMusicRemove = async (listId: string, ids: string[]): Promise<string[]> => {
   let targetList = await getListMusics(listId);
   const idsToRemove = new Set(ids);

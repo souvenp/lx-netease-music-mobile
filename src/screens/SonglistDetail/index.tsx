@@ -21,6 +21,11 @@ import { COMPONENT_IDS } from '@/config/constant'
 import Menu, { type MenuType } from '@/components/common/Menu'
 import PlaylistEditModal, { type PlaylistEditModalType } from '../Home/Views/MyPlaylist/PlaylistEditModal'
 import { type DetailInfo } from "@/screens/SonglistDetail/Header.tsx"
+import playerState from '@/store/player/state'
+import { LIST_IDS } from '@/config/constant'
+import listState from '@/store/list/state'
+import {usePlayerMusicInfo} from "@/store/player/hook.ts"
+import MusicInfoOnline = LX.Music.MusicInfoOnline
 
 const IMAGE_WIDTH = scaleSizeW(70)
 
@@ -125,7 +130,6 @@ const ListHeader = ({ detailInfo, info, onBack }: { detailInfo: DetailInfo, info
                   {detailInfo.desc}
                 </Text>
               </View>
-
               {showSubscribeButton && (
                 <TouchableOpacity style={styles.subscribeButton} onPress={toggleSubscribe}>
                   <Icon name={isSubscribed ? 'love-filled' : 'love'} color={isSubscribed ? theme['c-liked'] : theme['c-font-label']} size={20} />
@@ -154,7 +158,7 @@ const ListHeader = ({ detailInfo, info, onBack }: { detailInfo: DetailInfo, info
   )
 }
 
-export default ({ info, onBack }: { info: ListInfoItem, onBack?: () => void }) => {
+export default ({ info, onBack, initialScrollToInfo }: { info: ListInfoItem, onBack?: () => void, initialScrollToInfo: MusicInfoOnline | null }) => {
   const musicListRef = useRef<MusicListType>(null)
   const [detailInfo, setDetailInfo] = useState<DetailInfo>({
     name: info.name,
@@ -167,15 +171,30 @@ export default ({ info, onBack }: { info: ListInfoItem, onBack?: () => void }) =
   const playlists = useWySubscribedPlaylists()
   const isInitialMount = useRef(true)
   const loggedInUserId = useWyUid()
+  const playerMusicInfo = usePlayerMusicInfo()
+  const initialScrollDoneRef = useRef(false)
 
   const handleBack = onBack
-  // const handleBack = onBack ?? (() => {
-  //   void pop(commonState.componentIds.songlistDetail!)
-  // })
 
   const refreshList = useCallback((isRefresh = false) => {
     musicListRef.current?.loadList(info.source, info.id, isRefresh).then(setDetailInfo)
   }, [info.source, info.id])
+
+  useEffect(() => {
+    const handleJumpPosition = () => {
+      let listId = playerState.playMusicInfo.listId
+      if (listId === LIST_IDS.TEMP) listId = listState.tempListMeta.id
+      if (listId !== `${info.source}__${info.id}`) return
+      const musicInfo = playerState.playMusicInfo.musicInfo
+      if (musicInfo) {
+        musicListRef.current?.scrollToInfo(musicInfo as LX.Music.MusicInfoOnline)
+      }
+    }
+    global.app_event.on('jumpListPosition', handleJumpPosition)
+    return () => {
+      global.app_event.off('jumpListPosition', handleJumpPosition)
+    }
+  }, [info.id, info.source])
 
   useEffect(() => {
     refreshList()
@@ -210,7 +229,6 @@ export default ({ info, onBack }: { info: ListInfoItem, onBack?: () => void }) =
       return true
     }
     const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress)
-
     return () => subscription.remove()
   }, [handleBack])
 
@@ -223,8 +241,7 @@ export default ({ info, onBack }: { info: ListInfoItem, onBack?: () => void }) =
     if (!updatedPlaylist) {
       return
     }
-
-    if (updatedPlaylist.name !== detailInfo.name || updatedPlaylist.description !== detailInfo.desc) {
+    if (updatedPlaylist.name !== detailInfo.name || updatedPlaylist.description !== detailInfo.desc && updatedPlaylist.description != null) {
       console.log('歌单详情页检测到名称或描述变化，正在更新UI...')
       setDetailInfo(prev => ({
         ...prev,
@@ -233,6 +250,15 @@ export default ({ info, onBack }: { info: ListInfoItem, onBack?: () => void }) =
       }))
     }
   }, [playlists, handleBack, info.id, detailInfo.name, detailInfo.desc])
+
+  useEffect(() => {
+    if (initialScrollToInfo && detailInfo.total > 0 && !initialScrollDoneRef.current) {
+      initialScrollDoneRef.current = true
+      setTimeout(() => {
+        musicListRef.current?.scrollToInfo(initialScrollToInfo)
+      }, 300)
+    }
+  }, [detailInfo.total, initialScrollToInfo])
 
   const ListHeaderComponent = useMemo(() => <ListHeader detailInfo={detailInfo} info={info} onBack={handleBack} />, [detailInfo, info, handleBack])
 
@@ -253,7 +279,7 @@ export default ({ info, onBack }: { info: ListInfoItem, onBack?: () => void }) =
     <View style={{ flex: 1 }}>
       <ListInfoContext.Provider value={info}>
         {ListHeaderComponent}
-        <MusicList ref={musicListRef} componentId={commonState.componentIds[commonState.componentIds.length - 1]?.id} isCreator={isCreator} onListUpdate={handleListUpdate} />
+        <MusicList ref={musicListRef} playingId={playerMusicInfo.id} componentId={commonState.componentIds[commonState.componentIds.length - 1]?.id} isCreator={isCreator} onListUpdate={handleListUpdate} />
       </ListInfoContext.Provider>
     </View>
   )

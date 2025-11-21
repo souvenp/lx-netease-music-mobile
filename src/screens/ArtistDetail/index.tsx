@@ -11,6 +11,11 @@ import { createStyle } from '@/utils/tools';
 import { getArtistCache, setArtistCache,
   clearArtistCache, getArtistDetailCache, setArtistDetailCache } from '@/core/cache';
 import {useSettingValue} from "@/store/setting/hook.ts";
+import playerState from '@/store/player/state'
+import listState from '@/store/list/state'
+import { LIST_IDS } from '@/config/constant'
+import { type OnlineListType } from '@/components/OnlineList'
+import {usePlayerMusicInfo} from "@/store/player/hook.ts";
 
 const SONG_LIMIT = 100;
 const ALBUM_LIMIT = 100;
@@ -21,8 +26,11 @@ export default memo(({ componentId, artistInfo }: { componentId: string, artistI
   const [albums, setAlbums] = useState({ list: [], hasMore: true, page: 1, loading: false });
   const [activeTab, setActiveTab] = useState('songs');
   const albumViewMode = useSettingValue('artistDetail.albumViewMode')
-  const componentIdRef = useRef(componentId);
-  const isFirstSortEffect = useRef(true);
+  const componentIdRef = useRef(componentId)
+  const songListRef = useRef<any>(null)
+  const pendingScrollInfoRef = useRef<LX.Music.MusicInfoOnline | null>(null)
+  const isFirstSortEffect = useRef(true)
+  const playerMusicInfo = usePlayerMusicInfo()
 
   const handleSongListUpdate = useCallback((newList: LX.Music.MusicInfoOnline[]) => {
     setSongs(prev => ({
@@ -30,6 +38,40 @@ export default memo(({ componentId, artistInfo }: { componentId: string, artistI
       list: newList,
     }))
   }, [])
+
+
+
+  useEffect(() => {
+    const handleJumpPosition = () => {
+      let listId = playerState.playMusicInfo.listId
+      if (listId === LIST_IDS.TEMP) listId = listState.tempListMeta.id
+      if (listId !== `artist_detail_${artistInfo.id}`) return
+
+      const musicInfo = playerState.playMusicInfo.musicInfo as LX.Music.MusicInfoOnline
+      if (musicInfo) {
+        if (songs.list.length) {
+          songListRef.current?.scrollToInfo(musicInfo)
+        } else {
+          pendingScrollInfoRef.current = musicInfo
+        }
+      }
+    }
+
+    global.app_event.on('jumpListPosition', handleJumpPosition)
+    return () => {
+      global.app_event.off('jumpListPosition', handleJumpPosition)
+    }
+  }, [artistInfo.id, songs.list])
+  useEffect(() => {
+    if (pendingScrollInfoRef.current && songs.list.length) {
+      setTimeout(() => {
+        if (songListRef.current) {
+          songListRef.current.scrollToInfo(pendingScrollInfoRef.current);
+          pendingScrollInfoRef.current = null;
+        }
+      }, 300);
+    };
+  }, [songs.list])
 
   useEffect(() => {
     setComponentId('ARTIST_DETAIL', componentId);
@@ -194,6 +236,8 @@ export default memo(({ componentId, artistInfo }: { componentId: string, artistI
           songs={songs}
           albums={albums}
           activeTab={activeTab}
+          ref={songListRef as any}
+          artistId={artistInfo.id}
           albumViewMode={albumViewMode}
           onTabChange={handleTabChange}
           onLoadMoreSongs={handleLoadMoreSongs}
@@ -202,6 +246,7 @@ export default memo(({ componentId, artistInfo }: { componentId: string, artistI
           onRefresh={handleRefresh}
           onAlbumViewModeChange={handleAlbumViewModeChange}
           onSongListUpdate={handleSongListUpdate}
+          playingId={playerMusicInfo.id}
         />
         <PlayerBar componentId={componentId} />
       </View>

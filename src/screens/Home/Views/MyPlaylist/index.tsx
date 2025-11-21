@@ -10,7 +10,11 @@ import Text from '@/components/common/Text'
 import SonglistDetail from '../../../SonglistDetail'
 import { type ListInfoItem } from '@/store/songlist/state'
 import commonState from '@/store/common/state'
+import playerState from '@/store/player/state'
+import { LIST_IDS } from '@/config/constant'
+import listState from '@/store/list/state'
 import {setWySubscribedPlaylists} from "@/store/user/action.ts"
+import MusicInfoOnline = LX.Music.MusicInfoOnline;
 
 export default memo(() => {
   const playlists = useWySubscribedPlaylists()
@@ -19,8 +23,44 @@ export default memo(() => {
   const cookie = useSettingValue('common.wy_cookie')
   const theme = useTheme()
   const [selectedPlaylist, setSelectedPlaylist] = useState<ListInfoItem | null>(null)
+  const [scrollToMusicInfo, setScrollToMusicInfo] = useState<MusicInfoOnline | null>(null)
   const selectedPlaylistRef = useRef(selectedPlaylist)
   selectedPlaylistRef.current = selectedPlaylist
+
+  useEffect(() => {
+    const handleJumpPosition = () => {
+      let listId = playerState.playMusicInfo.listId
+      if (listId === LIST_IDS.TEMP) listId = listState.tempListMeta.id
+      if (!listId?.startsWith('wy__')) return
+
+      const playlistId = listId.replace('wy__', '')
+      const targetPlaylist = playlists.find(p => String(p.id) === playlistId)
+
+      if (targetPlaylist) {
+        const playlistInfo: ListInfoItem = {
+          id: String(targetPlaylist.id),
+          name: targetPlaylist.name,
+          author: targetPlaylist.creator?.nickname,
+          img: targetPlaylist.coverImgUrl,
+          play_count: targetPlaylist.playCount,
+          desc: targetPlaylist.description,
+          source: 'wy',
+          userId: targetPlaylist.userId,
+          total: targetPlaylist.trackCount,
+        }
+        const musicInfo = 'progress' in playerState.playMusicInfo.musicInfo
+          ? playerState.playMusicInfo.musicInfo.metadata.musicInfo
+          : playerState.playMusicInfo.musicInfo
+        if (musicInfo) setScrollToMusicInfo(musicInfo as MusicInfoOnline)
+        setSelectedPlaylist(playlistInfo)
+      }
+    }
+
+    global.app_event.on('jumpListPosition', handleJumpPosition)
+    return () => {
+      global.app_event.off('jumpListPosition', handleJumpPosition)
+    }
+  }, [playlists])
 
   useEffect(() => {
     if (!cookie || !uid) {
@@ -102,8 +142,13 @@ export default memo(() => {
       </View>
     )
   }
+
+  const handleBack = useCallback(() => {
+    setSelectedPlaylist(null)
+    setScrollToMusicInfo(null)
+  }, [])
   if (selectedPlaylist) {
-    return <SonglistDetail info={selectedPlaylist} onBack={() => setSelectedPlaylist(null)} />;
+    return <SonglistDetail info={selectedPlaylist} onBack={handleBack} initialScrollToInfo={scrollToMusicInfo} />
   }
 
   return (

@@ -30,6 +30,7 @@ import {
 import { handleShare } from '@/screens/Home/Views/Mylist/MusicList/listAction';
 import settingState from '@/store/setting/state';
 import commonState from '@/store/common/state';
+import {addSongsToPlayLater} from "@/core/player/playLaterManager.ts";
 
 export interface PlayerPlaylistType {
   show: () => void;
@@ -179,12 +180,8 @@ export default forwardRef<PlayerPlaylistType, {}>((props, ref) => {
   };
 
   const onPlayLater = (info: SelectInfo) => {
-    addTempPlayList([{
-      listId: playerState.playMusicInfo.listId!,
-      musicInfo: info.musicInfo,
-      isTop: true,
-    }]);
-    toast('已添加到下一首播放');
+    addSongsToPlayLater([info.musicInfo]);
+    toast('已添加到稍后播放');
   };
 
   const onDownload = (info: SelectInfo) => {

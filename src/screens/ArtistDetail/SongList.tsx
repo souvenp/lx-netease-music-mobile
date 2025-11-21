@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useRef } from 'react'
+import {forwardRef, memo, useCallback, useEffect, useImperativeHandle, useRef} from 'react'
 import { View, TouchableOpacity } from 'react-native'
 import OnlineList from '@/components/OnlineList'
 import AlbumList from './AlbumList'
@@ -9,23 +9,54 @@ import { playOnlineList } from '@/core/list'
 import { BorderWidths } from '@/theme'
 import { Icon } from '@/components/common/Icon.tsx'
 import PagerView, { type PagerViewOnPageSelectedEvent } from 'react-native-pager-view'
+import { type OnlineListType } from '@/components/OnlineList'
 
-export default memo(({componentId,
-                       songs, albums, activeTab, onTabChange,
-                       onLoadMoreSongs, onLoadMoreAlbums,
-                       onSortChange, onRefresh,
-                       albumViewMode, onAlbumViewModeChange,
-                       onSongListUpdate,
-                     }) => {
+interface SongListProps {
+  componentId: string
+  artistId: string
+  songs: { list: any[], hasMore: boolean, page: number, loading: boolean, sort: string }
+  albums: { list: any[], hasMore: boolean, page: number, loading: boolean }
+  activeTab: 'songs' | 'albums'
+  albumViewMode: 'grid' | 'list'
+  playingId: string | null
+  onTabChange: (tab: 'songs' | 'albums') => void
+  onLoadMoreSongs: () => void
+  onLoadMoreAlbums: () => void
+  onSortChange: (sort: 'hot' | 'time') => void
+  onRefresh: () => void
+  onAlbumViewModeChange: (mode: 'grid' | 'list') => void
+  onSongListUpdate: (list: LX.Music.MusicInfoOnline[]) => void
+}
+
+interface SongListRef {
+  scrollToInfo: (info: LX.Music.MusicInfoOnline) => void
+}
+
+const SongList = forwardRef<SongListRef, SongListProps>(({
+                                                           componentId,
+                                                           artistId,
+                                                           songs, albums, activeTab, onTabChange,
+                                                           onLoadMoreSongs, onLoadMoreAlbums,
+                                                           onSortChange, onRefresh,
+                                                           playingId,
+                                                           albumViewMode, onAlbumViewModeChange,
+                                                           onSongListUpdate,
+                                                         }, ref) => {
   const theme = useTheme()
-  const songListRef = useRef<any>(null)
+  const songListRef = useRef<OnlineListType>(null)
   const pagerViewRef = useRef<PagerView>(null)
+
+  useImperativeHandle(ref, () => ({
+    scrollToInfo: (info) => {
+      songListRef.current?.scrollToInfo(info)
+    },
+  }))
 
   const onPlayList = useCallback((index: number) => {
     if (!songs.list.length) return
-    const listId = `artist_detail_${songs.list[0]?.meta.albumId ?? 'unknown'}`
+    const listId = `artist_detail_${artistId}`
     void playOnlineList(listId, songs.list, index)
-  }, [songs.list])
+  }, [songs.list, artistId])
 
   useEffect(() => {
     const pageIndex = activeTab === 'songs' ? 0 : 1
@@ -122,6 +153,7 @@ export default memo(({componentId,
             onRefresh={onRefresh}
             onLoadMore={onLoadMoreSongs}
             onListUpdate={onSongListUpdate}
+            playingId={playingId}
           />
         </View>
         <View key="2" style={{ flex: 1 }}>
@@ -139,6 +171,8 @@ export default memo(({componentId,
     </View>
   )
 })
+
+export default memo(SongList)
 
 const styles = createStyle({
   listHeader: {

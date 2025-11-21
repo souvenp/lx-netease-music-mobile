@@ -52,6 +52,7 @@ export interface OnlineListType {
   setList: (list: LX.Music.MusicInfoOnline[], isAppend?: boolean, showSource?: boolean) => void
   setStatus: (val: Status) => void
   getList: () => LX.Music.MusicInfoOnline[]
+  scrollToInfo: (info: LX.Music.MusicInfoOnline) => void
 }
 
 export default forwardRef<OnlineListType, OnlineListProps>(
@@ -93,6 +94,9 @@ export default forwardRef<OnlineListType, OnlineListProps>(
       getList() {
         return listRef.current?.getList() ?? []
       },
+      scrollToInfo(info) {
+        listRef.current?.scrollToInfo(info)
+      },
     }))
 
     const hancelMultiSelect = () => {
@@ -105,16 +109,18 @@ export default forwardRef<OnlineListType, OnlineListProps>(
       listRef.current?.setSelectMode(mode)
     }
 
-    const hancelExitSelect = () => {
+    const hancelExitSelect = useCallback(() => {
       multipleModeBarRef.current?.exitSelectMode()
       listRef.current?.setIsMultiSelectMode(false)
-    }
+    }, [])
+
     const handleBatchDownload = useCallback(() => {
       const selectedList = listRef.current?.getSelectedList() ?? []
       if (!selectedList.length) return
       void batchDownload(selectedList)
       hancelExitSelect()
     }, [hancelExitSelect])
+
 
     const showMenu = (musicInfo: LX.Music.MusicInfoOnline, index: number, position: Position) => {
       listMenuRef.current?.show(
@@ -149,7 +155,6 @@ export default forwardRef<OnlineListType, OnlineListProps>(
       const componentId = componentId_raw ?? commonState.componentIds[commonState.componentIds.length - 1]?.id!
       handleShowAlbumDetail(componentId, info.musicInfo)
     }
-
     const handlePlayMv = useCallback((info: SelectInfo) => {
       const mvId = info.musicInfo.meta.mv
       if (!mvId) return
@@ -159,7 +164,6 @@ export default forwardRef<OnlineListType, OnlineListProps>(
         toast(err.message || '获取MV失败')
       })
     }, [])
-
     const handleMoveMusic = (info: SelectInfo) => {
       if (info.selectedList.length) {
         listMusicMultiAddRef.current?.show({ selectedList: info.selectedList, listId: listId!, isMove: true })
@@ -178,10 +182,10 @@ export default forwardRef<OnlineListType, OnlineListProps>(
         const currentList = listRef.current?.getList() ?? []
         const idsToRemove = new Set(musicInfos.map(m => m.id))
         const newList = currentList.filter(m => !idsToRemove.has(m.id))
-        listRef.current?.setList(newList, false)
+        listRef.current?.setList(newList, false, false)
         updateWySubscribedPlaylistTrackCount(playlistId, -songIds.length)
         clearListDetailCache('wy', playlistId)
-        global.app_event.playlist_updated({ source: 'wy', listId: playlistId })
+        // global.app_event.playlist_updated({ source: 'wy', listId: playlistId })
         hancelExitSelect()
       }).catch(err => {
         toast('移除失败: ' + err.message)

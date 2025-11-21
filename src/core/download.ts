@@ -15,7 +15,7 @@ import wySdk from '@/utils/musicSdk/wy'
 
 const taskQueue: DownloadTask[] = [];
 let isProcessing = false;
-let currentJobId: number | null = null;
+let currentDownloadTask: any | null = null;
 
 const processQueue = async () => {
   if (isProcessing || taskQueue.length === 0) return;
@@ -59,67 +59,62 @@ const startDownload = async (task: DownloadTask) => {
   } else {
     url = await getMusicUrl({ musicInfo: task.musicInfo, quality: task.quality, isRefresh: true });
   }
-  const extension = getFileExtension(task.quality);
-
-  let finalSingerString = task.musicInfo.singer;
-  // 文件名过长的情况下，只取前6个歌手名
-  if (task.musicInfo.artists && task.musicInfo.artists.length > 6) {
-    finalSingerString = task.musicInfo.artists.slice(0, 6).map(artist => artist.name).join('、') + '...';
-  }
-  let fileName = settingState.setting['download.fileName']
-    .replace('歌名', task.musicInfo.name)
-    .replace('歌手', finalSingerString);
-  fileName = filterFileName(fileName);
-  const downloadDir = settingState.setting['download.path'] || (RNFetchBlob.fs.dirs.MusicDir + '/LX-N Music');
-  const filePath = `${downloadDir}/${fileName}.${extension}`;
 
   await requestStoragePermission()
+
+  if (!task.isForceCookie) {
+    toast(`${task.fileName} 正在下载...`, 'short');
+  }
   let lastWritten = 0;
   let lastTime = Date.now();
-  const downloadTask = RNFetchBlob.config({
-    path: filePath,
-    fileCache: true,
-  }).fetch('GET', url, {
-    'User-Agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Mobile Safari/537.36',
-  });
-
-  currentJobId = downloadTask.jobId;
-  downloadTask.progress({ interval: 500 }, (written, total) => {
-    const now = Date.now();
-    const deltaTime = now - lastTime;
-    if (deltaTime === 0) return;
-
-    const deltaBytes = written - lastWritten;
-    const speed = deltaBytes / (deltaTime / 1000);
-
-    lastWritten = written;
-    lastTime = now;
-    const percent = total > 0 ? written / total : 0;
-    downloadActions.updateTask(task.id, {
-      progress: {
-        ...task.progress,
-        percent,
-        downloaded: written,
-        total,
-        speed: `${sizeFormate(speed)}/s`,
-      },
-    });
-  });
-
-  await downloadTask;
-  console.log('下载完成:', filePath);
-  currentJobId = null;
-  downloadActions.updateTask(task.id, { filePath });
-  await handleMetadata(task, filePath);
   try {
-    await RNFetchBlob.fs.scanFile([{ path: filePath }]);
-    console.log(`[Download Manager] Media scan requested for: ${filePath}`);
-  } catch (scanError) {
-    console.error(`[Download Manager] Failed to request media scan for ${filePath}:`, scanError);
-  }
-  downloadActions.updateTask(task.id, { status: 'completed', progress: { ...task.progress, percent: 1 } });
+      const downloadTask = RNFetchBlob.config({
+        path: task.filePath,
+        fileCache: true,
+      }).fetch('GET', url, {
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Mobile Safari/537.36',
+      });
 
-  toast(`${fileName} 下载完成!`, 'short');
+      currentDownloadTask = downloadTask;
+      downloadTask.progress({ interval: 500 }, (written, total) => {
+        const now = Date.now();
+        const deltaTime = now - lastTime;
+        if (deltaTime === 0) return;
+
+        const deltaBytes = written - lastWritten;
+        const speed = deltaBytes / (deltaTime / 1000);
+
+        lastWritten = written;
+        lastTime = now;
+        const percent = total > 0 ? written / total : 0;
+        downloadActions.updateTask(task.id, {
+          progress: {
+            ...task.progress,
+            percent,
+            downloaded: written,
+            total,
+            speed: `${sizeFormate(speed)}/s`,
+          },
+        });
+      });
+
+      await downloadTask;
+      console.log('下载完成:', task.fileName);
+      await handleMetadata(task, task.filePath);
+      try {
+        await RNFetchBlob.fs.scanFile([{ path: task.filePath }]);
+        console.log(`[Download Manager] Media scan requested for: ${task.filePath}`);
+      } catch (scanError) {
+        console.error(`[Download Manager] Failed to request media scan for ${task.filePath}:`, scanError);
+      }
+      downloadActions.updateTask(task.id, { status: 'completed', progress: { ...task.progress, percent: 1 } });
+
+      if (!task.isForceCookie) {
+        toast(`${task.fileName} 下载完成!`, 'short');
+      }
+  } finally {
+    currentDownloadTask = null;
+  }
 };
 
 const handleMetadata = async (task: DownloadTask, filePath: string) => {
@@ -283,11 +278,27 @@ export const retryTask = (taskId: string) => {
 };
 
 export const addTask = (musicInfo: LX.Music.MusicInfo, quality: LX.Quality, isForceCookie: boolean = false) => {
+  const extension = getFileExtension(quality);
+
+  let finalSingerString = musicInfo.singer;
+  // 文件名过长的情况下，只取前6个歌手名
+  if (musicInfo.artists && musicInfo.artists.length > 6) {
+    finalSingerString = musicInfo.artists.slice(0, 6).map(artist => artist.name).join('、') + '...';
+  }
+  let fileName = settingState.setting['download.fileName']
+    .replace('歌名', musicInfo.name)
+    .replace('歌手', finalSingerString);
+  fileName = filterFileName(fileName);
+  const downloadDir = settingState.setting['download.path'] || (RNFetchBlob.fs.dirs.MusicDir + '/LX-N Music');
+  const filePath = `${downloadDir}/${fileName}.${extension}`;
+
   const task: DownloadTask = {
     id: toMD5(`${musicInfo.id}-${quality}`),
     musicInfo,
     quality,
     status: 'waiting',
+    filePath,
+    fileName,
     progress: { percent: 0, speed: '', downloaded: 0, total: 0 },
     metadataStatus: { cover: 'pending', lyric: 'pending', tags: 'pending' },
     createdAt: Date.now(),
@@ -304,24 +315,21 @@ export const addTask = (musicInfo: LX.Music.MusicInfo, quality: LX.Quality, isFo
   processQueue();
 };
 
-export const pauseTask = (id: string) => {
-  if (currentJobId) {
-    RNFetchBlob.fs.cancelRequest(currentJobId);
-    currentJobId = null;
-  }
-  const taskIndex = taskQueue.findIndex(t => t.id === id);
-  if (taskIndex > -1) taskQueue.splice(taskIndex, 1);
-
-  downloadActions.updateTask(id, { status: 'paused' });
-  isProcessing = false;
-  processQueue();
-};
-
 export const removeTask = (id: string) => {
   const taskToRemove = downloadState.tasks.find(t => t.id === id);
-  if (currentJobId && taskToRemove && taskToRemove.status === 'downloading') {
-    RNFetchBlob.fs.cancelRequest(currentJobId);
-    currentJobId = null;
+  if (currentDownloadTask && taskToRemove && taskToRemove.status === 'downloading') {
+    currentDownloadTask.cancel(async () => {
+      try {
+        console.log(taskToRemove)
+        if (taskToRemove.filePath) {
+          await unlink(taskToRemove.filePath);
+          console.log(`[Download Manager] Canceled and deleted partial file: ${taskToRemove.filePath}`);
+        }
+      } catch (error) {
+        console.error(`[Download Manager] Failed to delete partial file on remove:`, error);
+      }
+      currentDownloadTask = null;
+    })
   }
   // 从队列中移除
   const taskIndex = taskQueue.findIndex(t => t.id === id);

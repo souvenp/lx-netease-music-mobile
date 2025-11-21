@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import { ScrollView, TouchableOpacity, View } from 'react-native'
-
 import Text from '@/components/common/Text'
 import { useMyList } from '@/store/list/hook'
 import ListItem, { styles as listStyles } from './ListItem'
@@ -10,6 +9,7 @@ import { useTheme } from '@/store/theme/hook'
 import { useI18n } from '@/lang'
 import { createStyle } from '@/utils/tools'
 import { scaleSizeW } from '@/utils/pixelRatio'
+import { useWySubscribedPlaylists, useWyUid } from '@/store/user/hook'
 
 const styles = createStyle({
   list: {
@@ -18,13 +18,13 @@ const styles = createStyle({
     paddingBottom: 5,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    // backgroundColor: 'rgba(0,0,0,0.2)'
   },
 })
+
 const MIN_WIDTH = scaleSizeW(140)
 const PADDING = styles.list.paddingLeft + styles.list.paddingRight
 
-const EditListItem = ({ itemWidth }: { itemWidth: number }) => {
+const EditListItem = ({ itemWidth, playlistType }: { itemWidth: number, playlistType: 'local' | 'online' }) => {
   const [isEdit, setEdit] = useState(false)
   const theme = useTheme()
   const t = useI18n()
@@ -56,6 +56,7 @@ const EditListItem = ({ itemWidth }: { itemWidth: number }) => {
           onHide={() => {
             setEdit(false)
           }}
+          playlistType={playlistType}
         />
       ) : null}
     </View>
@@ -63,14 +64,29 @@ const EditListItem = ({ itemWidth }: { itemWidth: number }) => {
 }
 
 export default ({
-  listId,
-  onPress,
-}: {
+                  listId,
+                  onPress,
+                  playlistType,
+                }: {
   listId: string
   onPress: (listInfo: LX.List.MyListInfo) => void
+  playlistType: 'local' | 'online'
 }) => {
   const windowSize = useWindowSize()
-  const allList = useMyList().filter((l) => l.id != listId)
+  const localLists = useMyList()
+  const onlinePlaylists = useWySubscribedPlaylists()
+  const uid = useWyUid()
+
+  const allList = useMemo(() => {
+    let sourceList
+    if (playlistType === 'online') {
+      sourceList = onlinePlaylists.filter(p => String(p.userId) === String(uid))
+    } else {
+      sourceList = localLists
+    }
+    return sourceList.filter((l) => l.id != listId)
+  }, [playlistType, localLists, onlinePlaylists, uid, listId])
+
   const itemWidth = useMemo(() => {
     let w = Math.floor(windowSize.width * 0.9 - PADDING)
     let n = Math.floor(w / MIN_WIDTH)
@@ -84,7 +100,7 @@ export default ({
         {allList.map((info) => (
           <ListItem key={info.id} listInfo={info} onPress={onPress} width={itemWidth} />
         ))}
-        <EditListItem itemWidth={itemWidth} />
+        <EditListItem itemWidth={itemWidth} playlistType={playlistType} />
       </View>
     </ScrollView>
   )

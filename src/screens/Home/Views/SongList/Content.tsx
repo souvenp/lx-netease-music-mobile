@@ -6,7 +6,12 @@ import HeaderBar, { type HeaderBarProps, type HeaderBarType } from './HeaderBar'
 import songlistState, { type InitState, type SortInfo, type ListInfoItem } from '@/store/songlist/state'
 import List, { type ListType } from './List'
 import SonglistDetail from '../../../SonglistDetail'
-import commonState from '@/store/common/state';
+import commonState from '@/store/common/state'
+import playerState from '@/store/player/state'
+import { LIST_IDS } from '@/config/constant'
+import listState from '@/store/list/state'
+import { useWySubscribedPlaylists } from '@/store/user/hook'
+import MusicInfoOnline = LX.Music.MusicInfoOnline;
 
 interface SonglistInfo {
   source: InitState['sources'][number]
@@ -18,10 +23,12 @@ export default () => {
   const headerBarRef = useRef<HeaderBarType>(null)
   const listRef = useRef<ListType>(null)
   const [selectedList, setSelectedList] = useState<ListInfoItem | null>(null)
+  const [scrollToMusicInfo, setScrollToMusicInfo] = useState<MusicInfoOnline | null>(null)
   const selectedListRef = useRef(selectedList)
   selectedListRef.current = selectedList
   const songlistInfo = useRef<SonglistInfo>({ source: 'kw', sortId: '5', tagId: '' })
   const [headerKey, setHeaderKey] = useState(Date.now())
+  const subscribedPlaylists = useWySubscribedPlaylists()
 
   // 使用 useCallback 包裹 loadList
   const loadList = useCallback(() => {
@@ -71,6 +78,36 @@ export default () => {
   }, [selectedList, loadList])
 
 
+  useEffect(() => {
+    const handleJumpPosition = () => {
+      let listId = playerState.playMusicInfo.listId
+      if (listId === LIST_IDS.TEMP) listId = listState.tempListMeta.id
+      if (!listId || !listId.includes('__')) return
+
+      const playlistId = listId.split('__')[1]
+      if (subscribedPlaylists.some(p => String(p.id) === playlistId)) return
+
+      const [source, id] = listId.split('__')
+      const targetListInfo: ListInfoItem = {
+        id,
+        source: source as LX.OnlineSource,
+        name: '',
+        author: '',
+        play_count: '',
+      }
+
+      const musicInfo = 'progress' in playerState.playMusicInfo.musicInfo
+        ? playerState.playMusicInfo.musicInfo.metadata.musicInfo
+        : playerState.playMusicInfo.musicInfo
+      if (musicInfo) setScrollToMusicInfo(musicInfo as MusicInfoOnline)
+      setSelectedList(targetListInfo)
+    }
+    global.app_event.on('jumpListPosition', handleJumpPosition)
+    return () => {
+      global.app_event.off('jumpListPosition', handleJumpPosition)
+    }
+  }, [subscribedPlaylists])
+
   const handleSortChange: HeaderBarProps['onSortChange'] = (id) => {
     songlistInfo.current.sortId = id
     void saveSongListSetting({ sortId: id })
@@ -106,8 +143,13 @@ export default () => {
     setSelectedList(item)
   }, [])
 
+  const handleBack = useCallback(() => {
+    setSelectedList(null)
+    setScrollToMusicInfo(null)
+  }, [])
+
   if (selectedList) {
-    return <SonglistDetail info={selectedList} onBack={() => setSelectedList(null)} />
+    return <SonglistDetail info={selectedList} onBack={handleBack} initialScrollToInfo={scrollToMusicInfo} />
   }
 
   return (
