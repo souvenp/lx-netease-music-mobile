@@ -74,6 +74,7 @@ declare global {
         maxTime: number
         listId: string
         index: number
+        tempMeta?: LX.List.MyTempListInfo['meta'] | null
       }
 
       interface Track extends RNTrack {

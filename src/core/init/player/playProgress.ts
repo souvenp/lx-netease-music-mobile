@@ -9,15 +9,25 @@ import playerState from '@/store/player/state'
 import settingState from '@/store/setting/state'
 import { onScreenStateChange } from '@/utils/nativeModules/utils'
 import { AppState } from 'react-native'
-import { updateScrobblePlayTime, updateScrobbleTotalTime } from '@/core/player/scrobble' // [新增] 引入更新函数
+import { updateScrobblePlayTime, updateScrobbleTotalTime } from '@/core/player/scrobble'
+import {LIST_IDS} from "@/config/constant.ts"
+import listState from '@/store/list/state'
 
 const delaySavePlayInfo = throttleBackgroundTimer(() => {
-  void savePlayInfo({
+  const listIdToSave = playerState.playMusicInfo.listId
+  const playInfoToSave: LX.Player.SavedPlayInfo = {
     time: playerState.progress.nowPlayTime,
     maxTime: playerState.progress.maxPlayTime,
-    listId: playerState.playMusicInfo.listId!,
+    listId: listIdToSave!,
     index: playerState.playInfo.playIndex,
-  })
+  }
+
+  // 如果当前播放的是临时列表，则附加其元数据
+  if (listIdToSave === LIST_IDS.TEMP) {
+    playInfoToSave.tempMeta = listState.tempListMeta
+  }
+
+  void savePlayInfo(playInfoToSave)
 }, 2000)
 
 export default () => {
@@ -130,12 +140,21 @@ export default () => {
     // setMaxplayTime(playProgress.maxPlayTime)
     handlePause()
     if (!playerState.playMusicInfo.isTempPlay) {
-      void savePlayInfo({
+      const playMusicInfo = playerState.playMusicInfo;
+      if (!playMusicInfo.listId) return
+
+      const playInfoToSave: LX.Player.SavedPlayInfo = {
         time: playerState.progress.nowPlayTime,
         maxTime: playerState.progress.maxPlayTime,
-        listId: playerState.playMusicInfo.listId!,
+        listId: playMusicInfo.listId,
         index: playerState.playInfo.playIndex,
-      })
+      }
+
+      if (playMusicInfo.listId === LIST_IDS.TEMP) {
+        playInfoToSave.tempMeta = listState.tempListMeta
+      }
+
+      void savePlayInfo(playInfoToSave)
     }
   }
 
