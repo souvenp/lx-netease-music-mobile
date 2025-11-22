@@ -14,7 +14,7 @@ import {
   listMusicUpdateInfo,
   listMusicUpdatePosition,
   listMusicClear,
-  allMusicList, listMusicAddAtPosition,
+  allMusicList,
 } from '@/utils/listManage';
 import { LIST_IDS } from '@/config/constant';
 import { setActiveList, setUserList } from '@/core/list';
@@ -270,22 +270,8 @@ export class ListEvent extends Event {
       await logOperation({ action: 'list_music_update_position', data: { listId, position, ids } });
       markListsChanged();
     }
-  }
-
-  async list_music_add_at_position(
-    listId: string,
-    musicInfos: LX.Music.MusicInfo[],
-    position: number,
-    isRemote: boolean = false,
-  ) {
-    const changedIds = await listMusicAddAtPosition(listId, musicInfos, position);
-    await checkUpdateList(changedIds);
-    this.emit('list_music_add_at_position', listId, musicInfos, position, isRemote);
-    if (!isRemote) {
-      markListsChanged();
-    };
   };
-}
+};
 
 type EventMethods = Omit<EventType, keyof Event>;
 declare class EventType extends ListEvent {

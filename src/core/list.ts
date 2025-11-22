@@ -21,19 +21,7 @@ export const playOnlineList = async (listId: string, list: LX.Music.MusicInfoOnl
   void playList(LIST_IDS.TEMP, index)
 }
 
-/**
- * 在指定位置添加歌曲到列表
- * @param id 列表ID
- * @param musicInfos 歌曲信息
- * @param position 插入位置
- */
-export const addListMusicsAtPosition = async (
-  id: string,
-  musicInfos: LX.Music.MusicInfo[],
-  position: number,
-) => {
-  await global.list_event.list_music_add_at_position(id, musicInfos, position);
-};
+
 /**
  * 覆盖全部列表数据
  * @param data

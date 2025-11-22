@@ -17,7 +17,6 @@ import {addWyLikedSong, removeWyLikedSong} from "@/store/user/action.ts";
 import {navigations} from "@/navigation";
 import commonState from '@/store/common/state'
 import wyApi from '@/utils/musicSdk/wy/user'
-import {addSongsToPlayLater} from "@/core/player/playLaterManager.ts";
 
 export const handleShowAlbumDetail = (componentId: string, musicInfo: LX.Music.MusicInfoOnline) => {
   const albumId = musicInfo.meta.albumId
@@ -104,12 +103,11 @@ export const handlePlayLater = (
   onCancelSelect: () => void
 ) => {
   if (selectedList.length) {
-    addSongsToPlayLater(selectedList);
-    onCancelSelect();
+    addTempPlayList(selectedList.map((s) => ({ listId: '', musicInfo: s })))
+    onCancelSelect()
   } else {
-    addSongsToPlayLater([musicInfo]);
+    addTempPlayList([{ listId: '', musicInfo }])
   }
-  toast('已添加到稍后播放');
 }
 
 export const handleShare = (musicInfo: LX.Music.MusicInfoOnline) => {

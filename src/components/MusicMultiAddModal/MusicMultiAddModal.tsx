@@ -10,9 +10,10 @@ import { useTheme } from '@/store/theme/hook'
 import Button from '@/components/common/Button'
 import { getPlaylistType, savePlaylistType } from '@/utils/data'
 import wyApi from '@/utils/musicSdk/wy/user'
-import { updateWySubscribedPlaylistTrackCount } from '@/store/user/action'
+import {addWyLikedSong, removeWyLikedSong, updateWySubscribedPlaylistTrackCount} from '@/store/user/action'
 import { clearListDetailCache } from '@/core/songlist'
 import {Text, View} from "react-native";
+import {useWySubscribedPlaylists} from "@/store/user/hook.ts";
 
 export interface SelectInfo {
   selectedList: LX.Music.MusicInfo[]
@@ -38,8 +39,9 @@ export default forwardRef<MusicMultiAddModalType, MusicMultiAddModalProps>(({ on
   const t = useI18n()
   const dialogRef = useRef<DialogType>(null)
   const [selectInfo, setSelectInfo] = useState<SelectInfo>(initSelectInfo)
-  const [playlistType, setPlaylistType] = useState<'local' | 'online'>('local');
-  const theme = useTheme();
+  const [playlistType, setPlaylistType] = useState<'local' | 'online'>('local')
+  const theme = useTheme()
+  const subscribedPlaylists = useWySubscribedPlaylists()
 
   useEffect(() => {
     getPlaylistType().then(setPlaylistType);
@@ -73,16 +75,27 @@ export default forwardRef<MusicMultiAddModalType, MusicMultiAddModalProps>(({ on
       if (!selectedList.length) return
       const toListId = String(listInfo.id)
       const songIds = selectedList.map(m => m.meta.songId)
+      const sourcePlaylist = subscribedPlaylists.find(p => `wy__${p.id}` === fromListId)
 
       if (isMove) {
         // 1. 先将歌曲添加到目标歌单
         wyApi.manipulatePlaylistTracks('add', toListId, songIds).then(() => {
+          if (listInfo.name === listInfo.creator.nickname + '喜欢的音乐') {
+            for (const songId of songIds) {
+              addWyLikedSong(songId);
+            }
+          }
           const sourcePlaylistId = fromListId.replace('wy__', '')
           clearListDetailCache('wy', toListId)
           global.app_event.playlist_updated({ source: 'wy', listId: toListId })
           // 2. 从源歌单删除歌曲
           return wyApi.manipulatePlaylistTracks('del', sourcePlaylistId, songIds)
         }).then(() => {
+          if (sourcePlaylist.name === sourcePlaylist.creator.nickname + '喜欢的音乐') {
+            for (const songId of songIds) {
+              removeWyLikedSong(songId)
+            }
+          }
           onAdded?.()
           toast(t('list_edit_action_tip_move_success'))
           // 3. 更新两个歌单的歌曲数量
@@ -97,6 +110,11 @@ export default forwardRef<MusicMultiAddModalType, MusicMultiAddModalProps>(({ on
         })
       } else {
         wyApi.manipulatePlaylistTracks('add', toListId, songIds).then(() => {
+          if (listInfo.name === listInfo.creator.nickname + '喜欢的音乐') {
+            for (const songId of songIds) {
+              addWyLikedSong(songId);
+            }
+          }
           onAdded?.()
           toast(t('list_edit_action_tip_add_success'))
           updateWySubscribedPlaylistTrackCount(toListId, songIds.length)

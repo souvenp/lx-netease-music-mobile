@@ -11,8 +11,9 @@ import settingState from '@/store/setting/state'
 import {useTheme} from "@/store/theme/hook"
 import {getPlaylistType, savePlaylistType} from "@/utils/data"
 import {Text, View} from "react-native"
-import {updateWySubscribedPlaylistTrackCount} from "@/store/user/action.ts";
+import {addWyLikedSong, removeWyLikedSong, updateWySubscribedPlaylistTrackCount} from "@/store/user/action.ts";
 import {clearListDetailCache} from "@/core/songlist.ts";
+import {useWySubscribedPlaylists} from "@/store/user/hook.ts";
 
 export interface SelectInfo {
   musicInfo: LX.Music.MusicInfo | null
@@ -36,6 +37,7 @@ export default forwardRef<MusicAddModalType, MusicAddModalProps>(({ onAdded }, r
   const [selectInfo, setSelectInfo] = useState<SelectInfo>(initSelectInfo as SelectInfo)
   const [playlistType, setPlaylistType] = useState<'local' | 'online'>('local')
   const theme = useTheme()
+  const subscribedPlaylists = useWySubscribedPlaylists()
 
   useEffect(() => {
     getPlaylistType().then(setPlaylistType)
@@ -64,19 +66,26 @@ export default forwardRef<MusicAddModalType, MusicAddModalProps>(({ onAdded }, r
 
   const handleSelect = (listInfo: LX.List.MyListInfo) => {
     dialogRef.current?.setVisible(false)
-    const { musicInfo, listId: fromListId, isMove } = selectInfo;
+    const { musicInfo, listId: fromListId, isMove } = selectInfo
     if (playlistType === 'online') {
       if (!musicInfo) return;
       const toListId = String(listInfo.id);
       const songId = musicInfo.meta.songId;
+      const sourcePlaylist = subscribedPlaylists.find(p => `wy__${p.id}` === fromListId);
 
       if (isMove) {
         wyApi.manipulatePlaylistTracks('add', toListId, [songId]).then(() => {
+          if (listInfo.name === listInfo.creator.nickname + '喜欢的音乐') {
+            addWyLikedSong(songId)
+          }
           const sourcePlaylistId = fromListId.replace('wy__', '');
           clearListDetailCache('wy', toListId)
           global.app_event.playlist_updated({ source: 'wy', listId: toListId })
           return wyApi.manipulatePlaylistTracks('del', sourcePlaylistId, [songId]);
         }).then(() => {
+          if (sourcePlaylist.name === sourcePlaylist.creator.nickname + '喜欢的音乐') {
+            removeWyLikedSong(songId)
+          }
           onAdded?.()
           toast(t('list_edit_action_tip_move_success'));
           updateWySubscribedPlaylistTrackCount(toListId, 1);
@@ -89,6 +98,9 @@ export default forwardRef<MusicAddModalType, MusicAddModalProps>(({ onAdded }, r
         });
       } else {
         wyApi.manipulatePlaylistTracks('add', toListId, [songId]).then(() => {
+          if (listInfo.name === listInfo.creator.nickname + '喜欢的音乐') {
+            addWyLikedSong(songId)
+          }
           onAdded?.()
           toast(t('list_edit_action_tip_add_success'))
           updateWySubscribedPlaylistTrackCount(toListId, 1)

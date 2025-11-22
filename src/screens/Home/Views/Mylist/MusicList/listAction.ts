@@ -23,7 +23,6 @@ import { getMusicUrl, getLyricInfo, getPicUrl } from '@/core/music/online'
 import { writeMetadata, writePic, writeLyric } from '@/utils/localMediaMetadata'
 import { downloadFile, writeFile } from '@/utils/fs'
 import {MusicMetadata} from "react-native-local-media-metadata";
-import {addSongsToPlayLater} from "@/core/player/playLaterManager.ts";
 export const handlePlay = (listId: SelectInfo['listId'], index: SelectInfo['index']) => {
   void playList(listId, index)
 }
@@ -34,12 +33,11 @@ export const handlePlayLater = (
   onCancelSelect: () => void
 ) => {
   if (selectedList.length) {
-    addSongsToPlayLater(selectedList);
-    onCancelSelect();
+    addTempPlayList(selectedList.map((s) => ({ listId, musicInfo: s })))
+    onCancelSelect()
   } else {
-    addSongsToPlayLater([musicInfo]);
+    addTempPlayList([{ listId, musicInfo }])
   }
-  toast('已添加到稍后播放');
 }
 
 export const handleRemove = (

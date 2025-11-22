@@ -6,7 +6,6 @@ import initWatchList from './watchList'
 import initPlayProgress from './playProgress'
 import initPreloadNextMusic from './preloadNextMusic'
 import initLyric from './lyric'
-import { init as initPlayLaterManager } from '@/core/player/playLaterManager'
 
 export default async (setting: LX.AppSetting) => {
   await initPlayer(setting)
@@ -17,5 +16,4 @@ export default async (setting: LX.AppSetting) => {
   initWatchList()
   initPlayProgress()
   initPreloadNextMusic()
-  initPlayLaterManager()
 }
