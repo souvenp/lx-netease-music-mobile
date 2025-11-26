@@ -9,6 +9,8 @@ import listState from '@/store/list/state'
 import userState from '@/store/user/state'
 import {COMPONENT_IDS, LIST_IDS, type NAV_ID_Type} from '@/config/constant'
 import {navigations} from "@/navigation";
+import {getDailyRecCache} from "@/utils/data.ts";
+import {toast} from "@/utils/tools.ts";
 
 // {
 //   // sync: {
@@ -176,7 +178,7 @@ export class AppEvent extends Event {
     this.emit('searchTypeChanged', type)
   }
 
-  jumpListPosition() {
+  async jumpListPosition() {
     const playMusicInfo = playerState.playMusicInfo
     let listId = playMusicInfo.listId
     const musicInfo = 'progress' in playMusicInfo.musicInfo ? playMusicInfo.musicInfo.metadata.musicInfo : playMusicInfo.musicInfo
@@ -226,6 +228,18 @@ export class AppEvent extends Event {
     } else if (listId.startsWith('dailyrec_wy')) {
       // 每日推荐，切换到对应 tab
       setNavActiveId('nav_daily_rec')
+    } else if (listId === 'similar_songs_list') {
+      if (currentComponent?.name !== COMPONENT_IDS.SIMILAR_SONGS_SCREEN) {
+        const cache = await getDailyRecCache();
+        const allSimilarSongs = cache?.items.flatMap(item => item.similarSongs) ?? [];
+        if (allSimilarSongs.length === 0) {
+          toast('找不到相似歌曲列表');
+          return;
+        }
+        const uniqueSongs = Array.from(new Map(allSimilarSongs.map(song => [song.id, song])).values());
+        navigations.pushSimilarSongsScreen(currentComponentId, uniqueSongs);
+        navigatedToDetail = true;
+      }
     } else {
       // 默认处理“我的列表”
       const targetNavId: NAV_ID_Type = 'nav_love'
