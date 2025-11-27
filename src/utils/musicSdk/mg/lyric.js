@@ -141,11 +141,11 @@ export default {
 
   getLyric(songInfo) {
     let requestObj = mrcTools.getLyric(songInfo)
-    requestObj.promise = requestObj.promise.catch(() => {
-      let webRequestObj = this.getLyricWeb(songInfo)
-      requestObj.cancelHttp = webRequestObj.cancelHttp.bind(webRequestObj)
-      return webRequestObj.promise
-    })
+    // requestObj.promise = requestObj.promise.catch(() => {
+    //   let webRequestObj = this.getLyricWeb(songInfo)
+    //   requestObj.cancelHttp = webRequestObj.cancelHttp.bind(webRequestObj)
+    //   return webRequestObj.promise
+    // })
     return requestObj
   },
 }
