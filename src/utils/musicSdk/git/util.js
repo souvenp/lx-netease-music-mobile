@@ -10,9 +10,9 @@ const CACHE_DURATION = 3600000 // 1小时缓存
 
 // Gitcode配置
 export const GITCODE_CONFIG = {
-  owner: 'ikun_0014', // Gitcode用户名
-  repo: 'music', // 仓库名
-  token: 'WzsER9knWNgC_4tjeJCtHKcN', // 访问令牌
+  owner: '', // Gitcode用户名
+  repo: '', // 仓库名
+  token: '', // 访问令牌
   dbUrl: null, // 数据库文件URL（将在init中设置）
 }
 GITCODE_CONFIG.dbUrl = `https://api.gitcode.com/api/v5/repos/${GITCODE_CONFIG.owner}/${GITCODE_CONFIG.repo}/raw/audio_database.json?access_token=${GITCODE_CONFIG.token}`
