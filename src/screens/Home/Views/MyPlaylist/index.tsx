@@ -139,9 +139,9 @@ export default memo(() => {
       setTimeout(() => {
         flatListRef.current?.scrollToOffset({
           offset: scrollPositionRef.current,
-          animated: false,
+          animated: true,
         });
-      }, 0);
+      }, 100);
     }
   }, [selectedPlaylist]);
 
