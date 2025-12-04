@@ -44,14 +44,12 @@ export const getMusicUrl = async ({
   isRefresh,
   allowToggleSource = true,
   onToggleSource = () => {},
-  prefer = 'cookie',
 }: {
   musicInfo: LX.Music.MusicInfoOnline
   quality?: LX.Quality
   isRefresh: boolean
   allowToggleSource?: boolean
   onToggleSource?: (musicInfo?: LX.Music.MusicInfoOnline) => void
-  prefer?: 'cookie' | 'api'
 }): Promise<string> => {
   // if (!musicInfo._types[type]) {
   //   // 兼容旧版酷我源搜索列表过滤128k音质的bug
@@ -93,11 +91,12 @@ export const getMusicUrl = async ({
   // 定义高音质列表
   const highQualityLevels: LX.Quality[] = ['flac', 'hires', 'master', 'atmos', 'atmos_plus'];
 
-  const isWyVipSong = musicInfo.source === 'wy' && musicInfo.meta.fee === 1;
-  const isNonVipUser = userState.wy_vip_type === 0;
+  const isVipUser = userState.wy_vip_type !== 0;
+  const isVipSong = musicInfo.meta.fee === 1;
+  const isHighQuality = highQualityLevels.includes(targetQuality);
 
-  // 检查是否优先使用 API (下载场景或高音质播放场景或VIP歌曲)
-  const preferApi = prefer === 'api' || (isWyVipSong && isNonVipUser) || (musicInfo.source == 'wy' && highQualityLevels.includes(targetQuality));
+  // 非网易源或不是网易云vip且歌曲是vip歌曲或高音质歌曲
+  const preferApi = !isWySource || (!isVipUser && (isVipSong || isHighQuality))
 
   if (preferApi) {
     try {
@@ -114,30 +113,12 @@ export const getMusicUrl = async ({
       void saveMusicUrl(musicInfo, result.quality, result.url);
       return result.url;
     } catch (apiError) {
-      console.log('API request failed, falling back to Cookie request', apiError);
-      // 如果 API 失败且有 Cookie，则尝试 Cookie 作为备用方案
-      if (musicInfo.source == 'wy' && settingState.setting['common.wy_cookie']) {
-        try {
-          const { url, level } = await wySdk.cookie.getMusicUrl(musicInfo, targetQuality).promise;
-          if (level === 'exhigh' && highQualityLevels.includes(targetQuality)) {
-            toast('非网易云会员，无法获取该音质', 'long')
-            throw new Error('自定义源获取失败，且非网易云会员，无法获取该音质')
-          }
-
-          if (url) {
-            void saveMusicUrl(musicInfo, targetQuality, url);
-            return url;
-          }
-        } catch (cookieError) {
-          console.log('Cookie request also failed', cookieError);
-          if (cookieError.message === '自定义源获取失败，且非网易云会员，无法获取该音质') throw cookieError;
-        }
-      }
-      throw apiError; // 如果备用方案也失败，则抛出原始错误
+      console.log('Custom API request failed', apiError);
+      throw apiError;
     }
   }
 
-  // 默认流程 (低音质播放或非网易云源)
+  // 默认流程
   if (musicInfo.source == 'wy' && settingState.setting['common.wy_cookie']) {
     try {
       const { url } = await wySdk.cookie.getMusicUrl(musicInfo, targetQuality).promise;

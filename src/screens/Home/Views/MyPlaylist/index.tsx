@@ -26,8 +26,6 @@ export default memo(() => {
   const [scrollToMusicInfo, setScrollToMusicInfo] = useState<MusicInfoOnline | null>(null)
   const selectedPlaylistRef = useRef(selectedPlaylist)
   selectedPlaylistRef.current = selectedPlaylist
-  const scrollPositionRef = useRef(0)
-  const flatListRef = useRef<FlatList>(null)
 
   useEffect(() => {
     const handleJumpPosition = () => {
@@ -132,19 +130,6 @@ export default memo(() => {
     return () => subscription.remove();
   }, []); // 依然使用空依赖数组
 
-
-  useEffect(() => {
-    if (!selectedPlaylist && flatListRef.current) {
-      // 使用 setTimeout 确保列表已经渲染完成
-      setTimeout(() => {
-        flatListRef.current?.scrollToOffset({
-          offset: scrollPositionRef.current,
-          animated: true,
-        });
-      }, 100);
-    }
-  }, [selectedPlaylist]);
-
   // 定义点击列表项的事件
   const handleItemPress = useCallback((playlistInfo: ListInfoItem) => {
     setSelectedPlaylist(playlistInfo)
@@ -169,11 +154,6 @@ export default memo(() => {
   return (
     <View style={{ flex: 1 }}>
       <FlatList
-        ref={flatListRef}
-        onScroll={event => {
-          scrollPositionRef.current = event.nativeEvent.contentOffset.y;
-        }}
-        scrollEventThrottle={16}
         onScrollBeginDrag={Keyboard.dismiss}
         data={playlists}
         renderItem={({ item }) => <ListItem item={item} onPress={handleItemPress} />}

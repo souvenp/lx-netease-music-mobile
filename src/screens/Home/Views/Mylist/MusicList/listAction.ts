@@ -208,7 +208,6 @@ export const handleDownload = async (musicInfo: LX.Music.MusicInfo, quality: LX.
         musicInfo,
         quality,
         isRefresh: true,
-        prefer: 'api',
       })
       const extension = getFileExtension(quality)
       let fileName = settingState.setting['download.fileName']
