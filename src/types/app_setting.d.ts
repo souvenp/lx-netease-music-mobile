@@ -211,7 +211,6 @@ declare global {
        * 是否启用蓝牙歌词
        */
       'player.isShowBluetoothLyric': boolean
-      'player.isSendNetworkLyric': boolean
 
       /**
        * 播放详情页-歌词对齐方式

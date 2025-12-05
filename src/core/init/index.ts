@@ -39,9 +39,7 @@ const handlePushedHomeScreen = async () => {
   } else {
     void checkUpdate(true)
   }
-  if (settingState.setting['player.isSendNetworkLyric']) {
-    networkLyric.toggle(true)
-  }
+  networkLyric.init()
 }
 
 let isInited = false
