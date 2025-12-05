@@ -45,6 +45,7 @@ const defaultSetting: LX.AppSetting = {
   'player.isShowNotificationImage': true,
   'player.isS2t': true,
   'player.isShowBluetoothLyric': false,
+  'player.isSendNetworkLyric': false,
 
   'playDetail.isCoverSpin': true,
   'playDetail.style.align': 'center',

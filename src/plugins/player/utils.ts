@@ -181,7 +181,7 @@ export const updateNowPlayingTitles = async (
   artist: string,
   album: string
 ) => {
-  console.log('set playing titles', duration, title, artist, album)
+  // console.log('set playing titles', duration, title, artist, album)
   return TrackPlayer.updateNowPlayingTitles(duration, title, artist, album)
 }
 

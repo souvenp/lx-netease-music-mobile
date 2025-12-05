@@ -14,6 +14,7 @@ import settingState from '@/store/setting/state'
 import { checkUpdate } from '@/core/version'
 import { bootLog } from '@/utils/bootLog'
 import { cheatTip } from '@/utils/tools'
+import * as networkLyric from '@/core/networkLyric'
 
 let isFirstPush = true
 const handlePushedHomeScreen = async () => {
@@ -37,6 +38,9 @@ const handlePushedHomeScreen = async () => {
     void checkUpdate(false)
   } else {
     void checkUpdate(true)
+  }
+  if (settingState.setting['player.isSendNetworkLyric']) {
+    networkLyric.toggle(true)
   }
 }
 

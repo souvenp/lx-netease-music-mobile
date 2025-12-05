@@ -67,6 +67,7 @@
     "react-native-quick-md5": "^3.0.6",
     "react-native-svg": "^13.8.0",
     "react-native-track-player": "github:lyswhut/react-native-track-player#75c097a4a46bea19970540bbc1bd38527ea73cde",
+	"react-native-udp": "^4.1.7",
     "react-native-vector-icons": "^10.2.0",
     "react-native-video": "^6.17.0",
     "react-native-webview": "^13.16.0",

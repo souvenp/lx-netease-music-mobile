@@ -13,6 +13,7 @@ import IsShowLyricRoma from './IsShowLyricRoma'
 import IsS2T from './IsS2T'
 import MaxCache from './MaxCache'
 import { useI18n } from '@/lang'
+import IsSendNetworkLyric from "@/screens/Home/Views/Setting/settings/Player/IsSendNetworkLyric.tsx";
 
 export default memo(() => {
   const t = useI18n()
@@ -24,6 +25,7 @@ export default memo(() => {
       <IsHandleAudioFocus />
       <IsEnableAudioOffload />
       <IsShowBluetoothLyric />
+      <IsSendNetworkLyric />
       <IsShowNotificationImage />
       <IsShowLyricTranslation />
       <IsShowLyricRoma />
