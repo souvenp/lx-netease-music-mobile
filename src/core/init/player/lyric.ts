@@ -9,6 +9,7 @@ import {
   setPlaybackRate,
 } from '@/core/lyric'
 import { updateSetting } from '@/core/common'
+import settingState from '@/store/setting/state'
 import {
   onDesktopLyricPositionChange,
   showDesktopLyric,
@@ -64,6 +65,7 @@ export default async (setting: LX.AppSetting) => {
     })
   })
   onLyricLinePlay(({ text, extendedLyrics }) => {
+    if (!settingState.setting['player.isShowBluetoothLyric']) return
     if (!text && !state.isPlaying) {
       void updateRemoteLyric()
     } else {
