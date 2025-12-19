@@ -11,7 +11,7 @@ import syncSourceList from '@/core/syncSourceList'
 import { log } from '@/utils/log'
 import { filterFileName, filterMusicList, formatPlayTime2, toNewMusicInfo } from '@/utils'
 import { handleImportListPart } from '@/screens/Home/Views/Setting/settings/Backup/actions'
-import { readMetadata, scanAudioFiles, type MusicMetadataFull } from '@/utils/localMediaMetadata'
+import {readMetadata, scanAudioFiles, type MusicMetadataFull, readPic} from '@/utils/localMediaMetadata'
 import settingState from '@/store/setting/state'
 import BackgroundTimer from 'react-native-background-timer'
 import { type FileType } from '@/utils/fs'
@@ -128,7 +128,8 @@ export const buildLocalMusicInfoByFilePath = (file: FileType): LX.Music.MusicInf
 }
 export const buildLocalMusicInfo = (
   filePath: string,
-  metadata: MusicMetadataFull
+  metadata: MusicMetadataFull,
+  picUrl?: string | null
 ): LX.Music.MusicInfoLocal => {
   return {
     id: filePath,
@@ -140,7 +141,7 @@ export const buildLocalMusicInfo = (
       albumName: metadata.albumName,
       filePath,
       songId: filePath,
-      picUrl: '',
+      picUrl: picUrl ?? '',
       ext: metadata.ext,
     },
   }
@@ -161,14 +162,19 @@ const createLocalMusicInfos = async (
     ].filter(Boolean) as string[]
 
     await Promise.all(
-      tasks.map(async (path) => readMetadata(path).then((info) => [path, info] as const))
+      tasks.map(async (path) => {
+        const info = await readMetadata(path)
+        const picPath = await readPic(path).catch(() => null)
+        return { path, info, picPath }
+      }),
     ).then((res) => {
-      for (const [path, info] of res) {
+      for (const { path, info, picPath } of res) {
         if (!info) {
           errorPath.push(path)
           continue
         }
-        list.push(buildLocalMusicInfo(path, info))
+        const musicInfo = buildLocalMusicInfo(path, info, picPath)
+        list.push(musicInfo)
       }
     })
   }

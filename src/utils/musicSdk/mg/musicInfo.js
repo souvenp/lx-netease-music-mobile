@@ -29,31 +29,28 @@ export const filterMusicInfoList = (rawList) => {
     const types = []
     const _types = {}
     item.newRateFormats?.forEach(type => {
-      let size
+      let size = sizeFormate(type.asize ?? type.isize ?? type.size ?? type.androidSize ?? 0);
       switch (type.formatType) {
         case 'PQ':
-          size = sizeFormate(type.size ?? type.androidSize)
           types.push({ type: '128k', size })
           _types['128k'] = {
             size,
           }
           break
         case 'HQ':
-          size = sizeFormate(type.size ?? type.androidSize)
           types.push({ type: '320k', size })
           _types['320k'] = {
             size,
           }
           break
         case 'SQ':
-          size = sizeFormate(type.size ?? type.androidSize)
           types.push({ type: 'flac', size })
           _types.flac = {
             size,
           }
           break
         case 'ZQ':
-          size = sizeFormate(type.size ?? type.androidSize)
+        case 'ZQ24':
           types.push({ type: 'hires', size })
           _types.hires = {
             size,
@@ -97,36 +94,25 @@ export const filterMusicInfoListV5 = (rawList) => {
     const types = []
     const _types = {}
     item.audioFormats?.forEach(type => {
-      let size
+      let size = sizeFormate(type.asize ?? type.isize ?? type.size ?? 0);
       switch (type.formatType) {
         case 'PQ':
-          size = sizeFormate(type.size ?? type.androidSize)
-          types.push({ type: '128k', size })
-          _types['128k'] = {
-            size,
-          }
-          break
+          types.push({ type: '128k', size });
+          _types['128k'] = { size };
+          break;
         case 'HQ':
-          size = sizeFormate(type.size ?? type.androidSize)
-          types.push({ type: '320k', size })
-          _types['320k'] = {
-            size,
-          }
-          break
+          types.push({ type: '320k', size });
+          _types['320k'] = { size };
+          break;
         case 'SQ':
-          size = sizeFormate(type.size ?? type.androidSize)
-          types.push({ type: 'flac', size })
-          _types.flac = {
-            size,
-          }
-          break
+          types.push({ type: 'flac', size });
+          _types.flac = { size };
+          break;
         case 'ZQ':
-          size = sizeFormate(type.size ?? type.androidSize)
-          types.push({ type: 'flac24bit', size })
-          _types.flac24bit = {
-            size,
-          }
-          break
+        case 'ZQ24':
+          types.push({ type: 'hires', size });
+          _types.hires = { size };
+          break;
       }
     })
 
