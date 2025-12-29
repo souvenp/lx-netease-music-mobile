@@ -74,7 +74,7 @@ export default forwardRef<MusicMultiAddModalType, MusicMultiAddModalProps>(({ on
     if (playlistType === 'online') {
       if (!selectedList.length) return
       const toListId = String(listInfo.id)
-      const songIds = selectedList.map(m => m.meta.songId)
+      const songIds = selectedList.map(m => m.meta.songId).reverse()
       const sourcePlaylist = subscribedPlaylists.find(p => `wy__${p.id}` === fromListId)
 
       if (isMove) {
