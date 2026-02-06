@@ -6,7 +6,7 @@ export const getMusicUrl = (songInfo, type, retryNum = 0) => {
   if (retryNum > 2) {
     const requestObj = {}
     requestObj.promise = Promise.reject(new Error('try max num'))
-    requestObj.cancelHttp = () => {}
+    requestObj.cancelHttp = () => { }
     return requestObj
   }
 
@@ -52,6 +52,7 @@ export const getMusicUrl = (songInfo, type, retryNum = 0) => {
       ids: `[${songId}]`,
       level: targetPrefer.level,
       encodeType: targetPrefer.encodeType,
+      csrf_token: (cookie.match(/_csrf=([^(;|$)]+)/) || [])[1] || '',
     }),
   })
 

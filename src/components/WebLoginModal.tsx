@@ -8,6 +8,8 @@ import { Icon } from '@/components/common/Icon';
 import Text from '@/components/common/Text';
 import { toast } from '@/utils/tools';
 import wyApi from '@/utils/musicSdk/wy/user';
+import CookieManager from '@react-native-cookies/cookies';
+
 
 const LOGIN_URL = 'https://music.163.com/#/login';
 const SUCCESS_URL_FLAG = 'discover';
@@ -53,11 +55,21 @@ export default forwardRef<WebLoginModalType, {}>((props, ref) => {
     // 可以在这里停止任何轮询操作
   };
 
-  const handleNavigationStateChange = (navState: WebViewNavigation) => {
+  const handleNavigationStateChange = async (navState: WebViewNavigation) => {
     console.log('Web登录: 页面导航状态变化:', navState.url);
     if (navState.url.includes(SUCCESS_URL_FLAG) || navState.url == 'https://music.163.com/') {
-      console.log('Web登录: injecting cookie');
-      webViewRef.current?.injectJavaScript('window.ReactNativeWebView.postMessage(document.cookie);');
+      console.log('Web登录: extracting cookies via CookieManager');
+      try {
+        const cookies = await CookieManager.get(navState.url, true);
+        const cookieString = Object.values(cookies)
+          .map(c => `${c.name}=${c.value}`)
+          .join('; ');
+        console.log('Web登录: CookieManager captured cookies');
+        handleMessage({ nativeEvent: { data: cookieString } });
+      } catch (err) {
+        console.error('Web登录: CookieManager extraction failed, falling back to document.cookie', err);
+        webViewRef.current?.injectJavaScript('window.ReactNativeWebView.postMessage(document.cookie);');
+      }
     }
   };
   const handleMessage = async (event: any) => {
