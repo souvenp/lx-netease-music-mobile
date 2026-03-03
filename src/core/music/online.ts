@@ -98,6 +98,7 @@ export const getMusicUrl = async ({
   // 非网易源或不是网易云vip且歌曲是vip歌曲或高音质歌曲
   const preferApi = !isWySource || (!isVipUser && (isVipSong || isHighQuality))
 
+  console.log("vip:" + userState.wy_vip_type)
   if (preferApi) {
     try {
       console.log('Attempting to get music URL via custom API');

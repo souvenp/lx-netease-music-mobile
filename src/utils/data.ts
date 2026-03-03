@@ -613,18 +613,20 @@ export const setUserApiAllowShowUpdateAlert = async (id: string, enable: boolean
   await saveData(userApiPrefix, userApis)
 }
 
-export const getLastSelectQuality = async(): Promise<LX.Quality> => {
+export const getLastSelectQuality = async (): Promise<LX.Quality> => {
   return (await getData<LX.Quality>(lastSelectQualityKey)) ?? '128k'
 }
-export const saveLastSelectQuality = async(quality: LX.Quality) => {
+export const saveLastSelectQuality = async (quality: LX.Quality) => {
   await saveData(lastSelectQualityKey, quality)
 }
 
-export const getWyUidCache = async (hashedCookie: string): Promise<string | null> => {
-  return getData<string>(wyUidCachePrefix + hashedCookie)
+export const getWyUidCache = async (hashedCookie: string): Promise<{ uid: string, vipType: number } | null> => {
+  const data = await getData<string | { uid: string, vipType: number }>(wyUidCachePrefix + hashedCookie)
+  if (typeof data === 'string') return { uid: data, vipType: 0 }
+  return data
 }
-export const saveWyUidCache = async (hashedCookie: string, uid: string) => {
-  await saveData(wyUidCachePrefix + hashedCookie, uid)
+export const saveWyUidCache = async (hashedCookie: string, uid: string, vipType: number) => {
+  await saveData(wyUidCachePrefix + hashedCookie, { uid, vipType })
 }
 
 const similarSongsCacheKey = storageDataPrefix.similarSongsCache;
@@ -638,26 +640,26 @@ export interface DailyRecCache {
   items: DailyRecCacheItem[]
 }
 
-export const getDailyRecCache = async(): Promise<DailyRecCache | null> => {
+export const getDailyRecCache = async (): Promise<DailyRecCache | null> => {
   return getData<DailyRecCache>(similarSongsCacheKey)
 }
 
-export const saveDailyRecCache = async(cache: DailyRecCache) => {
+export const saveDailyRecCache = async (cache: DailyRecCache) => {
   await saveData(similarSongsCacheKey, cache)
 }
 
-export const clearDailyRecCache = async() => {
+export const clearDailyRecCache = async () => {
   await removeData(similarSongsCacheKey);
 };
 
 const playlistTypeKey = storageDataPrefix.playlistType
 let playlistType: 'local' | 'online'
 
-export const getPlaylistType = async(): Promise<string> => {
+export const getPlaylistType = async (): Promise<string> => {
   playlistType ??= await getData<'local' | 'online'>(playlistTypeKey) ?? 'local'
   return playlistType
 }
-export const savePlaylistType = async(type: 'local' | 'online') => {
+export const savePlaylistType = async (type: 'local' | 'online') => {
   playlistType = type
   await saveData(playlistTypeKey, type)
 }

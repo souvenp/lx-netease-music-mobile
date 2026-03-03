@@ -324,4 +324,4 @@ export const updateOptions = async (
 //   useProgress,
 // }
 
-export { updateMetaData } from './playList'
+export { updateMetaData, initTrackInfo } from './playList'

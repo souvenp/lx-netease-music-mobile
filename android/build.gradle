@@ -12,6 +12,7 @@ buildscript {
         RNNKotlinVersion = kotlinVersion
 
         // https://github.com/DylanVann/react-native-fast-image/blob/9ab80fcd570b7f56da66ab20e52c9a35934067c9/docs/app-glide-module.md
+        // https://github.com/dream-horizon-org/react-native-fast-image/blob/main/docs/app-glide-module.md
         excludeAppGlideModule = true
     }
     repositories {

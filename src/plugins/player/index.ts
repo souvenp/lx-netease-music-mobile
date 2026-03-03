@@ -66,4 +66,5 @@ export {
   onStateChange,
   isEmpty,
   useBufferProgress,
+  initTrackInfo,
 } from './utils'

@@ -8,7 +8,7 @@ import { log } from '@/utils/log';
 import { debounce } from '@/utils/common';
 import { getOperationQueue, clearOperationQueue, loadOperationQueue } from './opQueue';
 import { applyListOperation } from '@/utils/listManage';
-import {overwriteUserApis} from "@/core/userApi.ts";
+import { overwriteUserApis } from "@/core/userApi.ts";
 
 let listsChanged = false;
 let isSyncing = false;
@@ -171,6 +171,78 @@ export async function manualDownloadSettingsAndApis() {
   }
 }
 
+export async function manualUploadLists() {
+  if (isSyncing) {
+    toast('正在同步中，请稍后...');
+    return;
+  }
+  if (!settingState.setting['sync.webdav.enable'] || !settingState.setting['sync.webdav.url']) {
+    toast('请先启用并配置 WebDAV 同步');
+    return;
+  }
+
+  const confirm = await confirmDialog({
+    title: '确认上传歌单',
+    message: '这将使用本地的“所有歌单”完全覆盖云端的数据，此操作不可逆，确定要继续吗？',
+    confirmButtonText: '上传',
+  });
+  if (!confirm) return;
+
+  isSyncing = true;
+  toast('开始上传歌单...');
+  try {
+    const remoteListsPath = getRemoteListsFilePath();
+    const { lists } = await getAllDataForSync();
+    await uploadLists(remoteListsPath, lists);
+    await clearOperationQueue();
+    toast('歌单上传成功！');
+  } catch (error: any) {
+    log.error(`[WebDAV Manual Upload Lists] Failed: ${error.stack ?? error.message}`);
+    toast(`上传失败: ${error.message}`, 'long');
+  } finally {
+    isSyncing = false;
+  }
+}
+
+export async function manualDownloadLists() {
+  if (isSyncing) {
+    toast('正在同步中，请稍后...');
+    return;
+  }
+  if (!settingState.setting['sync.webdav.enable'] || !settingState.setting['sync.webdav.url']) {
+    toast('请先启用并配置 WebDAV 同步');
+    return;
+  }
+
+  const confirm = await confirmDialog({
+    title: '确认下载歌单',
+    message: '这将使用云端的“所有歌单”完全覆盖本地的数据，此操作不可逆，确定要继续吗？',
+    confirmButtonText: '下载',
+  });
+  if (!confirm) return;
+
+  isSyncing = true;
+  toast('开始下载歌单...');
+  try {
+    const remoteListsPath = getRemoteListsFilePath();
+    const remoteListsContent = await webdav.downloadFile(remoteListsPath);
+    if (remoteListsContent) {
+      const remoteData = JSON.parse(remoteListsContent);
+      await overwriteListFull(remoteData.data);
+      await clearOperationQueue();
+      updateSetting({ 'sync.webdav.lastSyncTimeLists': remoteData.lastModified });
+      toast('歌单下载同步完成！');
+    } else {
+      toast('云端未找到歌单文件');
+    }
+  } catch (error: any) {
+    log.error(`[WebDAV Manual Download Lists] Failed: ${error.stack ?? error.message}`);
+    toast(`下载失败: ${error.message}`, 'long');
+  } finally {
+    isSyncing = false;
+  }
+}
+
 export async function triggerWebDAVSync(isManual = false) {
   if (isSyncing) {
     if (isManual) toast('正在同步中，请稍后...');
@@ -200,7 +272,40 @@ export async function triggerWebDAVSync(isManual = false) {
       const remoteData = JSON.parse(remoteListsContent);
       const remoteTimestamp = remoteData.lastModified;
       const localTimestamp = settingState.setting['sync.webdav.lastSyncTimeLists'] ?? 0;
+
+      // 首次同步逻辑：检测到本地无同步记录但云端有数据，询问用户
+      if (localTimestamp === 0) {
+        log.info('[WebDAV Sync] First sync detected with existing remote data. Prompting user.');
+        const userChoice = await confirmDialog({
+          title: '首次同步确认',
+          message: '云端已存在歌单数据。由于这是该设备上首次同步，请选择您的操作：\n\n“下载”：将使用云端数据覆盖本地（推荐用于恢复数据）。\n“上传”：将使用本地数据覆盖云端（请务必确认本地数据是您最终想要的版本）。',
+          cancelButtonText: '下载云端并覆盖本地',
+          confirmButtonText: '上传本地并覆盖云端',
+        });
+
+        if (userChoice === true) { // 上传本地
+          log.info('[WebDAV Sync] User chose to upload local state during first sync.');
+          const { lists: currentLocalLists } = await getAllDataForSync();
+          await uploadLists(remoteListsPath, currentLocalLists);
+          await clearOperationQueue();
+          toast('本地歌单已上传覆盖云端！');
+          return;
+        } else if (userChoice === false) { // 下载云端数据
+          log.info('[WebDAV Sync] User chose to download remote state during first sync.');
+          await overwriteListFull(remoteData.data);
+          await clearOperationQueue();
+          updateSetting({ 'sync.webdav.lastSyncTimeLists': remoteTimestamp });
+          toast('已从云端同步歌单数据到本地！');
+          return;
+        } else {
+          log.info('[WebDAV Sync] First sync resolution cancelled.');
+          if (isManual) toast('同步已取消');
+          return;
+        }
+      }
+
       const hasRemoteUpdate = remoteTimestamp > localTimestamp;
+      const localOpQueue = getOperationQueue();
       const hasLocalChanges = localOpQueue.length > 0;
 
       if (hasRemoteUpdate) {

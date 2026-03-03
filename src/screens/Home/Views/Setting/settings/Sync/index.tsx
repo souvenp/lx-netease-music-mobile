@@ -19,6 +19,8 @@ import {
   triggerWebDAVSync,
   manualUploadSettingsAndApis,
   manualDownloadSettingsAndApis,
+  manualUploadLists,
+  manualDownloadLists,
 } from '@/core/sync/webdavSync';
 import IsEnable from "@/screens/Home/Views/Setting/settings/Sync/IsEnable.tsx";
 
@@ -37,6 +39,8 @@ export default memo(() => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isUploadingLists, setIsUploadingLists] = useState(false);
+  const [isDownloadingLists, setIsDownloadingLists] = useState(false);
   const [host, setHost] = useState('');
 
   useEffect(() => {
@@ -94,6 +98,20 @@ export default memo(() => {
     await manualDownloadSettingsAndApis();
     setIsDownloading(false);
   }, [isDownloading]);
+
+  const handleUploadLists = useCallback(async () => {
+    if (isUploadingLists) return;
+    setIsUploadingLists(true);
+    await manualUploadLists();
+    setIsUploadingLists(false);
+  }, [isUploadingLists]);
+
+  const handleDownloadLists = useCallback(async () => {
+    if (isDownloadingLists) return;
+    setIsDownloadingLists(true);
+    await manualDownloadLists();
+    setIsDownloadingLists(false);
+  }, [isDownloadingLists]);
 
 
   const handleWebdavSettingChanged = (key: keyof LX.AppSetting) => (text: string, callback: (value: string) => void) => {
@@ -166,6 +184,15 @@ export default memo(() => {
             </Button>
             <Button onPress={handleDownload} disabled={!isEnableWebdav || isDownloading}>
               {isDownloading ? '下载中...' : '下载设置与音源'}
+            </Button>
+          </View>
+
+          <View style={styles.btnRow}>
+            <Button onPress={handleUploadLists} disabled={!isEnableWebdav || isUploadingLists}>
+              {isUploadingLists ? '上传中...' : '上传歌单'}
+            </Button>
+            <Button onPress={handleDownloadLists} disabled={!isEnableWebdav || isDownloadingLists}>
+              {isDownloadingLists ? '下载中...' : '下载歌单'}
             </Button>
           </View>
 

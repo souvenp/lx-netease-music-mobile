@@ -5,7 +5,7 @@ import {
   setPause,
   setPlay,
   setResource,
-  setStop,
+  setStop, initTrackInfo,
 } from '@/plugins/player'
 import { setStatusText } from '@/core/player/playStatus'
 import playerState from '@/store/player/state'
@@ -198,6 +198,8 @@ const handleRestorePlay = async (restorePlayInfo: LX.Player.SavedPlayInfo) => {
   })
 
   const playMusicInfo = playerState.playMusicInfo
+
+  void initTrackInfo(musicInfo, playerState.musicInfo)
 
   void getPicPath({ musicInfo, listId: playMusicInfo.listId }).then((url: string) => {
     if (

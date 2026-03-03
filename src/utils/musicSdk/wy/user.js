@@ -1,9 +1,9 @@
 import { httpFetch } from '../../request'
 import { weapi } from './utils/crypto'
 import { getWyUidCache, saveWyUidCache } from '@/utils/data'
-import {toast, toMD5} from '@/utils/tools'
+import { toast, toMD5 } from '@/utils/tools'
 import settingState from "@/store/setting/state";
-import {setWyVipType} from "@/store/user/action";
+import { setWyVipType } from "@/store/user/action";
 
 export default {
   async getUid(cookie, retryNum = 0) {
@@ -13,8 +13,11 @@ export default {
 
     try {
       const hashedCookie = toMD5(cookie);
-      const cachedUid = await getWyUidCache(hashedCookie);
-      if (cachedUid) return cachedUid;
+      const cachedData = await getWyUidCache(hashedCookie);
+      if (cachedData) {
+        setWyVipType(cachedData.vipType);
+        return cachedData.uid;
+      }
 
       const csrfToken = (cookie.match(/_csrf=([^(;|$)]+)/) || [])[1];
       const request = httpFetch('https://music.163.com/weapi/nuser/account/get', {
@@ -40,7 +43,7 @@ export default {
 
       const uid = body.account.id;
       setWyVipType(body.account.vipType);
-      await saveWyUidCache(hashedCookie, String(uid));
+      await saveWyUidCache(hashedCookie, String(uid), body.account.vipType);
       return uid;
     } catch (error) {
       if (retryNum < maxRetries) {

@@ -9,12 +9,21 @@ export default {
   allPage: 1,
 
   musicSearch(str, page, limit) {
-    const searchRequest = eapiRequest('/api/cloudsearch/pc', {
-      s: str,
-      type: 1,
-      limit,
-      total: page == 1,
-      offset: limit * (page - 1),
+    // const searchRequest = eapiRequest('/api/cloudsearch/pc', {
+    //   s: str,
+    //   type: 1, // 1: 单曲, 10: 专辑, 100: 歌手, 1000: 歌单, 1002: 用户, 1004: MV, 1006: 歌词, 1009: 电台, 1014: 视频
+    //   limit,
+    //   total: page == 1,
+    //   offset: limit * (page - 1),
+    // })
+    const searchRequest = eapiRequest('/api/search/song/list/page', {
+        keyword: str,
+        needCorrect: '1',
+        channel: 'typing',
+        offset: limit * (page - 1),
+        scene: 'normal',
+        total: page == 1,
+        limit,
     })
     return searchRequest.promise.then(({ body }) => body)
   },
@@ -126,6 +135,8 @@ export default {
     if (!rawList) return [];
 
     return rawList.map(item => {
+      item = item.baseInfo.simpleSongData
+
       const types = [];
       const _types = {};
       let size;
@@ -196,10 +207,10 @@ export default {
         console.log('retry search:', retryNum)
         return this.search(str, page, limit, retryNum)
       }
-      const list = this.handleResult(result.result.songs || [])
+      let list = this.handleResult(result.data.resources || [])
       if (!list) return this.search(str, page, limit, retryNum)
 
-      this.total = result.result.songCount || 0
+      this.total = result.data.totalCount || 0
       this.page = page
       this.allPage = Math.ceil(this.total / this.limit)
 
