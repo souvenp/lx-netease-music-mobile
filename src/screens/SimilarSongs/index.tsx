@@ -61,14 +61,14 @@ export default memo(({ componentId, similarSongs: initialSimilarSongs }: { compo
       <View style={styles.container}>
         <Header componentId={componentId} title="相似歌曲推荐" />
         <OnlineList componentId={componentId}
-                    ref={listRef}
-                    listId="dailyrec_wy"
-                    forcePlayList={true}
-                    playingId={playerMusicInfo.id}
-                    onPlayList={onPlayList}
-                    onLoadMore={() => {}}
-                    onRefresh={() => {}}
-                    onListUpdate={handleListUpdate}
+          ref={listRef}
+          listId="dailyrec_wy"
+          forcePlayList={true}
+          playingId={playerMusicInfo.id}
+          onPlayList={onPlayList}
+          onLoadMore={() => {}}
+          onRefresh={() => {}}
+          onListUpdate={handleListUpdate}
         />
         <PlayerBar componentId={componentId} />
       </View>
