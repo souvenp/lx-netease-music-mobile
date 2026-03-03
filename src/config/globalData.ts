@@ -27,6 +27,7 @@ global.lx = {
     isRegisteredService: false,
     isIniting: false,
   },
+  isCarMode: false,
 
   playerError: false,
   restorePlayInfo: null,
@@ -53,7 +54,7 @@ global.lx = {
 
   qualityList: {},
   apis: {},
-  apiInitPromise: [Promise.resolve(false), true, () => {}],
+  apiInitPromise: [Promise.resolve(false), true, () => { }],
 
   jumpMyListPosition: false,
 

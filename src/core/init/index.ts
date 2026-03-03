@@ -7,6 +7,7 @@ import initPlayer from './player'
 import dataInit from './dataInit'
 import initSync from './sync'
 import initCommonState from './common'
+import initUiMode from './uiMode'
 import { initDeeplink } from './deeplink'
 import { setApiSource } from '@/core/apiSource'
 import commonActions from '@/store/common/action'
@@ -57,6 +58,7 @@ export default async () => {
     initTheme(setting),
     initI18n(setting),
     initUserApi(setting),
+    initUiMode(),
   ])
   bootLog('Theme, I18n, UserApi inited.')
 

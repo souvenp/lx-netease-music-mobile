@@ -1,4 +1,4 @@
-import {memo, useMemo} from 'react'
+import { memo, useMemo } from 'react'
 import { ScrollView, TouchableOpacity, View } from 'react-native'
 import { useNavActiveId, useStatusbarHeight } from '@/store/common/hook'
 import { useTheme } from '@/store/theme/hook'
@@ -137,7 +137,7 @@ export default memo(() => {
     }
 
     global.app_event.changeMenuVisible(false)
-    setNavActiveId(id)
+    setNavActiveId(id as any)
   }
 
   const filteredNavMenus = useMemo(() => {
@@ -155,8 +155,8 @@ export default memo(() => {
           ))}
         </View>
       </ScrollView>
-      {showBackBtn ? <MenuItem id="back_home" icon="home" onPress={handlePress} /> : null}
-      {showExitBtn ? <MenuItem id="nav_exit" icon="exit2" onPress={handlePress} /> : null}
+      {global.lx.isCarMode && showBackBtn ? <MenuItem id="back_home" icon="home" onPress={handlePress} /> : null}
+      {global.lx.isCarMode && showExitBtn ? <MenuItem id="nav_exit" icon="exit2" onPress={handlePress} /> : null}
     </View>
   )
 })

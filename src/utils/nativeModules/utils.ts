@@ -102,3 +102,5 @@ export const requestIgnoreBatteryOptimization = async () =>
       resolve(false)
     })
   })
+
+export const getUiMode = UtilsModule.getUiMode as () => Promise<number>

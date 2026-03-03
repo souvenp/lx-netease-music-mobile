@@ -3,6 +3,7 @@ import kg from './kg'
 import tx from './tx'
 import wy from './wy'
 import mg from './mg'
+import git from './git'
 // import yt from './yt'
 import { supportQuality } from './api-source'
 
@@ -28,6 +29,10 @@ const sources = {
       name: '咪咕音乐',
       id: 'mg',
     },
+    {
+      name: 'Gitcode',
+      id: 'git',
+    },
     // {
     //   name: 'YouTube',
     //   id: 'yt',
@@ -38,6 +43,7 @@ const sources = {
   tx,
   wy,
   mg,
+  git,
   // yt,
 }
 export default {

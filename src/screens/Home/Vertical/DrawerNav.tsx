@@ -1,4 +1,4 @@
-import {memo, useMemo} from 'react'
+import { memo, useMemo } from 'react'
 import { ScrollView, TouchableOpacity, View } from 'react-native'
 import { useI18n } from '@/lang'
 import { useNavActiveId, useStatusbarHeight } from '@/store/common/hook'
@@ -16,7 +16,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { Animated, Easing } from 'react-native';
 import { useMyList } from '@/store/list/hook';
 import { setActiveList } from '@/core/list';
-import {navigations} from "@/navigation";
+import { navigations } from "@/navigation";
 import commonState from '@/store/common/state';
 
 const CollapsibleMyListItem = () => {
@@ -229,22 +229,22 @@ export default memo(() => {
   const isShowMyListSubMenu = useSettingValue('list.isShowMyListSubMenu');
 
   const handlePress = (id: IdType) => {
-    // switch (id) {
-    //   case 'nav_exit':
-    //     void confirmDialog({
-    //       message: global.i18n.t('exit_app_tip'),
-    //       confirmButtonText: global.i18n.t('list_remove_tip_button'),
-    //     }).then((isExit) => {
-    //       if (!isExit) return
-    //       exitApp('Exit Btn')
-    //     })
-    //     return
-    //   case 'back_home':
-    //     backHome()
-    //     return
-    // }
+    switch (id) {
+      case 'nav_exit':
+        void confirmDialog({
+          message: global.i18n.t('exit_app_tip'),
+          confirmButtonText: global.i18n.t('list_remove_tip_button'),
+        }).then((isExit) => {
+          if (!isExit) return
+          exitApp('Exit Btn')
+        })
+        return
+      case 'back_home':
+        backHome()
+        return
+    }
     global.app_event.changeMenuVisible(false)
-    setNavActiveId(id)
+    setNavActiveId(id as any)
   }
 
   const handleDownloadPress = () => {
@@ -279,8 +279,8 @@ export default memo(() => {
         </TouchableOpacity>
       </View>
 
-      {showBackBtn ? <MenuItem id="back_home" icon="home" onPress={handlePress} /> : null}
-      {showExitBtn ? <MenuItem id="nav_exit" icon="exit2" onPress={handlePress} /> : null}
+      {global.lx.isCarMode && showBackBtn ? <MenuItem id="back_home" icon="home" onPress={handlePress} /> : null}
+      {global.lx.isCarMode && showExitBtn ? <MenuItem id="nav_exit" icon="exit2" onPress={handlePress} /> : null}
     </View>
   )
 })

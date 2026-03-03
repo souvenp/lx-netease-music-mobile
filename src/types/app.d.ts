@@ -17,6 +17,7 @@ import type { SettingScreenIds } from '@/screens/Home/Views/Setting'
 interface GlobalData {
   fontSize: number
   gettingUrlId: string
+  isCarMode: boolean
 
   playerError: boolean;
   // event_app: AppType

@@ -12,6 +12,7 @@ import android.graphics.Rect;
 import android.net.Uri;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
+import android.app.UiModeManager;
 import android.os.Build;
 import android.util.Log;
 import android.view.View;
@@ -385,6 +386,16 @@ public class UtilsModule extends ReactContextBaseJavaModule {
   @ReactMethod
   public void requestIgnoreBatteryOptimization(Promise promise) {
     promise.resolve(BatteryOptimizationUtil.requestIgnoreBatteryOptimization(reactContext.getApplicationContext(), reactContext.getPackageName()));
+  }
+
+  @ReactMethod
+  public void getUiMode(Promise promise) {
+    UiModeManager uiModeManager = (UiModeManager) reactContext.getSystemService(Context.UI_MODE_SERVICE);
+    if (uiModeManager != null) {
+      promise.resolve(uiModeManager.getCurrentModeType());
+    } else {
+      promise.resolve(1); // Configuration.UI_MODE_TYPE_NORMAL
+    }
   }
 }
 
