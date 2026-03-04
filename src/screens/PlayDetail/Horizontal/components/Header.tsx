@@ -18,46 +18,75 @@ export const HEADER_HEIGHT = scaleSizeH(_HEADER_HEIGHT)
 const Title = () => {
   const theme = useTheme()
   const playMusicInfo = usePlayMusicInfo()
-  const musicInfo = 'progress' in playMusicInfo.musicInfo ? playMusicInfo.musicInfo.metadata.musicInfo : playMusicInfo.musicInfo
+  const musicInfo = playMusicInfo.musicInfo ? ('progress' in playMusicInfo.musicInfo ? playMusicInfo.musicInfo.metadata.musicInfo : playMusicInfo.musicInfo) : null
 
   const handleArtistPress = useCallback((artist: { id: string | number, name: string }) => {
-    if (musicInfo.source !== 'wy' || !artist.id) return
+    if (!musicInfo || musicInfo.source !== 'wy' || !artist.id) return
     navigations.pushArtistDetailScreen(commonState.componentIds[commonState.componentIds.length - 1]?.id!, { id: String(artist.id), name: artist.name })
+  }, [musicInfo])
+
+  const handleAlbumPress = useCallback(() => {
+    if (!musicInfo || musicInfo.source !== 'wy' || !(musicInfo.meta as any).albumId) return
+    navigations.pushAlbumDetailScreen(commonState.componentIds[commonState.componentIds.length - 1]?.id!, { id: String((musicInfo.meta as any).albumId), name: musicInfo.meta.albumName, source: musicInfo.source })
   }, [musicInfo])
 
 
   const singerRender = useMemo(() => {
-    if (!musicInfo || !musicInfo.artists?.length || musicInfo.source == 'local') {
+    if (!musicInfo) return null
+    const albumName = musicInfo.meta?.albumName
+    const albumId = (musicInfo.meta as any)?.albumId
+
+    if (!musicInfo.artists?.length || musicInfo.source == 'local') {
       return (
-        <Text numberOfLines={1} style={styles.title} size={12} color={theme['c-font-label']}>
-          {musicInfo?.singer}
-        </Text>
+        <View style={styles.singerContainer}>
+          <Text numberOfLines={1} size={12} color={theme['c-font-label']}>
+            {musicInfo.singer}
+          </Text>
+          {albumName ? (
+            <TouchableOpacity onPress={handleAlbumPress} disabled={musicInfo.source !== 'wy' || !albumId}>
+              <Text numberOfLines={1} size={12} color={theme['c-font-label']}>
+                {` · ${albumName}`}
+              </Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
       )
     }
 
     return (
       // <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View style={styles.singerContainer}>
-          {musicInfo.artists.map((artist, index) => (
-            <TouchableOpacity key={artist.id || index} onPress={() => handleArtistPress(artist)}>
-              <Text style={styles.singerText} size={12} color={theme['c-font-label']}>
-                {artist.name}
-                {index < musicInfo.artists.length - 1 ? ' / ' : ''}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+      <View style={styles.singerContainer}>
+        {musicInfo.artists.map((artist, index) => (
+          <TouchableOpacity key={artist.id || index} onPress={() => handleArtistPress(artist)}>
+            <Text style={styles.singerText} size={12} color={theme['c-font-label']}>
+              {artist.name}
+              {(musicInfo.artists?.length ?? 0) > 0 && index < (musicInfo.artists?.length ?? 0) - 1 ? ' / ' : ''}
+            </Text>
+          </TouchableOpacity>
+        ))}
+        {albumName ? (
+          <TouchableOpacity onPress={handleAlbumPress} disabled={musicInfo.source !== 'wy' || !albumId}>
+            <Text numberOfLines={1} size={12} color={theme['c-font-label']}>
+              {` · ${albumName}`}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
+      </View>
       // </ScrollView>
     )
-  }, [musicInfo, theme, handleArtistPress])
+  }, [musicInfo, theme, handleArtistPress, handleAlbumPress])
 
   return (
     <View style={styles.titleContent}>
-      <Text numberOfLines={1} style={styles.title} size={14}>
-        {musicInfo.name}
-        {musicInfo.alias ? <Text color={theme['c-font-label']}> ({musicInfo.alias})</Text> : null}
-      </Text>
-      {singerRender}
+      {musicInfo ? (
+        <>
+          <Text numberOfLines={1} style={styles.title} size={14}>
+            {musicInfo.name}
+            {musicInfo.alias ? <Text color={theme['c-font-label']}> ({musicInfo.alias})</Text> : null}
+          </Text>
+          {singerRender}
+        </>
+      ) : null}
     </View>
   )
 }
