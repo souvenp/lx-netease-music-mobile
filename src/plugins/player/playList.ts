@@ -1,4 +1,5 @@
 import TrackPlayer, { State } from 'react-native-track-player'
+import { updateWidget } from '@/utils/nativeModules/musicWidget'
 import BackgroundTimer from 'react-native-background-timer'
 import { defaultUrl } from '@/config'
 // import { action as playerAction } from '@/store/modules/player'
@@ -203,22 +204,27 @@ const updateMetaInfo = async (mInfo: LX.Player.MusicInfo, lyric?: string) => {
   state.isPlaying = await TrackPlayer.getState() == State.Playing
   let artwork = isShowNotificationImage ? mInfo.pic ?? prevArtwork : undefined
   if (mInfo.pic) prevArtwork = mInfo.pic
-  let name: string
-  let singer: string
+  let mainTitle: string
+  let artistText: string
   if (!state.isPlaying || lyric == null) {
-    name = mInfo.name ?? 'Unknow'
-    singer = `${mInfo.singer ?? 'Unknow'}${mInfo.album ? ` · ${mInfo.album}` : ''}`
+    mainTitle = mInfo.name ?? 'Unknow'
+    artistText = `${mInfo.singer ?? 'Unknow'}${mInfo.album ? ` · ${mInfo.album}` : ''}`
   } else {
-    name = lyric
-    singer = `${mInfo.name}${mInfo.singer ? ` - ${mInfo.singer}` : ''}${mInfo.album ? ` · ${mInfo.album}` : ''}`
+    mainTitle = lyric
+    artistText = `${mInfo.name}${mInfo.singer ? ` - ${mInfo.singer}` : ''}${mInfo.album ? ` · ${mInfo.album}` : ''}`
   }
   await TrackPlayer.updateNowPlayingMetadata({
-    title: name,
-    artist: singer,
-    album: mInfo.album ?? undefined,
+    title: mainTitle,
+    artist: artistText,
+    album: mainTitle, // Map title/lyric to album field for position D (header)
     artwork,
     duration: state.prevDuration || 0,
   }, state.isPlaying)
+
+  // Update home screen widget
+  const widgetTitle = mInfo.name ?? 'LX-N Music'
+  const widgetArtist = mInfo.singer ? `${mInfo.singer}${mInfo.album ? ` · ${mInfo.album}` : ''}` : '未在播放'
+  void updateWidget(widgetTitle, widgetArtist, state.isPlaying, artwork).catch(() => { })
 }
 
 

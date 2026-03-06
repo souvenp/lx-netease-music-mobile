@@ -67,4 +67,5 @@ export {
   isEmpty,
   useBufferProgress,
   initTrackInfo,
+  updateOptions,
 } from './utils'

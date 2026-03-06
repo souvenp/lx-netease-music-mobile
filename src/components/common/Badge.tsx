@@ -34,14 +34,16 @@ export default memo(({ type = 'normal', children }: { type?: BadgeType; children
         colors.textColor = theme['c-badge-primary']
         break
       case 'vip':
-        colors.textColor = theme.isDark ? theme['c-primary-dark-100'] : 'rgb(214, 69, 65)' // A strong red color
+        colors.textColor = 'rgb(214, 69, 65)' // A strong red color
         break
       case 'sq':
-        colors.textColor = '#ffca5f' // Golden yellow
+        colors.textColor = '#ffa900' // Golden yellow
+        break
+      case 'hq':
+        colors.textColor = '#007aff' // Blue
         break
       case 'secondary':
-        // colors.bgColor = theme.primary
-        colors.textColor = theme['c-badge-secondary']
+        colors.textColor = '#b22222' // Brownish red / Dark red (24bit)
         break
       case 'tertiary':
         // colors.bgColor = theme.primary

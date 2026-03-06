@@ -29,6 +29,7 @@ export enum COMPONENT_IDS {
   ALBUM_DETAIL_SCREEN = 'ALBUM_DETAIL_SCREEN',
   DOWNLOAD_MANAGER = 'DOWNLOAD_MANAGER',
   SIMILAR_SONGS_SCREEN = 'SIMILAR_SONGS_SCREEN',
+  PLAY_HISTORY_SCREEN = 'PLAY_HISTORY_SCREEN',
 }
 
 export enum NAV_SHEAR_NATIVE_IDS {
@@ -87,6 +88,7 @@ export const storageDataPrefix = {
   downloadList: '@download_list',
   wyUidCache: '@wy_uid_cache__',
   similarSongsCache: '@similar_songs_cache',
+  playHistory: '@play_history',
 } as const
 
 // v0.x.x 版本的 data keys
@@ -114,7 +116,7 @@ export const NAV_MENUS = [
   { id: 'nav_daily_rec', icon: 'love' },
   { id: 'nav_followed_artists', icon: 'love' },
   { id: 'nav_subscribed_albums', icon: 'album' },
-  { id: 'nav_my_playlist', icon: 'album'},
+  { id: 'nav_my_playlist', icon: 'album' },
   // { id: 'download', icon: 'download-2' },
   { id: 'nav_setting', icon: 'setting' },
 ] as const

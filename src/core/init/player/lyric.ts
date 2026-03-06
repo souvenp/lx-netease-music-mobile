@@ -12,6 +12,7 @@ import { updateSetting } from '@/core/common'
 import settingState from '@/store/setting/state'
 import {
   onDesktopLyricPositionChange,
+  onDesktopLyricLockChange,
   showDesktopLyric,
   onLyricLinePlay,
   showRemoteLyric,
@@ -63,6 +64,11 @@ export default async (setting: LX.AppSetting) => {
       'desktopLyric.position.x': position.x,
       'desktopLyric.position.y': position.y,
     })
+  })
+  onDesktopLyricLockChange((isLock) => {
+    if (settingState.setting['desktopLyric.isLock'] !== isLock) {
+      updateSetting({ 'desktopLyric.isLock': isLock })
+    }
   })
   onLyricLinePlay(({ text, extendedLyrics }) => {
     if (!settingState.setting['player.isShowBluetoothLyric']) return

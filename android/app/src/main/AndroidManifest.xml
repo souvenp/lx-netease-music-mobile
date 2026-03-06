@@ -103,5 +103,23 @@
           android:name="android.support.FILE_PROVIDER_PATHS"
           android:resource="@xml/file_paths" />
       </provider>
+
+      <!-- Music Widget -->
+      <receiver
+        android:name=".widget.MusicWidgetProvider"
+        android:exported="true">
+        <intent-filter>
+          <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+        </intent-filter>
+        <intent-filter>
+          <action android:name="com.lxnetease.music.mobile.widget.PLAY_PAUSE" />
+          <action android:name="com.lxnetease.music.mobile.widget.PREV" />
+          <action android:name="com.lxnetease.music.mobile.widget.NEXT" />
+          <action android:name="com.lxnetease.music.mobile.widget.UPDATE" />
+        </intent-filter>
+        <meta-data
+          android:name="android.appwidget.provider"
+          android:resource="@xml/widget_music_info" />
+      </receiver>
     </application>
 </manifest>

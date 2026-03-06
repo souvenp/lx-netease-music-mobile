@@ -8,6 +8,7 @@ import {
   temporaryDirectoryPath,
 } from '@/utils/fs'
 import { toast } from '@/utils/tools'
+import settingState from '@/store/setting/state'
 // import { PlayerMusicInfo } from '@/store/modules/player/playInfo'
 
 export { useBufferProgress } from './hook'
@@ -255,48 +256,51 @@ export const onStateChange = async (listener: (state: PlayStatus) => void) => {
 // export const playState = callback => TrackPlayer.addEventListener('playback-state', callback)
 
 export const updateOptions = async (
-  options = {
-    // Whether the player should stop running when the app is closed on Android
-    // stopWithApp: true,
-
-    // An array of media controls capabilities
-    // Can contain CAPABILITY_PLAY, CAPABILITY_PAUSE, CAPABILITY_STOP, CAPABILITY_SEEK_TO,
-    // CAPABILITY_SKIP_TO_NEXT, CAPABILITY_SKIP_TO_PREVIOUS, CAPABILITY_SET_RATING
+  isLyricEnabled = settingState.setting['desktopLyric.enable'],
+) => {
+  // console.log('updateOptions lyric:', isLyricEnabled)
+  // Button slot mapping:
+  // Position 1: SkipToPrevious → LRC lyrics toggle
+  // Position 2: Rewind         → Previous track (custom icon)
+  // Position 3: Play/Pause     → Play/Pause
+  // Position 4: FastForward    → Next track (custom icon)
+  // Stop is not shown in notification, but handles swipe-to-dismiss → exit app
+  return TrackPlayer.updateOptions({
     capabilities: [
       Capability.Play,
       Capability.Pause,
       Capability.Stop,
       Capability.SeekTo,
-      Capability.SkipToNext,
       Capability.SkipToPrevious,
+      Capability.JumpBackward,
+      Capability.JumpForward,
     ],
 
     notificationCapabilities: [
-      Capability.Play,
-      Capability.Pause,
-      Capability.Stop,
-      Capability.SkipToNext,
       Capability.SkipToPrevious,
-    ],
-
-    // // An array of capabilities that will show up when the notification is in the compact form on Android
-    compactCapabilities: [
+      Capability.JumpBackward,
       Capability.Play,
       Capability.Pause,
-      Capability.Stop,
-      Capability.SkipToNext,
+      Capability.JumpForward,
     ],
 
-    // Icons for the notification on Android (if you don't like the default ones)
-    // playIcon: require('./play-icon.png'),
-    // pauseIcon: require('./pause-icon.png'),
-    // stopIcon: require('./stop-icon.png'),
-    // previousIcon: require('./previous-icon.png'),
-    // nextIcon: require('./next-icon.png'),
-    // icon: notificationIcon, // The notification icon
-  }
-) => {
-  return TrackPlayer.updateOptions(options)
+    compactCapabilities: [
+      Capability.SkipToPrevious,
+      Capability.Play,
+      Capability.Pause,
+      Capability.JumpForward,
+    ],
+
+    // LRC toggle icon on SkipToPrevious slot
+    // @ts-expect-error - using native drawable resource name
+    previousIcon: { uri: isLyricEnabled ? 'ic_lyric_on' : 'ic_lyric_off' },
+    // Previous track icon on Rewind slot
+    // @ts-expect-error - using native drawable resource name
+    rewindIcon: { uri: 'previous' },
+    // Next track icon on FastForward slot
+    // @ts-expect-error - using native drawable resource name
+    forwardIcon: { uri: 'next' },
+  })
 }
 
 // export const setMaxCache = async size => {

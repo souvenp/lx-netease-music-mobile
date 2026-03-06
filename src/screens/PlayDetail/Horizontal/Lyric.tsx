@@ -6,15 +6,17 @@ import {
   type NativeSyntheticEvent,
   type NativeScrollEvent,
   type LayoutChangeEvent, TouchableOpacity,
+  PanResponder,
 } from 'react-native'
 // import { useLayout } from '@/utils/hooks'
 import { type Line, useLrcPlay, useLrcSet } from '@/plugins/lyric'
 import { createStyle } from '@/utils/tools'
-// import { useComponentIds } from '@/store/common/hook'
+import { updateSetting } from '@/core/common'
 import { useTheme } from '@/store/theme/hook'
 import { useSettingValue } from '@/store/setting/hook'
 import { AnimatedColorText } from '@/components/common/Text'
 import { setSpText } from '@/utils/pixelRatio'
+import settingState from '@/store/setting/state'
 import playerState from '@/store/player/state'
 import { scrollTo } from '@/utils/scroll'
 import PlayLine, { type PlayLineType } from '../components/PlayLine'
@@ -56,39 +58,39 @@ const LrcLine = memo(
     // https://stackoverflow.com/a/72822360
     return (
       <TouchableOpacity activeOpacity={0.7} onPress={handlePress}>
-         <View style={styles.line} onLayout={handleLayout}>
-        <AnimatedColorText
-          style={{
-            ...styles.lineText,
-            textAlign,
-            lineHeight,
-          }}
-          textBreakStrategy="simple"
-          color={colors[0]}
-          opacity={colors[2]}
-          size={size}
-        >
-          {line.text}
-        </AnimatedColorText>
-        {line.extendedLyrics.map((lrc, index) => {
-          return (
-            <AnimatedColorText
-              style={{
-                ...styles.lineTranslationText,
-                textAlign,
-                lineHeight: lineHeight * 0.8,
-              }}
-              textBreakStrategy="simple"
-              key={index}
-              color={colors[1]}
-              opacity={colors[2]}
-              size={size * 0.8}
-            >
-              {lrc}
-            </AnimatedColorText>
-          )
-        })}
-      </View>
+        <View style={styles.line} onLayout={handleLayout}>
+          <AnimatedColorText
+            style={{
+              ...styles.lineText,
+              textAlign,
+              lineHeight,
+            }}
+            textBreakStrategy="simple"
+            color={colors[0]}
+            opacity={colors[2]}
+            size={size}
+          >
+            {line.text}
+          </AnimatedColorText>
+          {line.extendedLyrics.map((lrc, index) => {
+            return (
+              <AnimatedColorText
+                style={{
+                  ...styles.lineTranslationText,
+                  textAlign,
+                  lineHeight: lineHeight * 0.8,
+                }}
+                textBreakStrategy="simple"
+                key={index}
+                color={colors[1]}
+                opacity={colors[2]}
+                size={size * 0.8}
+              >
+                {lrc}
+              </AnimatedColorText>
+            )
+          })}
+        </View>
       </TouchableOpacity>
     )
   },
@@ -120,6 +122,44 @@ export default () => {
   })
   const scrollCancelRef = useRef<(() => void) | null>(null)
   const isShowLyricProgressSetting = useSettingValue('playDetail.isShowLyricProgressSetting')
+
+  const initialDistanceRef = useRef(0)
+  const initialFontSizeRef = useRef(0)
+
+  const panResponder = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: (evt) => evt.nativeEvent.touches.length === 2,
+    onMoveShouldSetPanResponder: (evt) => evt.nativeEvent.touches.length === 2,
+    onPanResponderGrant: (evt) => {
+      if (evt.nativeEvent.touches.length === 2) {
+        const dx = evt.nativeEvent.touches[0].pageX - evt.nativeEvent.touches[1].pageX
+        const dy = evt.nativeEvent.touches[0].pageY - evt.nativeEvent.touches[1].pageY
+        initialDistanceRef.current = Math.sqrt(dx * dx + dy * dy)
+        initialFontSizeRef.current = settingState.setting['playDetail.horizontal.style.lrcFontSize']
+      }
+    },
+    onPanResponderMove: (evt) => {
+      if (evt.nativeEvent.touches.length === 2 && initialDistanceRef.current > 0) {
+        const dx = evt.nativeEvent.touches[0].pageX - evt.nativeEvent.touches[1].pageX
+        const dy = evt.nativeEvent.touches[0].pageY - evt.nativeEvent.touches[1].pageY
+        const distance = Math.sqrt(dx * dx + dy * dy)
+
+        const scale = distance / initialDistanceRef.current
+        let newSize = Math.round((initialFontSizeRef.current * scale) / 2) * 2
+        newSize = Math.max(100, Math.min(newSize, 300))
+
+        if (settingState.setting['playDetail.horizontal.style.lrcFontSize'] !== newSize) {
+          updateSetting({ 'playDetail.horizontal.style.lrcFontSize': newSize })
+        }
+      }
+    },
+    onPanResponderRelease: () => {
+      initialDistanceRef.current = 0
+    },
+    onPanResponderTerminate: () => {
+      initialDistanceRef.current = 0
+    }
+  }), [])
+
   // useLock()
   // const [imgUrl, setImgUrl] = useState(null)
   // const theme = useGetter('common', 'theme')
@@ -153,7 +193,7 @@ export default () => {
               scrollCancelRef.current = null
             }
           )
-        } catch {}
+        } catch { }
       } else {
         if (scrollCancelRef.current) {
           scrollCancelRef.current()
@@ -165,7 +205,7 @@ export default () => {
             animated: true,
             viewPosition: 0.42,
           })
-        } catch {}
+        } catch { }
       }
     }
   }
@@ -324,12 +364,12 @@ export default () => {
   )
 
   return (
-    <>
+    <View style={styles.container} {...panResponder.panHandlers}>
       <FlatList
         data={lyricLines}
         renderItem={renderItem}
         keyExtractor={getkey}
-        style={styles.container}
+        style={{ flex: 1 }}
         ref={flatListRef}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={spaceComponent}
@@ -344,7 +384,7 @@ export default () => {
       {isShowLyricProgressSetting ? (
         <PlayLine ref={playLineRef} onPlayLine={handlePlayLine} />
       ) : null}
-    </>
+    </View>
   )
 }
 

@@ -5,6 +5,7 @@ export { default as Comment } from './Comment'
 export { default as ArtistDetail } from './ArtistDetail'
 export { default as AlbumDetail } from './AlbumDetail'
 export { default as SimilarSongs } from './SimilarSongs'
+export { default as PlayHistory } from './PlayHistory'
 
 // export { default as Setting } from './Setting'
 // export { default as LoginScreen } from './LoginScreen/LoginScreen'

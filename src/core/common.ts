@@ -1,5 +1,6 @@
 import { hideDesktopLyric } from './desktopLyric'
 import { exitApp as utilExitApp } from '@/utils/nativeModules/utils'
+import { updateWidget } from '@/utils/nativeModules/musicWidget'
 import { destroy as destroyPlayer } from '@/plugins/player/utils'
 import { initSetting as initAppSetting } from '@/config/setting'
 import { setLanguage as applyLanguage } from '@/lang/i18n'
@@ -56,7 +57,12 @@ export const exitApp = (reason: string) => {
   console.log('Handle Exit App, Reason: ' + reason)
   if (isDestroying) return
   isDestroying = true
-  void Promise.all([hideDesktopLyric(), destroyPlayer(), hideDesktopLyricView()]).finally(() => {
+  void Promise.all([
+    hideDesktopLyric(),
+    destroyPlayer(),
+    hideDesktopLyricView(),
+    updateWidget('', '', false).catch(() => { }),
+  ]).finally(() => {
     isDestroying = false
     utilExitApp()
   })
@@ -72,7 +78,7 @@ export const setStatusbarHeight = (size: number) => {
 }
 
 export const setComponentId = (name: keyof CommonStateType['componentIds'], id: string) => {
-  commonActions.setComponentId(name, id)
+  commonActions.setComponentId(name as any, id)
 }
 export const removeComponentId = (name: string) => {
   commonActions.removeComponentId(name)

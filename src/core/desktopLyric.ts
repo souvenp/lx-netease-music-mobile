@@ -21,13 +21,14 @@ import {
   checkOverlayPermission,
   openOverlayPermissionActivity,
   onPositionChange,
+  onLockChange,
 } from '@/utils/nativeModules/lyricDesktop'
 import settingState from '@/store/setting/state'
 import playerState from '@/store/player/state'
 import { tranditionalize } from '@/utils/simplify-chinese-main'
 import { getPosition } from '@/plugins/player'
-import {windowSizeTools} from "@/utils/windowSizeTools.ts";
-import {updateSetting} from "@/core/common.ts";
+import { windowSizeTools } from "@/utils/windowSizeTools.ts";
+import { updateSetting } from "@/core/common.ts";
 export { onLyricLinePlay } from '@/utils/nativeModules/lyricDesktop'
 
 export const showDesktopLyric = async () => {
@@ -124,6 +125,7 @@ export const setDesktopLyricTextPosition = async (
 export const checkDesktopLyricOverlayPermission = checkOverlayPermission
 export const openDesktopLyricOverlayPermissionActivity = openOverlayPermissionActivity
 export const onDesktopLyricPositionChange = onPositionChange
+export const onDesktopLyricLockChange = onLockChange
 
 export const showRemoteLyric = async (isSend: boolean) => {
   await setSendLyricTextEvent(isSend)

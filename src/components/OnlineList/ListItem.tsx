@@ -9,6 +9,7 @@ import { scaleSizeH } from '@/utils/pixelRatio'
 import { LIST_ITEM_HEIGHT } from '@/config/constant'
 import { createStyle, type RowInfo } from '@/utils/tools'
 import Image from '@/components/common/Image'
+import PlayingIcon from '@/components/common/PlayingIcon'
 import { useIsWyLiked } from '@/store/user/hook'
 import { handleLikeMusic } from './listAction'
 
@@ -27,7 +28,7 @@ const useQualityTag = (musicInfo: LX.Music.MusicInfoOnline) => {
   //   info.type = 'secondary'
   //   info.text = t('quality_lossless_atmos')
   // } else
-    if (musicInfo.meta._qualitys.hires) {
+  if (musicInfo.meta._qualitys.hires) {
     info.type = 'secondary'
     info.text = t('quality_lossless_24bit')
   } else if (musicInfo.meta._qualitys.flac) {
@@ -35,7 +36,7 @@ const useQualityTag = (musicInfo: LX.Music.MusicInfoOnline) => {
     info.type = 'sq'
     info.text = t('quality_lossless')
   } else if (musicInfo.meta._qualitys['320k']) {
-    info.type = 'tertiary'
+    info.type = 'hq'
     info.text = t('quality_high_quality')
   }
 
@@ -44,20 +45,20 @@ const useQualityTag = (musicInfo: LX.Music.MusicInfoOnline) => {
 
 export default memo(
   ({
-     item,
-     index,
-     showSource,
-     onPress,
-     onLongPress,
-     onShowMenu,
-     selectedList,
-     rowInfo,
-     isShowAlbumName,
-     playingId,
-     isShowInterval,
-     listId,
-     showCover = true,
-   }: {
+    item,
+    index,
+    showSource,
+    onPress,
+    onLongPress,
+    onShowMenu,
+    selectedList,
+    rowInfo,
+    isShowAlbumName,
+    playingId,
+    isShowInterval,
+    listId,
+    showCover = true,
+  }: {
     item: LX.Music.MusicInfoOnline
     index: number
     showSource?: boolean
@@ -110,7 +111,8 @@ export default memo(
           ...styles.listItem,
           width: rowInfo.rowWidth,
           height: ITEM_HEIGHT,
-          backgroundColor: isPlaying || isSelected ? theme['c-primary-background-hover'] : 'rgba(0,0,0,0)',        }}
+          backgroundColor: isPlaying || isSelected ? theme['c-primary-background-hover'] : 'rgba(0,0,0,0)',
+        }}
       >
         <TouchableOpacity
           style={styles.listItemLeft}
@@ -125,9 +127,18 @@ export default memo(
 
           <View style={showCover ? styles.sn : styles.snIndex}>
             {showCover ? (
-              <Image url={item.meta.picUrl} style={styles.albumArt} />
+              <>
+                <Image url={item.meta.picUrl} style={styles.albumArt} />
+                {isPlaying && (
+                  <View style={{ position: 'absolute', width: 52, height: 52, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 4 }}>
+                    <PlayingIcon />
+                  </View>
+                )}
+              </>
+            ) : isPlaying ? (
+              <PlayingIcon />
             ) : (
-              <Text color={isPlaying ? theme['c-primary-font'] : theme['c-font']} size={12}>
+              <Text color={theme['c-font']} size={12}>
                 {index + 1}
               </Text>
             )}

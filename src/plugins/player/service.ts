@@ -6,6 +6,10 @@ import { isTempId, isEmpty } from './utils'
 import { exitApp } from '@/core/common'
 import { getCurrentTrackId } from './playList'
 import { pause, play, playNext, playPrev } from '@/core/player/player'
+import { showDesktopLyric, hideDesktopLyric } from '@/core/desktopLyric'
+import { updateSetting } from '@/core/common'
+import settingState from '@/store/setting/state'
+import { onWidgetPlayPause, onWidgetPrev, onWidgetNext } from '@/utils/nativeModules/musicWidget'
 
 let isInitialized = false
 
@@ -41,14 +45,54 @@ const registerPlaybackService = async () => {
     void playNext()
   })
 
+  // SkipToPrevious slot is now used for LRC toggle
   TrackPlayer.addEventListener(TPEvent.RemotePrevious, () => {
-    // console.log('remote-previous')
+    // console.log('remote-previous -> toggle lyric')
+    const isEnable = !settingState.setting['desktopLyric.enable']
+    if (isEnable) {
+      void showDesktopLyric().then(() => {
+        updateSetting({ 'desktopLyric.enable': true })
+      }).catch(() => { })
+    } else {
+      void hideDesktopLyric().then(() => {
+        updateSetting({ 'desktopLyric.enable': false })
+      })
+    }
+  })
+
+  // JumpBackward (Rewind slot) is now used for previous track
+  TrackPlayer.addEventListener(TPEvent.RemoteJumpBackward, () => {
+    // console.log('remote-jump-backward -> prev track')
     void playPrev()
   })
 
+  // JumpForward (FastForward slot) is now used for next track
+  TrackPlayer.addEventListener(TPEvent.RemoteJumpForward, () => {
+    // console.log('remote-jump-forward -> next track')
+    void playNext()
+  })
+
+  // Stop is triggered by notification swipe-to-dismiss
   TrackPlayer.addEventListener(TPEvent.RemoteStop, () => {
-    // console.log('remote-stop')
-    void handleExitApp('Remote Stop')
+    // console.log('remote-stop -> exit app')
+    void handleExitApp('Notification Dismissed')
+  })
+
+  // Widget button handlers
+  onWidgetPlayPause(() => {
+    void TrackPlayer.getState().then(state => {
+      if (state === TPState.Playing) {
+        void pause()
+      } else {
+        play()
+      }
+    })
+  })
+  onWidgetPrev(() => {
+    void playPrev()
+  })
+  onWidgetNext(() => {
+    void playNext()
   })
 
   // TrackPlayer.addEventListener(TPEvent.RemoteDuck, async({ permanent, paused, ducking }) => {

@@ -9,6 +9,7 @@ import { scaleSizeH } from '@/utils/pixelRatio'
 import Text from '@/components/common/Text'
 import Badge, { type BadgeType } from '@/components/common/Badge'
 import Image from '@/components/common/Image'
+import PlayingIcon from '@/components/common/PlayingIcon'
 import { useI18n } from '@/lang'
 
 export const ITEM_HEIGHT = scaleSizeH(LIST_ITEM_HEIGHT)
@@ -23,7 +24,7 @@ const useQualityTag = (musicInfo: LX.Music.MusicInfoOnline) => {
     info.type = 'sq'
     info.text = t('quality_lossless')
   } else if (musicInfo.meta._qualitys['320k']) {
-    info.type = 'tertiary'
+    info.type = 'hq'
     info.text = t('quality_high_quality')
   }
   return info
@@ -31,18 +32,18 @@ const useQualityTag = (musicInfo: LX.Music.MusicInfoOnline) => {
 
 export default memo(
   ({
-     item,
-     index,
-     activeIndex,
-     onPress,
-     onShowMenu,
-     onLongPress,
-     selectedList,
-     rowInfo,
-     isShowAlbumName,
-     isShowInterval,
-     showCover,
-   }: {
+    item,
+    index,
+    activeIndex,
+    onPress,
+    onShowMenu,
+    onLongPress,
+    selectedList,
+    rowInfo,
+    isShowAlbumName,
+    isShowInterval,
+    showCover,
+  }: {
     item: LX.Music.MusicInfo
     index: number
     activeIndex: number
@@ -106,9 +107,18 @@ export default memo(
 
           <View style={showCover ? styles.sn : styles.snIndex}>
             {showCover ? (
-              <Image url={item.meta.picUrl} style={styles.albumArt} />
+              <>
+                <Image url={item.meta.picUrl} style={styles.albumArt} />
+                {active && (
+                  <View style={{ position: 'absolute', width: 52, height: 52, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 4 }}>
+                    <PlayingIcon />
+                  </View>
+                )}
+              </>
+            ) : active ? (
+              <PlayingIcon />
             ) : (
-              <Text color={active ? theme['c-primary-font'] : theme['c-font']} size={12}>
+              <Text color={theme['c-font']} size={12}>
                 {index + 1}
               </Text>
             )}

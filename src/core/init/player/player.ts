@@ -2,7 +2,7 @@ import { addPlayedList, clearPlayedList } from '@/core/player/playedList'
 import { pause, playNext } from '@/core/player/player'
 import { setStatusText, setIsPlay } from '@/core/player/playStatus'
 // import { resetPlayerMusicInfo } from '@/core/player/playInfo'
-import { setStop } from '@/plugins/player'
+import { setStop, updateOptions } from '@/plugins/player'
 import { delayUpdateMusicInfo } from '@/plugins/player/playList'
 import playerState from '@/store/player/state'
 import settingState from '@/store/setting/state'
@@ -50,6 +50,14 @@ export default async (setting: LX.AppSetting) => {
       const playMusicInfo = playerState.playMusicInfo
       if (newValue == 'random' && playMusicInfo.musicInfo && !playMusicInfo.isTempPlay)
         addPlayedList({ ...(playMusicInfo as LX.Player.PlayMusicInfo) })
+    }
+    if (keys.includes('desktopLyric.enable')) {
+      void updateOptions(settings['desktopLyric.enable'] as boolean).then(() => {
+        // Force notification rebuild after updating options icon
+        if (playerState.playMusicInfo.musicInfo) {
+          delayUpdateMusicInfo(playerState.musicInfo, playerState.lastLyric)
+        }
+      })
     }
   }
 

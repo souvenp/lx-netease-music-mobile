@@ -17,6 +17,8 @@ import android.view.MotionEvent;
 import android.view.OrientationEventListener;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.ImageView;
+import android.widget.FrameLayout;
 
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReactApplicationContext;
@@ -32,6 +34,10 @@ public class LyricView extends Activity implements View.OnTouchListener {
   LyricSwitchView textView = null;
   WindowManager windowManager = null;
   WindowManager.LayoutParams layoutParams = null;
+  private ImageView lockIcon = null;
+  private WindowManager.LayoutParams lockIconParams = null;
+  private Handler lockIconHandler = new Handler();
+  private Runnable hideLockIconRunnable = this::hideLockIcon;
   final private ReactApplicationContext reactContext;
   final private LyricEvent lyricEvent;
 
@@ -53,6 +59,7 @@ public class LyricView extends Activity implements View.OnTouchListener {
   private boolean isLock = false;
   private boolean isSingleLine = false;
   private boolean isShowToggleAnima = false;
+  private boolean isMoved = false; // Track if finger moved (to distinguish tap from drag)
   private String unplayColor = "rgba(255, 255, 255, 1)";
   private String playedColor = "rgba(7, 197, 86, 1)";
   private String shadowColor = "rgba(0, 0, 0, 0.15)";
@@ -110,6 +117,60 @@ public class LyricView extends Activity implements View.OnTouchListener {
     // orientationEventListener = null;
   }
 
+  private void createLockIcon() {
+    if (lockIcon != null) {
+      hideLockIcon();
+      lockIcon = null;
+    }
+    lockIcon = new ImageView(reactContext);
+    // Note: Since this view uses FLAG_NOT_TOUCHABLE when locked (to allow penetration),
+    // this method is only reachable from onTouch while the view is currently UNLOCKED.
+    // Thus, we only need the logic to show the "Lock" button.
+    lockIcon.setImageResource(R.drawable.ic_lock_outline);
+    lockIcon.setOnClickListener(v -> {
+      lockView();
+      sendLockEvent(true);
+    });
+    lockIcon.setBackgroundResource(R.drawable.rounded_corner);
+    lockIcon.setPadding(10, 10, 10, 10);
+    lockIcon.setAlpha(0.6f);
+    lockIcon.setVisibility(View.GONE);
+
+    lockIconParams = new WindowManager.LayoutParams();
+    lockIconParams.type = layoutParams.type;
+    lockIconParams.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL;
+    lockIconParams.format = PixelFormat.TRANSPARENT;
+    lockIconParams.gravity = Gravity.TOP | Gravity.START;
+    float density = reactContext.getResources().getDisplayMetrics().density;
+    int size = (int) (32 * density);
+    lockIconParams.width = size;
+    lockIconParams.height = size;
+  }
+
+  private void showLockIcon() {
+    if (lockIcon == null) return;
+    lockIconHandler.removeCallbacks(hideLockIconRunnable);
+    float density = reactContext.getResources().getDisplayMetrics().density;
+    int size = (int) (32 * density);
+    lockIconParams.x = layoutParams.x + (layoutParams.width / 2) - (size / 2);
+    lockIconParams.y = Math.max(0, layoutParams.y - size - (int)(10 * density));
+    
+    if (lockIcon.getParent() == null) {
+        windowManager.addView(lockIcon, lockIconParams);
+    } else {
+        windowManager.updateViewLayout(lockIcon, lockIconParams);
+    }
+    lockIcon.setVisibility(View.VISIBLE);
+    lockIconHandler.postDelayed(hideLockIconRunnable, 1200);
+  }
+
+  private void hideLockIcon() {
+    if (lockIcon != null && lockIcon.getParent() != null) {
+      lockIcon.setVisibility(View.GONE);
+      windowManager.removeView(lockIcon);
+    }
+  }
+
   private int getLayoutParamsFlags() {
     int flag = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
       WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
@@ -117,7 +178,7 @@ public class LyricView extends Activity implements View.OnTouchListener {
       WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
 
     if (isLock) {
-      flag = flag | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
+      flag |= WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
     }
 
     return flag;
@@ -183,6 +244,12 @@ public class LyricView extends Activity implements View.OnTouchListener {
     params.putDouble("x", x);
     params.putDouble("y", y);
     lyricEvent.sendEvent(lyricEvent.SET_VIEW_POSITION, params);
+  }
+
+  public void sendLockEvent(boolean isLock) {
+    WritableMap params = Arguments.createMap();
+    params.putBoolean("isLock", isLock);
+    lyricEvent.sendEvent(lyricEvent.SET_VIEW_LOCK, params);
   }
 
 //  public void permission(){
@@ -427,6 +494,7 @@ public class LyricView extends Activity implements View.OnTouchListener {
         // 获取按下时的X，Y坐标
         lastX = event.getRawX();
         lastY = event.getRawY();
+        isMoved = false;
 
         preY = lastY;
         break;
@@ -451,6 +519,7 @@ public class LyricView extends Activity implements View.OnTouchListener {
         // 移动悬浮窗
         layoutParams.x = x;
         layoutParams.y = y;
+        isMoved = true;
         //更新悬浮窗位置
         windowManager.updateViewLayout(textView, layoutParams);
         //记录当前坐标作为下一次计算的上一次移动的位置坐标
@@ -483,6 +552,11 @@ public class LyricView extends Activity implements View.OnTouchListener {
           prevViewPercentageY = percentageY / 100f;
           sendPositionEvent(percentageX, percentageY);
         }
+        // Show lock icon on tap (no drag) in unlocked state
+        if (!isMoved) {
+          createLockIcon();
+          showLockIcon();
+        }
         break;
     }
     return true;
@@ -498,6 +572,7 @@ public class LyricView extends Activity implements View.OnTouchListener {
     }
     textView.setBackgroundColor(Color.TRANSPARENT);
     windowManager.updateViewLayout(textView, layoutParams);
+    hideLockIcon(); // Ensure hidden when first locked
   }
 
   public void unlockView() {
@@ -510,6 +585,8 @@ public class LyricView extends Activity implements View.OnTouchListener {
     }
     textView.setBackgroundResource(R.drawable.rounded_corner);
     windowManager.updateViewLayout(textView, layoutParams);
+    hideLockIcon();
+    sendLockEvent(false);
   }
 
   public void setColor(String unplayColor, String playedColor, String shadowColor) {
@@ -596,6 +673,8 @@ public class LyricView extends Activity implements View.OnTouchListener {
     if (textView == null || windowManager == null) return;
     windowManager.removeView(textView);
     textView = null;
+    hideLockIcon();
+    lockIcon = null;
     removeOrientationEvent();
   }
 

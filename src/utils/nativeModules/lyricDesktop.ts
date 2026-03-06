@@ -252,3 +252,16 @@ export const onLyricLinePlay = (
     eventListener.remove()
   }
 }
+
+export const onLockChange = (
+  handler: (isLock: boolean) => void
+): (() => void) => {
+  const eventEmitter = new NativeEventEmitter(LyricModule)
+  const eventListener = eventEmitter.addListener('set-lock', (event) => {
+    handler((event as { isLock: boolean }).isLock)
+  })
+
+  return () => {
+    eventListener.remove()
+  }
+}

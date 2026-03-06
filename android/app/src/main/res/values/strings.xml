@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">LX-N Music</string>
+    <string name="widget_description">LX-N Widget</string>
 </resources>
