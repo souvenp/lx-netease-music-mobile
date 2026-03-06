@@ -22,7 +22,7 @@ import {
   PACT_MODAL,
   ARTIST_DETAIL_SCREEN,
   SYNC_MODE_MODAL,
-  ALBUM_DETAIL_SCREEN, DOWNLOAD_MANAGER_SCREEN, PLAY_HISTORY_SCREEN,
+  ALBUM_DETAIL_SCREEN, DOWNLOAD_MANAGER_SCREEN,
   SIMILAR_SONGS_SCREEN,
   // SETTING_SCREEN,
 } from './screenNames'
@@ -30,8 +30,6 @@ import VersionModal from './components/VersionModal'
 import PactModal from './components/PactModal'
 import SyncModeModal from './components/SyncModeModal'
 import DownloadManager from "@/screens/DownloadManager";
-import PlayHistory from "@/screens/PlayHistory";
-
 function WrappedComponent(Component: any) {
   return function inject(props: Record<string, any>) {
     const EnhancedComponent = () => (
@@ -55,7 +53,6 @@ export default () => {
   Navigation.registerComponent(ALBUM_DETAIL_SCREEN, () => WrappedComponent(AlbumDetail))
   Navigation.registerComponent(SYNC_MODE_MODAL, () => WrappedComponent(SyncModeModal))
   Navigation.registerComponent(DOWNLOAD_MANAGER_SCREEN, () => WrappedComponent(DownloadManager))
-  Navigation.registerComponent(PLAY_HISTORY_SCREEN, () => WrappedComponent(PlayHistory))
   Navigation.registerComponent(SIMILAR_SONGS_SCREEN, () => WrappedComponent(SimilarSongs))
   // Navigation.registerComponent(SETTING_SCREEN, () => WrappedComponent(Setting))
 

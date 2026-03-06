@@ -10,7 +10,6 @@ import settingState from '@/store/setting/state'
 import { onScreenStateChange } from '@/utils/nativeModules/utils'
 import { AppState } from 'react-native'
 import { updateScrobblePlayTime, updateScrobbleTotalTime } from '@/core/player/scrobble'
-import { updatePlayHistoryPlayTime, updatePlayHistoryTotalTime } from '@/core/player/playHistory'
 import { LIST_IDS } from "@/config/constant.ts"
 import listState from '@/store/list/state'
 
@@ -43,7 +42,6 @@ export default () => {
       if (!position || id != playerState.musicInfo.id) return
       setNowPlayTime(position)
       updateScrobblePlayTime(position) // 实时更新打点记录的播放时间
-      updatePlayHistoryPlayTime(position)
 
       if (!playerState.isPlay) return
       if (
@@ -60,7 +58,6 @@ export default () => {
     const duration = await getDuration()
     setMaxplayTime(duration)
     updateScrobbleTotalTime(duration)
-    updatePlayHistoryTotalTime(duration)
 
     if (
       playerState.playMusicInfo.musicInfo &&
@@ -100,12 +97,10 @@ export default () => {
     if (!playerState.musicInfo.id) return
     setNowPlayTime(time)
     updateScrobblePlayTime(time)
-    updatePlayHistoryPlayTime(time)
     void setCurrentTime(time)
     if (maxTime != null) {
       setMaxplayTime(maxTime)
       updateScrobbleTotalTime(maxTime)
-      updatePlayHistoryTotalTime(maxTime)
     }
   }
 

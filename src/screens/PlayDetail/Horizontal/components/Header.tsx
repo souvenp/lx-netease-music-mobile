@@ -43,7 +43,7 @@ const Title = () => {
             {musicInfo.singer}
           </Text>
           {albumName ? (
-            <TouchableOpacity onPress={handleAlbumPress} disabled={musicInfo.source !== 'wy' || !albumId}>
+            <TouchableOpacity style={{ flexShrink: 1 }} onPress={handleAlbumPress} disabled={musicInfo.source !== 'wy' || !albumId}>
               <Text numberOfLines={1} size={12} color={theme['c-font-label']}>
                 {` · ${albumName}`}
               </Text>
@@ -54,7 +54,6 @@ const Title = () => {
     }
 
     return (
-      // <ScrollView horizontal showsHorizontalScrollIndicator={false}>
       <View style={styles.singerContainer}>
         {musicInfo.artists.map((artist, index) => (
           <TouchableOpacity key={artist.id || index} onPress={() => handleArtistPress(artist)}>
@@ -65,14 +64,13 @@ const Title = () => {
           </TouchableOpacity>
         ))}
         {albumName ? (
-          <TouchableOpacity onPress={handleAlbumPress} disabled={musicInfo.source !== 'wy' || !albumId}>
+          <TouchableOpacity style={{ flexShrink: 1 }} onPress={handleAlbumPress} disabled={musicInfo.source !== 'wy' || !albumId}>
             <Text numberOfLines={1} size={12} color={theme['c-font-label']}>
               {` · ${albumName}`}
             </Text>
           </TouchableOpacity>
         ) : null}
       </View>
-      // </ScrollView>
     )
   }, [musicInfo, theme, handleArtistPress, handleAlbumPress])
 

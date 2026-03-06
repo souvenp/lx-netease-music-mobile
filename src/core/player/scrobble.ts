@@ -9,27 +9,15 @@ export let scrobbleInfo: {
   totalTime: number
   accumulatedPlayedTime: number
   lastReportedTime: number
+  isScrobbled?: boolean
 } | null = null
 
-export const scrobbleLastSong = () => {
-  if (!scrobbleInfo) return
-  const { songId, sourceId, totalTime, accumulatedPlayedTime } = scrobbleInfo
-  const playedTime = Math.floor(accumulatedPlayedTime)
-  scrobbleInfo = null
 
-  if (playedTime < 1 || (totalTime > 0 && playedTime < 120 && (playedTime / totalTime) < 0.5)) {
-    console.log(`Scrobble skipped for song ${songId} (played: ${playedTime}s, total: ${totalTime.toFixed(0)}s)`)
-    return
-  }
-
-  console.log(`Scrobbling song: ${songId}, Source ID: '${sourceId}', Time: ${playedTime}s`)
-  void wyApi.scrobble(songId, sourceId, playedTime)
-}
 
 export const updateScrobbleInfo = () => {
   const musicInfo = playerState.playMusicInfo.musicInfo
   const listId = playerState.playMusicInfo.listId
-  if (!musicInfo || musicInfo.source !== 'wy') {
+  if (!musicInfo || !('source' in musicInfo) || musicInfo.source !== 'wy') {
     scrobbleInfo = null
     return
   }
@@ -50,11 +38,12 @@ export const updateScrobbleInfo = () => {
   }
 
   scrobbleInfo = {
-    songId: musicInfo.meta.songId,
+    songId: ('meta' in musicInfo) ? musicInfo.meta.songId : '',
     sourceId: sourceId,
     totalTime: 0,
     accumulatedPlayedTime: 0,
     lastReportedTime: 0,
+    isScrobbled: false,
   }
   console.log('Scrobble info updated for new song:', scrobbleInfo)
 }
@@ -72,6 +61,17 @@ export const updateScrobblePlayTime = (currentTime: number) => {
   }
 
   scrobbleInfo.lastReportedTime = currentTime
+  
+  // 实时判断是否满足打卡条件，如果满足而且未打过卡，直接上报
+  if (!scrobbleInfo.isScrobbled) {
+    const playedTime = Math.floor(scrobbleInfo.accumulatedPlayedTime)
+    const { totalTime } = scrobbleInfo
+    if (playedTime >= 120 || (totalTime > 0 && playedTime >= totalTime * 0.5)) {
+        scrobbleInfo.isScrobbled = true
+        console.log(`Scrobbling song realtime: ${scrobbleInfo.songId}, Source ID: '${scrobbleInfo.sourceId}', Time: ${playedTime}s`)
+        void wyApi.scrobble(scrobbleInfo.songId, scrobbleInfo.sourceId, playedTime)
+    }
+  }
 }
 
 export const updateScrobbleTotalTime = (time: number) => {

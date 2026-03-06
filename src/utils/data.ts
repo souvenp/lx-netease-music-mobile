@@ -664,30 +664,4 @@ export const savePlaylistType = async (type: 'local' | 'online') => {
   await saveData(playlistTypeKey, type)
 }
 
-export interface PlayHistoryRecord {
-  musicInfo: LX.Music.MusicInfo;
-  playedAt: number; // Unix timestamp for start of day
-  sourceContext: 'daily_recommend' | 'search' | 'playlist' | 'artist' | 'album' | 'unknown';
-  platform: string;
-  listenCount: number;
-}
 
-const playHistoryKey = storageDataPrefix.playHistory;
-let playHistoryCache: PlayHistoryRecord[] | undefined;
-
-export const getPlayHistoryData = async (): Promise<PlayHistoryRecord[]> => {
-  if (playHistoryCache === undefined) {
-    playHistoryCache = (await getData<PlayHistoryRecord[]>(playHistoryKey)) ?? [];
-  }
-  return playHistoryCache;
-};
-
-export const savePlayHistoryData = async (history: PlayHistoryRecord[]) => {
-  playHistoryCache = history;
-  await saveData(playHistoryKey, history);
-};
-
-export const clearPlayHistoryData = async () => {
-  playHistoryCache = [];
-  await removeData(playHistoryKey);
-};

@@ -274,12 +274,6 @@ export default memo(() => {
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.footerBtn} onPress={() => {
-          global.app_event.changeMenuVisible(false);
-          navigations.pushPlayHistoryScreen(commonState.componentIds[commonState.componentIds.length - 1]?.id!);
-        }}>
-          <Icon name="music_time" size={22} color={theme['c-font-label']} />
-        </TouchableOpacity>
         <TouchableOpacity style={styles.footerBtn} onPress={handleDownloadPress}>
           <Icon name="download-2" size={22} color={theme['c-font-label']} />
         </TouchableOpacity>

@@ -44,7 +44,7 @@ const Title = () => {
             {musicInfo.singer}
           </Text>
           {albumName ? (
-            <TouchableOpacity onPress={handleAlbumPress} disabled={musicInfo.source !== 'wy' || !albumId}>
+            <TouchableOpacity style={{ flexShrink: 1 }} onPress={handleAlbumPress} disabled={musicInfo.source !== 'wy' || !albumId}>
               <Text numberOfLines={1} size={12} color={theme['c-font']}>
                 {` · ${albumName}`}
               </Text>
@@ -65,7 +65,7 @@ const Title = () => {
           </TouchableOpacity>
         ))}
         {albumName ? (
-          <TouchableOpacity onPress={handleAlbumPress} disabled={musicInfo.source !== 'wy' || !albumId}>
+          <TouchableOpacity style={{ flexShrink: 1 }} onPress={handleAlbumPress} disabled={musicInfo.source !== 'wy' || !albumId}>
             <Text numberOfLines={1} size={12} color={theme['c-font']}>
               {` · ${albumName}`}
             </Text>

@@ -127,14 +127,7 @@ export default memo(
 
           <View style={showCover ? styles.sn : styles.snIndex}>
             {showCover ? (
-              <>
-                <Image url={item.meta.picUrl} style={styles.albumArt} />
-                {isPlaying && (
-                  <View style={{ position: 'absolute', width: 52, height: 52, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 4 }}>
-                    <PlayingIcon />
-                  </View>
-                )}
-              </>
+              <Image url={item.meta.picUrl} style={styles.albumArt} />
             ) : isPlaying ? (
               <PlayingIcon />
             ) : (

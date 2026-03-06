@@ -36,7 +36,7 @@ const MiniLyric = ({ onPress, style }: { onPress?: () => void, style?: any }) =>
       {currentLine ? (
         <>
           <Text
-            size={size}
+            size={13}
             color={activeColor}
             style={{ textAlign }}
             numberOfLines={1}
@@ -45,7 +45,7 @@ const MiniLyric = ({ onPress, style }: { onPress?: () => void, style?: any }) =>
           </Text>
           {translationLine && (
             <Text
-              size={size}
+              size={13}
               color={activeColor}
               style={{ textAlign, marginTop: 4 }}
               numberOfLines={1}
@@ -55,7 +55,7 @@ const MiniLyric = ({ onPress, style }: { onPress?: () => void, style?: any }) =>
           )}
         </>
       ) : (
-        <Text size={size} color={theme['c-font-label']} style={{ textAlign }}>
+        <Text size={13} color={theme['c-font-label']} style={{ textAlign }}>
           ...
         </Text>
       )}
