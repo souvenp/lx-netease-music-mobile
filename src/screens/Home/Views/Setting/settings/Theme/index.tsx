@@ -16,7 +16,6 @@ export default memo(() => {
     <>
       <Theme />
       <IsAutoTheme />
-      <IsHideBgDark />
       <IsDynamicBg />
       <CustomBg />
       <PicOpacity />

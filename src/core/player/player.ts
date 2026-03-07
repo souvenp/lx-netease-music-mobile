@@ -407,6 +407,7 @@ export const getNextPlayMusicInfo = async (): Promise<LX.Player.PlayMusicInfo | 
   let togglePlayMethod = settingState.setting['player.togglePlayMethod']
   switch (togglePlayMethod) {
     case 'listLoop':
+    case 'heartbeat':
       nextIndex = playerIndex === filteredList.length - 1 ? 0 : playerIndex + 1
       break
     case 'random':
@@ -519,11 +520,13 @@ export const playNext = async (isAutoToggle = false): Promise<void> => {
       case 'list':
       case 'singleLoop':
       case 'none':
-        togglePlayMethod = 'listLoop'
+      case 'heartbeat':
+        togglePlayMethod = 'listLoop' as any
     }
   }
   switch (togglePlayMethod) {
     case 'listLoop':
+    case 'heartbeat':
       nextIndex = playerIndex === filteredList.length - 1 ? 0 : playerIndex + 1
       break
     case 'random':
@@ -611,7 +614,8 @@ export const playPrev = async (isAutoToggle = false): Promise<void> => {
         case 'list':
         case 'singleLoop':
         case 'none':
-          togglePlayMethod = 'listLoop'
+        case 'heartbeat':
+          togglePlayMethod = 'listLoop' as any
       }
     }
     switch (togglePlayMethod) {
@@ -620,6 +624,7 @@ export const playPrev = async (isAutoToggle = false): Promise<void> => {
         break
       case 'listLoop':
       case 'list':
+      case 'heartbeat':
         nextIndex = playerIndex === 0 ? filteredList.length - 1 : playerIndex - 1
         break
       case 'singleLoop':

@@ -1,5 +1,6 @@
 import { TouchableOpacity } from 'react-native'
 import { Icon } from '@/components/common/Icon'
+import { SvgIcon } from '@/components/common/SvgIcon'
 import { createStyle } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
 import { scaleSizeW } from '@/utils/pixelRatio'
@@ -28,7 +29,10 @@ const Btn = forwardRef(({
       onPress={onPress}
       onLongPress={onLongPress}
     >
-      <Icon name={icon} color={color ?? theme['c-font-label']} size={BTN_ICON_SIZE} />
+      {icon.startsWith('svg:') 
+        ? <SvgIcon name={icon.replace('svg:', '')} color={color ?? theme['c-font-label']} size={BTN_ICON_SIZE} /> 
+        : <Icon name={icon} color={color ?? theme['c-font-label']} size={BTN_ICON_SIZE} />
+      }
     </TouchableOpacity>
   )
 })

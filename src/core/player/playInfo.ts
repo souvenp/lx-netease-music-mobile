@@ -3,7 +3,10 @@ import playerState from '@/store/player/state'
 
 import { getListMusicSync } from '@/utils/listManage'
 import { setProgress } from '@/core/player/progress'
-import { LIST_IDS } from '@/config/constant'
+import { LIST_IDS, MUSIC_TOGGLE_MODE } from '@/config/constant'
+import settingState from '@/store/setting/state'
+import listState from '@/store/list/state'
+import { updateSetting } from '@/core/common'
 
 export const setMusicInfo = (musicInfo: Partial<LX.Player.MusicInfo>) => {
   playerActions.setMusicInfo(musicInfo)
@@ -137,6 +140,12 @@ export const setPlayMusicInfo = (
 ) => {
   playerActions.setPlayMusicInfo(listId, musicInfo, isTempPlay)
   setPlayerMusicInfo(musicInfo)
+
+  if (settingState.setting['player.togglePlayMethod'] === 'heartbeat') {
+    if (listId !== LIST_IDS.TEMP || listState.tempListMeta.id !== 'heartbeat') {
+      updateSetting({ 'player.togglePlayMethod': MUSIC_TOGGLE_MODE.listLoop })
+    }
+  }
 
   setProgress(0, 0)
 

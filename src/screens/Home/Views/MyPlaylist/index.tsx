@@ -2,7 +2,13 @@ import { memo, useEffect, useState, useCallback, useRef } from 'react'
 import {View, FlatList, RefreshControl, BackHandler, StyleSheet, Keyboard} from 'react-native'
 import ListItem from './ListItem'
 import wyApi from '@/utils/musicSdk/wy/user'
+import wyDailyRecApi from '@/utils/musicSdk/wy/dailyRec'
+import wyMusicDetailApi from '@/utils/musicSdk/wy/musicDetail'
+import { playOnlineList } from '@/core/list'
+import { MUSIC_TOGGLE_MODE } from '@/config/constant'
+import { updateSetting } from '@/core/common'
 import { useWySubscribedPlaylists, useWyUid } from '@/store/user/hook.ts'
+import userState from '@/store/user/state'
 import { useSettingValue } from '@/store/setting/hook'
 import { toast } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
@@ -135,6 +141,40 @@ export default memo(() => {
     setSelectedPlaylist(playlistInfo)
   }, [])
 
+  const handleHeartbeatPress = useCallback(async (playlistInfo: ListInfoItem) => {
+    if (!cookie || !uid) return
+    try {
+      toast('正在开启心动模式...')
+      let ids = Array.from(userState.wy_liked_song_ids)
+      if (!ids || !ids.length) {
+        ids = (await wyApi.getLikedSongList(uid, cookie)).map(String)
+      }
+
+      if (!ids || !ids.length) {
+        toast('没有喜欢的歌曲')
+        return
+      }
+
+      const randomSongId = ids[Math.floor(Math.random() * ids.length)]
+      const musicInfoRes = await wyMusicDetailApi.getList([randomSongId])
+      const mInfo = musicInfoRes.list[0]
+
+      if (!mInfo) {
+        toast('获取歌曲详情失败')
+        return
+      }
+
+      const res = await wyDailyRecApi.getHeartbeatModeList(cookie, playlistInfo.id, randomSongId)
+      const heartbeatList = [mInfo, ...res.list].filter(Boolean) as any[]
+
+      updateSetting({ 'player.togglePlayMethod': MUSIC_TOGGLE_MODE.heartbeat })
+      playOnlineList('heartbeat', heartbeatList, 0, false)
+      toast('心动模式已开启')
+    } catch (err: any) {
+      toast(`开启心动模式失败: ${err.message}`)
+    }
+  }, [cookie, uid])
+
   if (!cookie) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -156,7 +196,7 @@ export default memo(() => {
       <FlatList
         onScrollBeginDrag={Keyboard.dismiss}
         data={playlists}
-        renderItem={({ item }) => <ListItem item={item} onPress={handleItemPress} />}
+        renderItem={({ item }) => <ListItem item={item} onPress={handleItemPress} onHeartbeatPress={handleHeartbeatPress} />}
         keyExtractor={item => String(item.id)}
         refreshControl={
           <RefreshControl

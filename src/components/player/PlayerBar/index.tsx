@@ -20,7 +20,6 @@ import { LIST_IDS } from '@/config/constant'
 export default memo(({ componentId, isHome = false }: { isHome?: boolean }) => {
   const { keyboardShown } = useKeyboard()
   const theme = useTheme()
-  const autoHidePlayBar = useSettingValue('common.autoHidePlayBar')
   const musicInfo = usePlayerMusicInfo()
   const longPressedRef = useRef(false)
   const playlistRef = useRef<PlayerPlaylistType>(null)
@@ -114,7 +113,7 @@ export default memo(({ componentId, isHome = false }: { isHome?: boolean }) => {
 
   return (
     <>
-      {autoHidePlayBar && keyboardShown ? null : playerComponent}
+      {keyboardShown ? null : playerComponent}
       <PlayerPlaylist ref={playlistRef} />
     </>
   )

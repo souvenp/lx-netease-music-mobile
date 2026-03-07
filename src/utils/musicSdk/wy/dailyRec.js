@@ -22,7 +22,7 @@ export default {
         form: weapi({
           offset: 0,
           total: true,
-          limit: 50,
+          limit: 30,
           csrf_token: csrfToken || '',
         }),
       })
@@ -40,6 +40,75 @@ export default {
     } catch (error) {
       console.log(`获取日推失败，正在进行第 ${retryNum + 1} 次重试...`, error.message)
       return this.getList(cookie, retryNum + 1)
+    }
+  },
+
+  async saveStylizedTag(cookie, categoryId, tagIds, retryNum = 0) {
+    if (retryNum > 2) return Promise.reject(new Error('try max num'))
+
+    try {
+      const csrfToken = (cookie.match(/_csrf=([^(;|$)]+)/) || [])[1]
+      const tagsStr = JSON.stringify({ categoryId, tagIds })
+      const requestObj = httpFetch(`https://music.163.com/weapi/homepage/daily/song/tag/save?csrf_token=${csrfToken || ''}`, {
+        method: 'post',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Edg/124.0.0.0',
+          origin: 'https://music.163.com',
+          Referer: 'https://music.163.com',
+          cookie,
+        },
+        form: weapi({
+          tags: tagsStr,
+          csrf_token: csrfToken || '',
+        }),
+      })
+      const { body, statusCode } = await requestObj.promise
+
+      if (statusCode !== 200 || body.code !== 200) {
+        throw new Error('保存风格化标签失败');
+      }
+
+      return true
+    } catch (error) {
+      console.log(`保存风格化标签失败，正在进行第 ${retryNum + 1} 次重试...`, error.message)
+      return this.saveStylizedTag(cookie, categoryId, tagIds, retryNum + 1)
+    }
+  },
+
+  async getStylizedList(cookie, retryNum = 0) {
+    if (this._requestObj) this._requestObj.cancelHttp()
+    if (retryNum > 2) return Promise.reject(new Error('try max num'))
+
+    try {
+      const csrfToken = (cookie.match(/_csrf=([^(;|$)]+)/) || [])[1]
+
+      const _requestObj = httpFetch(`https://music.163.com/weapi/homepage/category/daily/song/list?csrf_token=${csrfToken || ''}`, {
+        method: 'post',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Edg/124.0.0.0',
+          origin: 'https://music.163.com',
+          Referer: 'https://music.163.com',
+          cookie,
+        },
+        form: weapi({
+          csrf_token: csrfToken || '',
+        }),
+      })
+      this._requestObj = _requestObj
+      const { body, statusCode } = await _requestObj.promise
+
+      if (statusCode !== 200 || body.code !== 200 || !body.data) {
+        throw new Error('获取风格化推荐失败或返回数据无效');
+      }
+
+      const filteredList = await musicDetailApi.filterList({ songs: body.data.dailySongs, privileges: [] });
+      return {
+        list: filteredList,
+        source: 'wy',
+      }
+    } catch (error) {
+      console.log(`获取风格化推荐失败，正在进行第 ${retryNum + 1} 次重试...`, error.message)
+      return this.getStylizedList(cookie, retryNum + 1)
     }
   },
 
@@ -104,6 +173,44 @@ export default {
         console.error('获取相似歌曲失败 (已达最大重试次数)', error)
         throw error
       }
+    }
+  },
+
+  async getHeartbeatModeList(cookie, playlistId, songId, retryNum = 0) {
+    if (retryNum > 2) return Promise.reject(new Error('try max num'))
+
+    try {
+      const csrfToken = (cookie.match(/_csrf=([^(;|$)]+)/) || [])[1]
+      const requestObj = httpFetch(`https://music.163.com/weapi/playmode/intelligence/list?csrf_token=${csrfToken || ''}`, {
+        method: 'post',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36 Edg/108.0.1462.54',
+          origin: 'https://music.163.com',
+          Referer: 'https://music.163.com',
+          cookie,
+        },
+        form: weapi({
+          playlistId,
+          songId,
+          type: 'fromPlayOne',
+          startMusicId: songId,
+          count: '150',
+          csrf_token: csrfToken || '',
+        }),
+      })
+
+      const { body, statusCode } = await requestObj.promise
+
+      if (statusCode !== 200 || body.code !== 200) {
+        throw new Error('获取心动模式列表失败')
+      }
+
+      const ids = (body.data || []).map(item => item.id || item.songInfo?.id).filter(id => id)
+      if (!ids.length) return { list: [], source: 'wy' }
+      return await musicDetailApi.getList(ids)
+    } catch (error) {
+      console.log(`获取心动模式列表失败，正在进行第 ${retryNum + 1} 次重试...`, error.message)
+      return this.getHeartbeatModeList(cookie, playlistId, songId, retryNum + 1)
     }
   },
 }

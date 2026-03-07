@@ -33,7 +33,6 @@ export default memo(() => {
           <IsShowExitBtn />
         </>
       ) : null}
-      <IsAutoHidePlayBar />
       <IsHomePageScroll />
       <IsUseSystemFileSelector />
       <IsAlwaysKeepStatusbarHeight />

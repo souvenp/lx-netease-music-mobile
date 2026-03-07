@@ -35,9 +35,8 @@ const formatMusicInfo = (musicInfo: LX.Player.PlayMusic) => {
 const buildTracks = (musicInfo: LX.Player.PlayMusic, url?: LX.Player.Track['url'], duration?: LX.Player.Track['duration']): LX.Player.Track[] => {
   const mInfo = formatMusicInfo(musicInfo)
   const track = [] as LX.Player.Track[]
-  const isShowNotificationImage = settingState.setting['player.isShowNotificationImage']
   const album = mInfo.album || undefined
-  const artwork = isShowNotificationImage && mInfo.pic && httpRxp.test(mInfo.pic) ? mInfo.pic : undefined
+  const artwork = mInfo.pic && httpRxp.test(mInfo.pic) ? mInfo.pic : undefined
   if (url) {
     track.push({
       id: `${mInfo.id}__//${Math.random()}__//${url}`,
@@ -188,21 +187,8 @@ export const playMusic = (musicInfo: LX.Player.PlayMusic, url: string, time: num
 let prevArtwork: string | undefined
 const updateMetaInfo = async (mInfo: LX.Player.MusicInfo, lyric?: string) => {
   console.log('updateMetaInfo', lyric)
-  const isShowNotificationImage = settingState.setting['player.isShowNotificationImage']
-  // const mInfo = formatMusicInfo(musicInfo)
-  // console.log('+++++updateMusicPic+++++', track.artwork, track.duration)
-
-  // if (track.musicId == musicId) {
-  //   if (global.playInfo.musicInfo.img != null) artwork = global.playInfo.musicInfo.img
-  //   if (track.duration != null) duration = global.playInfo.duration
-  // } else {
-  //   musicId = track.musicId
-  //   artwork = global.playInfo.musicInfo.img
-  //   duration = global.playInfo.duration || 0
-  // }
-  // console.log('+++++updateMetaInfo+++++', mInfo.name)
   state.isPlaying = await TrackPlayer.getState() == State.Playing
-  let artwork = isShowNotificationImage ? mInfo.pic ?? prevArtwork : undefined
+  let artwork = mInfo.pic ?? prevArtwork
   if (mInfo.pic) prevArtwork = mInfo.pic
   let mainTitle: string
   let artistText: string

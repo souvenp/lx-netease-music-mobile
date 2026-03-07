@@ -24,7 +24,6 @@ export default memo(() => {
       <IsHandleAudioFocus />
       <IsEnableAudioOffload />
       <IsShowBluetoothLyric />
-      <IsShowNotificationImage />
       <IsShowLyricTranslation />
       <IsShowLyricRoma />
       <IsS2T />

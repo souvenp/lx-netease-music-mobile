@@ -26,7 +26,6 @@ export default memo(() => {
       <IsSingleLine />
       <Theme />
       <TextSize />
-      <ViewWidth />
       <MaxLineNum />
       <TextOpacity />
       <TextPositionX />

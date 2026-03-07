@@ -5,8 +5,9 @@ import Text from '@/components/common/Text'
 import { useTheme } from '@/store/theme/hook'
 import { createStyle } from '@/utils/tools'
 import { type ListInfoItem } from '@/store/songlist/state'
+import { SvgIcon } from '@/components/common/SvgIcon'
 
-export default memo(({ item, onPress }: { item: any, onPress: (info: ListInfoItem) => void }) => {
+export default memo(({ item, onPress, onHeartbeatPress }: { item: any, onPress: (info: ListInfoItem) => void, onHeartbeatPress?: (info: ListInfoItem) => void }) => {
   const theme = useTheme()
 
   const handlePress = () => {
@@ -24,13 +25,35 @@ export default memo(({ item, onPress }: { item: any, onPress: (info: ListInfoIte
     onPress(playlistInfo)
   }
 
+  const handleHeartbeatPress = () => {
+    const playlistInfo: ListInfoItem = {
+      id: String(item.id),
+      name: item.name,
+      author: item.creator?.nickname,
+      img: item.coverImgUrl,
+      play_count: item.playCount,
+      desc: item.description,
+      source: 'wy',
+      userId: item.userId,
+      total: item.trackCount,
+    }
+    onHeartbeatPress?.(playlistInfo)
+  }
+
   return (
     <TouchableOpacity style={styles.container} onPress={handlePress}>
       <Image url={item.coverImgUrl} style={styles.artwork} />
       <View style={styles.info}>
         <Text size={16} numberOfLines={1}>{item.name}</Text>
-        <Text size={12} color={theme['c-font-label']}>{item.trackCount} tracks</Text>
+        {item.trackCount > 0 ? (
+          <Text size={12} color={theme['c-font-label']}>{item.trackCount} tracks</Text>
+        ) : null}
       </View>
+      {item.name.endsWith('喜欢的音乐') && onHeartbeatPress && (
+        <TouchableOpacity style={styles.heartbeatBtn} onPress={handleHeartbeatPress}>
+          <SvgIcon name="heartbeat" size={28} color={theme['c-primary']} />
+        </TouchableOpacity>
+      )}
     </TouchableOpacity>
   )
 })
@@ -52,5 +75,10 @@ const styles = createStyle({
   info: {
     flex: 1,
     marginLeft: 15,
+  },
+  heartbeatBtn: {
+    padding: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 })

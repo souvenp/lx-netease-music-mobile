@@ -111,9 +111,9 @@ export const NAV_MENUS = [
   { id: 'nav_songlist', icon: 'album' },
   { id: 'nav_top', icon: 'leaderboard' },
   { id: 'nav_love', icon: 'love' },
-  { id: 'nav_daily_rec', icon: 'love' },
-  { id: 'nav_followed_artists', icon: 'love' },
-  { id: 'nav_subscribed_albums', icon: 'album' },
+  { id: 'nav_daily_rec', icon: 'svg:calendar' },
+  { id: 'nav_followed_artists', icon: 'svg:artist' },
+  { id: 'nav_subscribed_albums', icon: 'svg:album-disc' },
   { id: 'nav_my_playlist', icon: 'album' },
   // { id: 'download', icon: 'download-2' },
   { id: 'nav_setting', icon: 'setting' },
@@ -129,6 +129,7 @@ export const MUSIC_TOGGLE_MODE = {
   random: 'random', // 列表随机
   list: 'list', // 顺序播放
   singleLoop: 'singleLoop', // 单曲循环
+  heartbeat: 'heartbeat', // 心动模式
   none: 'none', // 禁用
 } as const
 

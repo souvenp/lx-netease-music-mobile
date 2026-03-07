@@ -13,12 +13,12 @@ import { clearPlayedList } from '@/core/player/playedList'
  * @param list 要播放的歌曲数组
  * @param index 开始播放的歌曲索引
  */
-export const playOnlineList = async (listId: string, list: LX.Music.MusicInfoOnline[], index: number) => {
+export const playOnlineList = async (listId: string, list: LX.Music.MusicInfoOnline[], index: number, isSkipPlay: boolean = false) => {
   await overwriteListMusics(LIST_IDS.TEMP, [...list])
   await setTempList(listId, list) // 确保meta信息被设置
   clearPlayedList()
   setActiveList(LIST_IDS.TEMP)
-  void playList(LIST_IDS.TEMP, index)
+  if (!isSkipPlay) void playList(LIST_IDS.TEMP, index)
 }
 
 

@@ -32,7 +32,7 @@ export default memo(({ onOpenDetail }: { onOpenDetail: (info: any) => void }) =>
     setLoading(true)
     wyApi.getRecPlaylists(cookie).then(list => {
       const adaptedList =  list
-        .filter(item => !item.name.includes('雷达'))
+        // .filter(item => !item.name.includes('雷达'))
         .map(item => ({
           id: item.id,
           name: item.name,

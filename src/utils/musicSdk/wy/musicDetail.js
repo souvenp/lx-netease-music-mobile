@@ -253,20 +253,25 @@ export default {
   async getList(ids = [], retryNum = 0) {
     if (retryNum > 2) return Promise.reject(new Error('try max num'))
 
-    const requestObj = httpFetch('https://music.163.com/weapi/v3/song/detail', {
-      method: 'post',
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36',
-        origin: 'https://music.163.com',
-      },
-      form: weapi({
-        c: '[' + ids.map((id) => '{"id":' + id + '}').join(',') + ']',
-        ids: '[' + ids.join(',') + ']',
-      }),
-    })
-    const { body, statusCode } = await requestObj.promise
-    if (statusCode != 200 || body.code !== 200) throw new Error('获取歌曲详情失败')
-    return { source: 'wy', list: await this.filterList(body) }
+    try {
+      const requestObj = httpFetch('https://music.163.com/weapi/v3/song/detail', {
+        method: 'post',
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36',
+          origin: 'https://music.163.com',
+        },
+        form: weapi({
+          c: '[' + ids.map((id) => '{"id":' + id + '}').join(',') + ']',
+          ids: '[' + ids.join(',') + ']',
+        }),
+      })
+      const { body, statusCode } = await requestObj.promise
+      if (statusCode != 200 || body.code !== 200) throw new Error('获取歌曲详情失败')
+      return { source: 'wy', list: await this.filterList(body) }
+    } catch (error) {
+      console.log(`获取歌曲详情失败，正在进行第 ${retryNum + 1} 次重试...`, error.message)
+      return this.getList(ids, retryNum + 1)
+    }
   },
 }

@@ -23,6 +23,8 @@ import listState from '@/store/list/state'
 import { LIST_IDS } from '@/config/constant'
 
 
+import type { StylizedSelection } from './StylizedModal'
+
 const BATCH_SIZE = 8
 
 const similarSongsFetcher = {
@@ -30,7 +32,12 @@ const similarSongsFetcher = {
   currentDailyRecId: null as string | null,
 }
 
-export default memo(() => {
+interface RecSongsProps {
+  isStylized?: boolean
+  stylizedSelection?: StylizedSelection | null
+}
+
+export default memo(({ isStylized, stylizedSelection }: RecSongsProps) => {
   const listRef = useRef<OnlineListType>(null)
   const [isLoading, setIsLoading] = useState(true)
   const t = useI18n()
@@ -71,11 +78,31 @@ export default memo(() => {
       return
     }
 
+    if (isStylized && stylizedSelection) {
+      setIsLoading(true)
+      listRef.current?.setStatus('loading')
+      wyApi.dailyRec.saveStylizedTag(cookie, stylizedSelection.categoryId, stylizedSelection.tagIds).then(() => {
+        return wyApi.dailyRec.getStylizedList(cookie)
+      }).then((result: any) => {
+        listRef.current?.setList(result.list, false)
+        listRef.current?.setStatus('idle')
+      }).catch((err: any) => {
+        console.error(err)
+        toast(t('load_failed'), 'long')
+        listRef.current?.setStatus('error')
+      }).finally(() => {
+        setIsLoading(false)
+      })
+      return
+    }
+
     const cachedSongs = getDailyRecSongsCache()
     if (cachedSongs) {
-      listRef.current?.setList(cachedSongs, false)
-      listRef.current?.setStatus('idle')
-      setIsLoading(false)
+      setTimeout(() => {
+        listRef.current?.setList(cachedSongs, false)
+        listRef.current?.setStatus('idle')
+        setIsLoading(false)
+      }, 0)
     } else {
       setIsLoading(true)
       listRef.current?.setStatus('loading')
@@ -193,7 +220,7 @@ export default memo(() => {
         setIsLoading(false)
       })
     }
-  }, [t, cookie])
+  }, [t, cookie, isStylized, stylizedSelection])
 
   useEffect(() => {
     const handleReplaceMusic = (oldMusicInfoId: string, newMusicInfo: LX.Music.MusicInfoOnline | null) => {
@@ -223,8 +250,24 @@ export default memo(() => {
       listRef.current?.setStatus('idle')
       return
     }
-    clearDailyRecSongsCache()
     listRef.current?.setStatus('refreshing')
+
+    if (isStylized && stylizedSelection) {
+      wyApi.dailyRec.saveStylizedTag(cookie, stylizedSelection.categoryId, stylizedSelection.tagIds).then(() => {
+        return wyApi.dailyRec.getStylizedList(cookie)
+      }).then((result: any) => {
+        listRef.current?.setList(result.list, false)
+      }).catch((err: any) => {
+        console.error(err)
+        toast(t('load_failed'), 'long')
+        listRef.current?.setStatus('error')
+      }).finally(() => {
+        listRef.current?.setStatus('idle')
+      })
+      return
+    }
+
+    clearDailyRecSongsCache()
     wyApi.dailyRec.getList(cookie).then(result => {
       listRef.current?.setList(result.list, false)
       setDailyRecSongsCache(result.list)
@@ -238,7 +281,7 @@ export default memo(() => {
     }).finally(() => {
       listRef.current?.setStatus('idle')
     })
-  }, [cookie, t])
+  }, [cookie, t, isStylized, stylizedSelection])
 
   const handleFindMore = async() => {
     const cache = await getDailyRecCache()
@@ -255,7 +298,7 @@ export default memo(() => {
   }
 
   const ListFooter = () => {
-    if (isLoading || !isAllSimilarSongsFetched) return null
+    if (isStylized || isLoading || !isAllSimilarSongsFetched) return null
     return (
       <View style={{ alignItems: 'center', padding: 20 }}>
         <TouchableOpacity onPress={handleFindMore}>

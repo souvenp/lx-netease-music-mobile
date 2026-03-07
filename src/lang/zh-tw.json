@@ -199,6 +199,7 @@
   "play_list_random": "隨機播放",
   "play_next": "下一曲",
   "play_prev": "上一曲",
+  "play_heartbeat": "心動模式",
   "play_single": "停用歌曲切換",
   "play_single_loop": "重複播放",
   "player__buffering": "緩衝中...",

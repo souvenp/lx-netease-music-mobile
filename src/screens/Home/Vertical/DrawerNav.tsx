@@ -4,6 +4,7 @@ import { useI18n } from '@/lang'
 import { useNavActiveId, useStatusbarHeight } from '@/store/common/hook'
 import { useTheme } from '@/store/theme/hook'
 import { Icon } from '@/components/common/Icon'
+import { SvgIcon } from '@/components/common/SvgIcon'
 import { confirmDialog, createStyle, exitApp as backHome } from '@/utils/tools'
 import { NAV_MENUS } from '@/config/constant'
 import type { InitState } from '@/store/common/state'
@@ -183,6 +184,13 @@ const Header = () => {
 
 type IdType = InitState['navActiveId'] | 'nav_exit' | 'back_home'
 
+const renderIcon = (icon: string, size: number, color: string) => {
+  if (icon.startsWith('svg:')) {
+    return <SvgIcon name={icon.slice(4)} size={size} color={color} />
+  }
+  return <Icon name={icon} size={size} color={color} />
+}
+
 const MenuItem = ({
   id,
   icon,
@@ -199,7 +207,7 @@ const MenuItem = ({
   return activeId == id ? (
     <View style={{ ...styles.menuItem, backgroundColor: theme['c-primary-background-hover'] }}>
       <View style={styles.iconContent}>
-        <Icon name={icon} size={20} color={theme['c-primary-font-active']} />
+        {renderIcon(icon, 20, theme['c-primary-font-active'])}
       </View>
       <Text style={styles.text} color={theme['c-primary-font']}>
         {t(id)}
@@ -213,7 +221,7 @@ const MenuItem = ({
       }}
     >
       <View style={styles.iconContent}>
-        <Icon name={icon} size={20} color={theme['c-font-label']} />
+        {renderIcon(icon, 20, theme['c-font-label'])}
       </View>
       <Text style={styles.text}>{t(id)}</Text>
     </TouchableOpacity>

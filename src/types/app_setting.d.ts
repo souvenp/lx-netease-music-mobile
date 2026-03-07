@@ -135,7 +135,7 @@ declare global {
       /**
        * 切歌模式
        */
-      'player.togglePlayMethod': 'listLoop' | 'random' | 'list' | 'singleLoop' | 'none'
+      'player.togglePlayMethod': 'listLoop' | 'random' | 'list' | 'singleLoop' | 'heartbeat' | 'none'
 
       /**
        * 优先播放的音质
