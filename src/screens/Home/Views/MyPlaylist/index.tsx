@@ -187,25 +187,28 @@ export default memo(() => {
     setSelectedPlaylist(null)
     setScrollToMusicInfo(null)
   }, [])
-  if (selectedPlaylist) {
-    return <SonglistDetail info={selectedPlaylist} onBack={handleBack} initialScrollToInfo={scrollToMusicInfo} />
-  }
-
   return (
     <View style={{ flex: 1 }}>
-      <FlatList
-        onScrollBeginDrag={Keyboard.dismiss}
-        data={playlists}
-        renderItem={({ item }) => <ListItem item={item} onPress={handleItemPress} onHeartbeatPress={handleHeartbeatPress} />}
-        keyExtractor={item => String(item.id)}
-        refreshControl={
-          <RefreshControl
-            colors={[theme['c-primary']]}
-            refreshing={loading}
-            onRefresh={onRefresh}
-          />
-        }
-      />
+      <View style={[{ flex: 1 }, selectedPlaylist ? { opacity: 0 } : null]} pointerEvents={selectedPlaylist ? 'none' : 'auto'}>
+        <FlatList
+          onScrollBeginDrag={Keyboard.dismiss}
+          data={playlists}
+          renderItem={({ item }) => <ListItem item={item} onPress={handleItemPress} onHeartbeatPress={handleHeartbeatPress} />}
+          keyExtractor={item => String(item.id)}
+          refreshControl={
+            <RefreshControl
+              colors={[theme['c-primary']]}
+              refreshing={loading}
+              onRefresh={onRefresh}
+            />
+          }
+        />
+      </View>
+      {selectedPlaylist && (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: theme['c-content-background'] }]}>
+          <SonglistDetail info={selectedPlaylist} onBack={handleBack} initialScrollToInfo={scrollToMusicInfo} />
+        </View>
+      )}
     </View>
   )
 })

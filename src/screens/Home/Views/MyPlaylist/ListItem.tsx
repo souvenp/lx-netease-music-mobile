@@ -44,7 +44,7 @@ export default memo(({ item, onPress, onHeartbeatPress }: { item: any, onPress: 
     <TouchableOpacity style={styles.container} onPress={handlePress}>
       <Image url={item.coverImgUrl} style={styles.artwork} />
       <View style={styles.info}>
-        <Text size={16} numberOfLines={1}>{item.name}</Text>
+        <Text size={16} numberOfLines={2}>{item.name}</Text>
         {item.trackCount > 0 ? (
           <Text size={12} color={theme['c-font-label']}>{item.trackCount} tracks</Text>
         ) : null}

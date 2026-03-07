@@ -16,14 +16,14 @@ import { useSettingValue } from '@/store/setting/hook'
 import { useNavActiveId } from '@/store/common/hook'
 import { setNavActiveId } from '@/core/common'
 
-const Tabs = ({ 
-  activeTab, 
+const Tabs = ({
+  activeTab,
   onTabChange,
   isStylized,
   setIsStylized,
   onOpenModal
-}: { 
-  activeTab: 'songs' | 'playlists' 
+}: {
+  activeTab: 'songs' | 'playlists'
   onTabChange: (tab: 'songs' | 'playlists') => void
   isStylized: boolean
   setIsStylized: (v: boolean) => void
@@ -34,14 +34,26 @@ const Tabs = ({
     <View style={[styles.tabsContainer, { justifyContent: 'space-between', alignItems: 'center' }]}>
       {activeTab === 'songs' ? (
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <TouchableOpacity onPress={() => setIsStylized(false)} style={{ marginRight: 15 }}>
-            <Text color={!isStylized ? theme['c-primary-font-active'] : theme['c-font']} size={14} style={!isStylized && { fontWeight: 'bold' }}>默认推荐</Text>
+          <TouchableOpacity
+            onPress={() => setIsStylized(false)}
+            style={[
+              { marginRight: 5, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 0, borderWidth: BorderWidths.normal },
+              !isStylized ? { borderColor: theme['c-primary-font'] } : { borderColor: 'transparent' }
+            ]}
+          >
+            <Text color={!isStylized ? theme['c-primary-font'] : theme['c-font']} size={13}>默认推荐</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => {
-            if (!isStylized) setIsStylized(true)
-            else onOpenModal()
-          }}>
-            <Text color={isStylized ? theme['c-primary-font-active'] : theme['c-font']} size={14} style={isStylized && { fontWeight: 'bold' }}>
+          <TouchableOpacity
+            onPress={() => {
+              if (!isStylized) setIsStylized(true)
+              else onOpenModal()
+            }}
+            style={[
+              { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 0, borderWidth: BorderWidths.normal },
+              isStylized ? { borderColor: theme['c-primary-font'] } : { borderColor: 'transparent' }
+            ]}
+          >
+            <Text color={isStylized ? theme['c-primary-font'] : theme['c-font']} size={13}>
               {isStylized ? '风格化推荐 ▾' : '风格化推荐'}
             </Text>
           </TouchableOpacity>
@@ -80,7 +92,7 @@ export default memo(() => {
       if (data) setStylizedSelection(data)
     })
   }, [])
-  
+
   const pagerViewRef = useRef<PagerView>(null)
   const [selectedPlaylist, setSelectedPlaylist] = useState<ListInfoItem | null>(null)
   const selectedPlaylistRef = useRef(selectedPlaylist)
@@ -151,42 +163,45 @@ export default memo(() => {
     return () => subscription.remove()
   }, [])
 
-  if (selectedPlaylist) {
-    return <SonglistDetail info={selectedPlaylist} onBack={handleCloseDetail} initialScrollToInfo={null} />
-  }
-
   return (
-    <View style={{ flex: 1 }} {...(isHomePageScrollEnabled ? panResponder.panHandlers : {})}>
-      <Tabs 
-        activeTab={activeTab} 
-        onTabChange={handleTabChange} 
-        isStylized={isStylized}
-        setIsStylized={setIsStylized}
-        onOpenModal={() => setShowStylizedModal(true)}
-      />
-      <PagerView
-        ref={pagerViewRef}
-        style={{ flex: 1 }}
-        initialPage={activeTab === 'songs' ? 0 : 1} // <-- 核心修改在这里
-        onPageSelected={onPageSelected}
-        scrollEnabled={!isHomePageScrollEnabled}
-      >
-        <View key="1">
-          {(activeTab === 'songs') && <RecSongs isStylized={isStylized} stylizedSelection={stylizedSelection} />}
+    <View style={{ flex: 1 }}>
+      <View style={[{ flex: 1 }, selectedPlaylist ? { opacity: 0 } : null]} pointerEvents={selectedPlaylist ? 'none' : 'auto'} {...(isHomePageScrollEnabled ? panResponder.panHandlers : {})}>
+        <Tabs
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          isStylized={isStylized}
+          setIsStylized={setIsStylized}
+          onOpenModal={() => setShowStylizedModal(true)}
+        />
+        <PagerView
+          ref={pagerViewRef}
+          style={{ flex: 1 }}
+          initialPage={activeTab === 'songs' ? 0 : 1} // <-- 核心修改在这里
+          onPageSelected={onPageSelected}
+          scrollEnabled={!isHomePageScrollEnabled}
+        >
+          <View key="1">
+            {(activeTab === 'songs') && <RecSongs isStylized={isStylized} stylizedSelection={stylizedSelection} />}
+          </View>
+          <View key="2">
+            <RecPlaylists onOpenDetail={handleOpenDetail} />
+          </View>
+        </PagerView>
+        <StylizedModal
+          visible={showStylizedModal}
+          onClose={() => setShowStylizedModal(false)}
+          onConfirm={(selection) => {
+            setStylizedSelection(selection)
+            setShowStylizedModal(false)
+            setIsStylized(true)
+          }}
+        />
+      </View>
+      {selectedPlaylist && (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: theme['c-content-background'] }]}>
+          <SonglistDetail info={selectedPlaylist} onBack={handleCloseDetail} initialScrollToInfo={null} />
         </View>
-        <View key="2">
-          <RecPlaylists onOpenDetail={handleOpenDetail} />
-        </View>
-      </PagerView>
-      <StylizedModal 
-        visible={showStylizedModal} 
-        onClose={() => setShowStylizedModal(false)} 
-        onConfirm={(selection) => {
-          setStylizedSelection(selection)
-          setShowStylizedModal(false)
-          setIsStylized(true)
-        }} 
-      />
+      )}
     </View>
   )
 })

@@ -45,9 +45,9 @@ export default () => {
             style={{
               ...styles.buttonText,
               borderBottomColor:
-                type == t.id ? theme['c-primary-background-active'] : 'transparent',
+                type == t.id ? theme['c-font-label'] : 'transparent',
             }}
-            color={type == t.id ? theme['c-primary-font-active'] : theme['c-font']}
+            color={type == t.id ? theme['c-font-label'] : theme['c-font']}
           >
             {t.label}
           </Text>

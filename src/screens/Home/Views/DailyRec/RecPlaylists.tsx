@@ -4,11 +4,12 @@ import { useSettingValue } from '@/store/setting/hook'
 import { toast } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
 import wyApi from '@/utils/musicSdk/wy/dailyRec'
+import wy from '@/utils/musicSdk/wy/index'
 import ListItem from '../MyPlaylist/ListItem'
 import { getDailyRecPlaylistsCache, setDailyRecPlaylistsCache, clearDailyRecPlaylistsCache } from '@/core/cache'
 
 export default memo(({ onOpenDetail }: { onOpenDetail: (info: any) => void }) => {
-  const [playlists, setPlaylists] = useState([])
+  const [playlists, setPlaylists] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const cookie = useSettingValue('common.wy_cookie')
   const theme = useTheme()
@@ -30,7 +31,7 @@ export default memo(({ onOpenDetail }: { onOpenDetail: (info: any) => void }) =>
     }
 
     setLoading(true)
-    wyApi.getRecPlaylists(cookie).then(list => {
+    wyApi.getRecPlaylists(cookie).then(async list => {
       const adaptedList =  list
         // .filter(item => !item.name.includes('雷达'))
         .map(item => ({
@@ -42,6 +43,24 @@ export default memo(({ onOpenDetail }: { onOpenDetail: (info: any) => void }) =>
           playCount: item.playcount,
           description: item.copywriter,
         }))
+
+      let isFirstRadarFound = false
+      for (let i = 0; i < adaptedList.length; i++) {
+        if (!isFirstRadarFound && adaptedList[i].name.includes('私人雷达') && adaptedList[i].trackCount === 0) {
+          isFirstRadarFound = true
+          try {
+            const detail = await wy.songList.getListDetail(String(adaptedList[i].id), 1)
+            if (detail && detail.info) {
+              adaptedList[i].name = detail.info.name || adaptedList[i].name
+              adaptedList[i].trackCount = detail.total != null ? detail.total : adaptedList[i].trackCount
+              adaptedList[i].coverImgUrl = detail.info.img || adaptedList[i].coverImgUrl
+            }
+          } catch (e) {
+            console.log('Failed to fetch radar detail:', e)
+          }
+        }
+      }
+
       setPlaylists(adaptedList)
       setDailyRecPlaylistsCache(adaptedList)
     }).catch(err => {
