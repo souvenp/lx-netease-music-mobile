@@ -130,8 +130,8 @@ export default memo(({ visible, onClose, onConfirm }: StylizedModalProps) => {
       animationType="fade"
       onRequestClose={onClose}
     >
-      <View style={[styles.overlay, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
-        <View style={[styles.container, { backgroundColor: theme['c-content-background'] }]}>
+      <TouchableOpacity activeOpacity={1} onPress={onClose} style={[styles.overlay, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
+        <TouchableOpacity activeOpacity={1} style={[styles.container, { backgroundColor: theme['c-content-background'] }]}>
           <View style={[styles.header, { borderBottomColor: theme['c-border-background'] }]}>
             <Text size={18} style={{ fontWeight: 'bold', color: theme['c-font'] }}>选择风格标签</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
@@ -144,19 +144,19 @@ export default memo(({ visible, onClose, onConfirm }: StylizedModalProps) => {
             <View style={[styles.categoryList, { borderRightColor: theme['c-border-background'] }]}>
               {Object.keys(CATEGORIES).map(name => {
                 const isSelected = selectedCategoryName === name
-                const isThemeSupported = Object.keys(theme).includes('c-primary-background-active');
+                const isThemeSupported = Object.keys(theme).includes('c-button-background');
                 return (
                   <TouchableOpacity
                     key={name}
                     style={[
                       styles.categoryItem,
-                      isSelected && { backgroundColor: isThemeSupported ? theme['c-primary-background-active'] : 'rgba(0,0,0,0.1)' }
+                      isSelected && { backgroundColor: isThemeSupported ? theme['c-button-background'] : 'rgba(0,0,0,0.1)' }
                     ]}
                     onPress={() => handleSelectCategory(name as keyof typeof CATEGORIES)}
                   >
                     <Text
                       size={14}
-                      color={isSelected ? theme['c-primary-font-active'] : theme['c-font']}
+                      color={isSelected ? theme['c-button-font'] : theme['c-font']}
                       style={isSelected ? { fontWeight: 'bold' } : {}}
                     >
                       {name}
@@ -174,20 +174,20 @@ export default memo(({ visible, onClose, onConfirm }: StylizedModalProps) => {
               <View style={styles.tagsContainer}>
                 {Object.entries(currentTags).map(([tagName, tagId]) => {
                   const isSelected = selectedTags.includes(tagId as number)
-                  const isThemeSupported = Object.keys(theme).includes('c-primary-background-active');
+                  const isThemeSupported = Object.keys(theme).includes('c-button-background');
                   return (
                     <TouchableOpacity
                       key={tagId.toString()}
                       style={[
                         styles.tagItem,
                         { borderColor: Object.keys(theme).includes('c-border-background') ? theme['c-border-background'] : '#ddd' },
-                        isSelected && { borderColor: theme['c-primary-font-active'], backgroundColor: isThemeSupported ? theme['c-primary-background-active'] : 'rgba(0,0,0,0.1)' }
+                        isSelected && { borderColor: theme['c-button-background'], backgroundColor: isThemeSupported ? theme['c-button-background'] : 'rgba(0,0,0,0.1)' }
                       ]}
                       onPress={() => handleSelectTag(tagId as number)}
                     >
                       <Text
                         size={14}
-                        color={isSelected ? theme['c-primary-font-active'] : theme['c-font']}
+                        color={isSelected ? theme['c-button-font'] : theme['c-font']}
                       >
                         {tagName}
                       </Text>
@@ -205,15 +205,15 @@ export default memo(({ visible, onClose, onConfirm }: StylizedModalProps) => {
             <TouchableOpacity 
               style={[
                 styles.btn, 
-                { backgroundColor: Object.keys(theme).includes('c-primary-background-active') ? theme['c-primary-background-active'] : '#f0f0f0' }
+                { backgroundColor: Object.keys(theme).includes('c-button-background') ? theme['c-button-background'] : '#f0f0f0' }
               ]} 
               onPress={handleConfirm}
             >
-              <Text color={theme['c-primary-font-active']}>确定</Text>
+              <Text color={theme['c-button-font']}>确定</Text>
             </TouchableOpacity>
           </View>
-        </View>
-      </View>
+        </TouchableOpacity>
+      </TouchableOpacity>
     </Modal>
   )
 })

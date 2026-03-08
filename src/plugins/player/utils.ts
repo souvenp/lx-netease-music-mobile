@@ -272,6 +272,7 @@ export const updateOptions = async (
       Capability.Stop,
       Capability.SeekTo,
       Capability.SkipToPrevious,
+      Capability.SkipToNext,
       Capability.JumpBackward,
       Capability.JumpForward,
     ],
