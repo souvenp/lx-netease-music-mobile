@@ -2,7 +2,7 @@ import { useMemo, useRef, useState, forwardRef, useImperativeHandle } from 'reac
 import { FlatList, type FlatListProps, RefreshControl, View } from 'react-native'
 
 // import { useMusicList } from '@/store/list/hook'
-import CommentFloor from './CommentFloor'
+import CommentFloor, { type CommentFloorActions } from './CommentFloor'
 import { createStyle } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
 import { type Comment } from '../utils'
@@ -14,6 +14,7 @@ type FlatListType = FlatListProps<Comment>
 export interface ListProps {
   onRefresh: () => void
   onLoadMore: () => void
+  actions?: CommentFloorActions
 }
 export interface ListType {
   setList: (list: Comment[]) => void
@@ -22,7 +23,7 @@ export interface ListType {
 }
 export type Status = 'loading' | 'refreshing' | 'end' | 'error' | 'idle'
 
-const List = forwardRef<ListType, ListProps>(({ onRefresh, onLoadMore }, ref) => {
+const List = forwardRef<ListType, ListProps>(({ onRefresh, onLoadMore, actions }, ref) => {
   // const t = useI18n()
   const theme = useTheme()
   const flatListRef = useRef<FlatList>(null)
@@ -48,7 +49,15 @@ const List = forwardRef<ListType, ListProps>(({ onRefresh, onLoadMore }, ref) =>
     onLoadMore()
   }
 
-  const renderItem: FlatListType['renderItem'] = ({ item }) => <CommentFloor comment={item} />
+  const renderItem: FlatListType['renderItem'] = ({ item }) => (
+    <CommentFloor
+      comment={item}
+      onReply={actions?.onReply}
+      onDelete={actions?.onDelete}
+      canDelete={actions?.canDelete}
+      showActions={actions?.showActions}
+    />
+  )
 
   const getkey: FlatListType['keyExtractor'] = (item) => item.id
 

@@ -1,5 +1,5 @@
 import { memo, useState, useMemo, useCallback } from 'react'
-import { StyleSheet, View } from 'react-native'
+import { StyleSheet, View, TouchableOpacity } from 'react-native'
 import { BorderWidths } from '@/theme'
 import { Icon } from '@/components/common/Icon'
 import { createStyle } from '@/utils/tools'
@@ -17,7 +17,24 @@ const defaultUser = require('@/resources/images/defaultUser.jpg')
 const GAP = 12
 const avatarWidth = scaleSizeW(36)
 
-const CommentFloor = memo(({ comment, isLast }: { comment: Comment; isLast?: boolean }) => {
+export interface CommentFloorActions {
+  onReply?: (comment: Comment) => void
+  onDelete?: (comment: Comment) => void
+  canDelete?: (comment: Comment) => boolean
+  showActions?: boolean
+}
+
+const CommentFloor = memo(({
+  comment,
+  isLast,
+  onReply,
+  onDelete,
+  canDelete,
+  showActions,
+}: {
+  comment: Comment
+  isLast?: boolean
+} & CommentFloorActions) => {
   const theme = useTheme()
   const [isAvatarError, setIsAvatarError] = useState(false)
   const { onLayout, width } = useLayout()
@@ -27,17 +44,33 @@ const CommentFloor = memo(({ comment, isLast }: { comment: Comment; isLast?: boo
     setIsAvatarError(true)
   }, [])
 
+  const handleReply = useCallback(() => {
+    onReply?.(comment)
+  }, [onReply, comment])
+
+  const handleDelete = useCallback(() => {
+    onDelete?.(comment)
+  }, [onDelete, comment])
+
   const replyComments = useMemo(() => {
     if (!comment.reply?.length) return null
     const endIndex = comment.reply.length - 1
     return (
       <View style={{ ...styles.replyFloor, borderTopColor: theme['c-list-header-border-bottom'] }}>
         {comment.reply.map((c, index) => (
-          <CommentFloor comment={c} isLast={index === endIndex} key={`${comment.id}_${c.id}`} />
+          <CommentFloor
+            comment={c}
+            isLast={index === endIndex}
+            key={`${comment.id}_${c.id}`}
+            onReply={onReply}
+            onDelete={onDelete}
+            canDelete={canDelete}
+            showActions={showActions}
+          />
         ))}
       </View>
     )
-  }, [])
+  }, [onReply, onDelete, canDelete, showActions])
 
   const likedCount = useMemo(() => {
     if (comment.likedCount == null) return null
@@ -50,6 +83,8 @@ const CommentFloor = memo(({ comment, isLast }: { comment: Comment; isLast?: boo
       </View>
     )
   }, [])
+
+  const showDeleteBtn = showActions && canDelete?.(comment)
 
   return (
     <View
@@ -93,6 +128,24 @@ const CommentFloor = memo(({ comment, isLast }: { comment: Comment; isLast?: boo
               {comment.images.map((url, index) => (
                 <CommentImage key={String(index)} url={url} maxWidth={width} />
               ))}
+            </View>
+          ) : null}
+          {showActions ? (
+            <View style={styles.actionBar}>
+              <TouchableOpacity onPress={handleReply} style={styles.actionBtn}>
+                <Icon name="comment" size={14} color={theme['c-450']} />
+                <Text size={12} color={theme['c-450']} style={styles.actionText}>
+                  {t('comment_reply' as any)}
+                </Text>
+              </TouchableOpacity>
+              {showDeleteBtn ? (
+                <TouchableOpacity onPress={handleDelete} style={styles.actionBtn}>
+                  <Icon name="close" size={14} color={theme['c-450']} />
+                  <Text size={12} color={theme['c-450']} style={styles.actionText}>
+                    {t('comment_delete' as any)}
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
           ) : null}
         </View>
@@ -153,6 +206,19 @@ const styles = createStyle({
     // backgroundColor: 'rgba(0,0,0,0.1)',
     borderStyle: 'dashed',
   },
+  actionBar: {
+    flexDirection: 'row',
+    marginTop: 8,
+    gap: 16,
+  },
+  actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 2,
+  },
+  actionText: {
+    marginLeft: 4,
+  },
 })
 
 const stylesRaw = StyleSheet.create({
@@ -164,3 +230,4 @@ const stylesRaw = StyleSheet.create({
 })
 
 export default CommentFloor
+

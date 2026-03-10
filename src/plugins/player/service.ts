@@ -45,9 +45,15 @@ const registerPlaybackService = async () => {
     void playNext()
   })
 
-  // SkipToPrevious slot is now used for LRC toggle
+  // SkipToPrevious -> Previous track (standard)
   TrackPlayer.addEventListener(TPEvent.RemotePrevious, () => {
-    // console.log('remote-previous -> toggle lyric')
+    // console.log('remote-previous -> prev track')
+    void playPrev()
+  })
+
+  // JumpBackward (Rewind slot) -> LRC toggle
+  TrackPlayer.addEventListener(TPEvent.RemoteJumpBackward, () => {
+    // console.log('remote-jump-backward -> toggle lyric')
     const isEnable = !settingState.setting['desktopLyric.enable']
     if (isEnable) {
       void showDesktopLyric().then(() => {
@@ -58,18 +64,6 @@ const registerPlaybackService = async () => {
         updateSetting({ 'desktopLyric.enable': false })
       })
     }
-  })
-
-  // JumpBackward (Rewind slot) is now used for previous track
-  TrackPlayer.addEventListener(TPEvent.RemoteJumpBackward, () => {
-    // console.log('remote-jump-backward -> prev track')
-    void playPrev()
-  })
-
-  // JumpForward (FastForward slot) is now used for next track
-  TrackPlayer.addEventListener(TPEvent.RemoteJumpForward, () => {
-    // console.log('remote-jump-forward -> next track')
-    void playNext()
   })
 
   // Stop is triggered by notification swipe-to-dismiss

@@ -2,14 +2,19 @@ import { useEffect, useRef } from 'react'
 import { filterList, getHotComment } from './utils'
 import music from '@/utils/musicSdk'
 import List, { type ListType } from './components/List'
+import { type CommentFloorActions } from './components/CommentFloor'
 const limit = 15
 
 export default ({
   musicInfo,
   onUpdateTotal,
+  actions,
+  refreshKey,
 }: {
   musicInfo: LX.Music.MusicInfoOnline
   onUpdateTotal: (total: number) => void
+  actions?: CommentFloorActions
+  refreshKey?: number
 }) => {
   // const [isLoading, setIsLoading] = useState(false)
   const listRef = useRef<ListType>(null)
@@ -108,5 +113,15 @@ export default ({
     handleShowComment(musicInfo)
   }, [musicInfo.id])
 
-  return <List ref={listRef} onLoadMore={handleListLoadMore} onRefresh={handleListRefresh} />
+  // Force refresh when refreshKey changes (after send/delete)
+  const isFirstRender = useRef(true)
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      return
+    }
+    handleListRefresh()
+  }, [refreshKey])
+
+  return <List ref={listRef} onLoadMore={handleListLoadMore} onRefresh={handleListRefresh} actions={actions} />
 }

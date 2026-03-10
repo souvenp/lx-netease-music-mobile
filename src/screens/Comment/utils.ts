@@ -74,3 +74,25 @@ export const filterList = (list: Comment[]) => {
     return true
   })
 }
+
+export const sendComment = async (
+  songmid: string,
+  content: string
+): Promise<any> => {
+  return (music as any).wy.comment.sendComment(songmid, content)
+}
+
+export const replyComment = async (
+  songmid: string,
+  content: string,
+  commentId: string
+): Promise<any> => {
+  return (music as any).wy.comment.replyComment(songmid, content, commentId)
+}
+
+export const deleteComment = async (
+  songmid: string,
+  commentId: string
+): Promise<any> => {
+  return (music as any).wy.comment.deleteComment(songmid, commentId)
+}

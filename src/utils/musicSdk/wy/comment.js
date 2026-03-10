@@ -1,6 +1,7 @@
 import { httpFetch } from '../../request'
 import { weapi } from './utils/crypto'
 import { dateFormat2 } from '../../index'
+import settingState from '@/store/setting/state'
 
 const emojis = [
   ['大笑', '😃'],
@@ -205,19 +206,107 @@ export default {
       let replyData = item.beReplied && item.beReplied[0]
       return replyData
         ? {
-            id: item.commentId,
-            rootId: replyData.beRepliedCommentId,
-            text: replyData.content ? applyEmoji(replyData.content) : '',
-            time: item.time,
-            timeStr: null,
-            location: replyData.ipLocation?.location,
-            userName: replyData.user.nickname,
-            avatar: replyData.user.avatarUrl,
-            userId: replyData.user.userId,
-            likedCount: null,
-            reply: [data],
-          }
+          id: item.commentId,
+          rootId: replyData.beRepliedCommentId,
+          text: replyData.content ? applyEmoji(replyData.content) : '',
+          time: item.time,
+          timeStr: null,
+          location: replyData.ipLocation?.location,
+          userName: replyData.user.nickname,
+          avatar: replyData.user.avatarUrl,
+          userId: replyData.user.userId,
+          likedCount: null,
+          reply: [data],
+        }
         : data
     })
+  },
+  async sendComment(songmid, content, retryNum = 0) {
+    const cookie = settingState.setting['common.wy_cookie']
+    if (!cookie) throw new Error('未设置Cookie')
+    const threadId = 'R_SO_4_' + songmid
+    const csrfToken = (cookie.match(/_csrf=([^(;|$)]+)/) || [])[1]
+    const requestObj = httpFetch('https://music.163.com/weapi/resource/comments/add', {
+      method: 'post',
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36',
+        origin: 'https://music.163.com',
+        Referer: 'https://music.163.com',
+        cookie,
+      },
+      form: weapi({
+        threadId,
+        content,
+        csrf_token: csrfToken || '',
+      }),
+    })
+    try {
+      const { body, statusCode } = await requestObj.promise
+      if (statusCode != 200 || body.code !== 200) throw new Error(body.message || '发送评论失败')
+      return body
+    } catch (error) {
+      if (retryNum < 2) return this.sendComment(songmid, content, retryNum + 1)
+      throw error
+    }
+  },
+  async replyComment(songmid, content, commentId, retryNum = 0) {
+    const cookie = settingState.setting['common.wy_cookie']
+    if (!cookie) throw new Error('未设置Cookie')
+    const threadId = 'R_SO_4_' + songmid
+    const csrfToken = (cookie.match(/_csrf=([^(;|$)]+)/) || [])[1]
+    const requestObj = httpFetch('https://music.163.com/weapi/resource/comments/reply', {
+      method: 'post',
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36',
+        origin: 'https://music.163.com',
+        Referer: 'https://music.163.com',
+        cookie,
+      },
+      form: weapi({
+        threadId,
+        content,
+        commentId,
+        csrf_token: csrfToken || '',
+      }),
+    })
+    try {
+      const { body, statusCode } = await requestObj.promise
+      if (statusCode != 200 || body.code !== 200) throw new Error(body.message || '回复评论失败')
+      return body
+    } catch (error) {
+      if (retryNum < 2) return this.replyComment(songmid, content, commentId, retryNum + 1)
+      throw error
+    }
+  },
+  async deleteComment(songmid, commentId, retryNum = 0) {
+    const cookie = settingState.setting['common.wy_cookie']
+    if (!cookie) throw new Error('未设置Cookie')
+    const threadId = 'R_SO_4_' + songmid
+    const csrfToken = (cookie.match(/_csrf=([^(;|$)]+)/) || [])[1]
+    const requestObj = httpFetch('https://music.163.com/weapi/resource/comments/delete', {
+      method: 'post',
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36',
+        origin: 'https://music.163.com',
+        Referer: 'https://music.163.com',
+        cookie,
+      },
+      form: weapi({
+        threadId,
+        commentId,
+        csrf_token: csrfToken || '',
+      }),
+    })
+    try {
+      const { body, statusCode } = await requestObj.promise
+      if (statusCode != 200 || body.code !== 200) throw new Error(body.message || '删除评论失败')
+      return body
+    } catch (error) {
+      if (retryNum < 2) return this.deleteComment(songmid, commentId, retryNum + 1)
+      throw error
+    }
   },
 }

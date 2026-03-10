@@ -260,10 +260,10 @@ export const updateOptions = async (
 ) => {
   // console.log('updateOptions lyric:', isLyricEnabled)
   // Button slot mapping:
-  // Position 1: SkipToPrevious → LRC lyrics toggle
-  // Position 2: Rewind         → Previous track (custom icon)
+  // Position 1: Rewind         → LRC lyrics toggle (custom icon)
+  // Position 2: SkipToPrevious → Previous track (standard)
   // Position 3: Play/Pause     → Play/Pause
-  // Position 4: FastForward    → Next track (custom icon)
+  // Position 4: SkipToNext     → Next track (standard)
   // Stop is not shown in notification, but handles swipe-to-dismiss → exit app
   return TrackPlayer.updateOptions({
     capabilities: [
@@ -274,33 +274,26 @@ export const updateOptions = async (
       Capability.SkipToPrevious,
       Capability.SkipToNext,
       Capability.JumpBackward,
-      Capability.JumpForward,
     ],
 
     notificationCapabilities: [
-      Capability.SkipToPrevious,
       Capability.JumpBackward,
+      Capability.SkipToPrevious,
       Capability.Play,
       Capability.Pause,
-      Capability.JumpForward,
+      Capability.SkipToNext,
     ],
 
     compactCapabilities: [
       Capability.SkipToPrevious,
       Capability.Play,
       Capability.Pause,
-      Capability.JumpForward,
+      Capability.SkipToNext,
     ],
 
-    // LRC toggle icon on SkipToPrevious slot
+    // LRC toggle icon on Rewind slot
     // @ts-expect-error - using native drawable resource name
-    previousIcon: { uri: isLyricEnabled ? 'ic_lyric_on' : 'ic_lyric_off' },
-    // Previous track icon on Rewind slot
-    // @ts-expect-error - using native drawable resource name
-    rewindIcon: { uri: 'previous' },
-    // Next track icon on FastForward slot
-    // @ts-expect-error - using native drawable resource name
-    forwardIcon: { uri: 'next' },
+    rewindIcon: { uri: isLyricEnabled ? 'ic_lyric_on' : 'ic_lyric_off' },
   })
 }
 
