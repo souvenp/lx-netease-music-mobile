@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useImperativeHandle, useRef, useState } from 'react'
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import {
   DrawerLayoutAndroid,
   type DrawerLayoutAndroidProps,
@@ -6,7 +6,8 @@ import {
   type LayoutChangeEvent,
 } from 'react-native'
 // import { getWindowSise } from '@/utils/tools'
-import { usePageVisible } from '@/store/common/hook'
+import { usePageVisible, useBgPic } from '@/store/common/hook'
+import { useSettingValue } from '@/store/setting/hook'
 import { type COMPONENT_IDS } from '@/config/constant'
 
 interface Props extends DrawerLayoutAndroidProps {
@@ -28,12 +29,20 @@ const DrawerLayoutFixed = forwardRef<DrawerLayoutFixedType, Props>(
     const [drawerWidth, setDrawerWidth] = useState(0)
     const changedRef = useRef({ width: 0, changed: false })
 
+    const bgPic = useBgPic()
+    const dynamicBg = useSettingValue('theme.dynamicBg')
+
     const fixDrawerWidth = useCallback(() => {
       if (!changedRef.current.width) return
       changedRef.current.changed = true
       // console.log('usePageVisible', visible, changedRef.current.width)
       setW(changedRef.current.width - 1)
     }, [])
+
+    useEffect(() => {
+      // 当背景图片或动态背景设置改变时，重新渲染以修复原生 DrawerLayoutAndroid 背景丢失/黑屏的问题
+      fixDrawerWidth()
+    }, [bgPic, dynamicBg, fixDrawerWidth])
 
     // 修复 DrawerLayoutAndroid 在导航到其他屏幕再返回后无法打开的问题
     usePageVisible(

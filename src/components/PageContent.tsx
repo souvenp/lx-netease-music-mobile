@@ -46,31 +46,7 @@ export default ({ children }: Props) => {
   // }
   // console.log('render page content')
 
-  const themeComponent = useMemo(
-    () => (
-      <View style={{ flex: 1, overflow: 'hidden' }}>
-        <ImageBackground
-          style={{
-            position: 'absolute',
-            left: 0,
-            top: 0,
-            height: windowSize.height,
-            width: windowSize.width,
-            backgroundColor: theme['c-content-background'],
-          }}
-          source={theme['bg-image']}
-          resizeMode="cover"
-        ></ImageBackground>
-        <View
-          style={{ flex: 1, flexDirection: 'column', backgroundColor: theme['c-main-background'] }}
-        >
-          {children}
-        </View>
-      </View>
-    ),
-    [children, theme, windowSize.height, windowSize.width]
-  )
-  const picComponent = useMemo(() => {
+  const contentComponent = useMemo(() => {
     return (
       <View style={{ flex: 1, overflow: 'hidden' }}>
         <ImageBackground
@@ -82,20 +58,30 @@ export default ({ children }: Props) => {
             width: windowSize.width,
             backgroundColor: theme['c-content-background'],
           }}
-          source={{ uri: pic!, headers: defaultHeaders }}
+          source={pic ? { uri: pic, headers: defaultHeaders } : theme['bg-image']}
           resizeMode="cover"
-          blurRadius={BLUR_RADIUS}
+          blurRadius={pic ? BLUR_RADIUS : undefined}
         >
-          <View
-            style={{
-              flex: 1,
-              flexDirection: 'column',
-              backgroundColor: theme['c-content-background'],
-              opacity: picOpacity / 100,
-            }}
-          ></View>
+          {pic ? (
+            <View
+              style={{
+                flex: 1,
+                flexDirection: 'column',
+                backgroundColor: theme['c-content-background'],
+                opacity: picOpacity / 100,
+              }}
+            ></View>
+          ) : null}
         </ImageBackground>
-        <View style={{ flex: 1, flexDirection: 'column' }}>{children}</View>
+        <View
+          style={{
+            flex: 1,
+            flexDirection: 'column',
+            backgroundColor: pic ? undefined : theme['c-main-background'],
+          }}
+        >
+          {children}
+        </View>
       </View>
     );
   }, [children, pic, theme, windowSize.height, windowSize.width, BLUR_RADIUS, picOpacity]);
@@ -103,7 +89,7 @@ export default ({ children }: Props) => {
   return (
     <>
       <SizeView />
-      {pic ? picComponent : themeComponent}
+      {contentComponent}
     </>
   );
 }
