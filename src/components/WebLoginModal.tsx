@@ -11,8 +11,8 @@ import wyApi from '@/utils/musicSdk/wy/user';
 import CookieManager from '@react-native-cookies/cookies';
 
 
-const LOGIN_URL = 'https://music.163.com/#/login';
-const SUCCESS_URL_FLAG = 'discover';
+const LOGIN_URL = 'https://music.163.com/m/login';
+const SUCCESS_URL_FLAG = 'music.163.com';
 
 export interface WebLoginModalType {
   show: () => void;
@@ -57,7 +57,9 @@ export default forwardRef<WebLoginModalType, {}>((props, ref) => {
 
   const handleNavigationStateChange = async (navState: WebViewNavigation) => {
     console.log('Web登录: 页面导航状态变化:', navState.url);
-    if (navState.url.includes(SUCCESS_URL_FLAG) || navState.url == 'https://music.163.com/') {
+    const url = navState.url;
+    const isLoggedIn = url.includes(SUCCESS_URL_FLAG) && !url.includes('/login') && !url.includes('/m/login');
+    if (isLoggedIn) {
       console.log('Web登录: extracting cookies via CookieManager');
       try {
         const cookies = await CookieManager.get(navState.url, true);
@@ -109,7 +111,7 @@ export default forwardRef<WebLoginModalType, {}>((props, ref) => {
           onMessage={handleMessage}
           injectedJavaScript={injectedJavaScript}
           onNavigationStateChange={handleNavigationStateChange}
-          userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36 Edg/108.0.1462.54"
+          userAgent="Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
         />
       </View>
     </Modal>
