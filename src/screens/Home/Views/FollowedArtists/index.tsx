@@ -13,7 +13,7 @@ export default memo(() => {
   const theme = useTheme()
   const onRefresh = useCallback(() => {
     setLoading(true)
-    wyApi.getSublist(100, 0)
+    wyApi.getAllSublist()
       .then(artists => {
         setWyFollowedArtists(artists)
       })

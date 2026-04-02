@@ -10,6 +10,7 @@ import {
 } from './screenNames'
 
 import themeState from '@/store/theme/state'
+import playerState from '@/store/player/state'
 import { NAV_SHEAR_NATIVE_IDS } from '@/config/constant'
 import { getStatusBarStyle } from './utils'
 import { windowSizeTools } from '@/utils/windowSizeTools'
@@ -122,6 +123,7 @@ export function pushPlayDetailScreen(componentId: string, skipAnimation = false)
   */
   requestAnimationFrame(() => {
     const theme = themeState.theme
+    const hasPic = !!playerState.musicInfo.pic
 
     void Navigation.push(componentId, {
       component: {
@@ -148,7 +150,7 @@ export function pushPlayDetailScreen(componentId: string, skipAnimation = false)
           animations: {
             push: skipAnimation
               ? {}
-              : {
+              : hasPic ? {
                 sharedElementTransitions: [
                   {
                     fromId: NAV_SHEAR_NATIVE_IDS.playDetail_pic,
@@ -160,33 +162,35 @@ export function pushPlayDetailScreen(componentId: string, skipAnimation = false)
                   {
                     id: NAV_SHEAR_NATIVE_IDS.playDetail_header,
                     alpha: {
-                      from: 0, // We don't declare 'to' value as that is the element's current alpha value, here we're essentially animating from 0 to 1
+                      from: 0,
                       duration: 300,
                     },
                     translationY: {
-                      from: -32, // Animate translationY from 16dp to 0dp
+                      from: -32,
                       duration: 300,
                     },
                   },
                   {
                     id: NAV_SHEAR_NATIVE_IDS.playDetail_player,
                     alpha: {
-                      from: 0, // We don't declare 'to' value as that is the element's current alpha value, here we're essentially animating from 0 to 1
+                      from: 0,
                       duration: 300,
                     },
                     translationY: {
-                      from: 32, // Animate translationY from 16dp to 0dp
+                      from: 32,
                       duration: 300,
                     },
                   },
                 ],
-                // content: {
-                //   translationX: {
-                //     from: windowSizeTools.getSize().width,
-                //     to: 0,
-                //     duration: 300,
-                //   },
-                // },
+              }
+              : {
+                content: {
+                  translationX: {
+                    from: windowSizeTools.getSize().width,
+                    to: 0,
+                    duration: 300,
+                  },
+                },
               },
             pop: {
               content: {

@@ -375,6 +375,38 @@ export default {
   },
 
   /**
+   * 获取所有关注的歌手（自动分页）
+   */
+  async getAllSublist() {
+    let allArtists = [];
+    let offset = 0;
+    const limit = 100;
+    while (true) {
+      const artists = await this.getSublist(limit, offset);
+      allArtists = allArtists.concat(artists);
+      if (artists.length < limit) break;
+      offset += limit;
+    }
+    return allArtists;
+  },
+
+  /**
+   * 获取所有收藏的专辑（自动分页）
+   */
+  async getAllSubAlbumList() {
+    let allAlbums = [];
+    let offset = 0;
+    const limit = 100;
+    while (true) {
+      const albums = await this.getSubAlbumList(limit, offset);
+      allAlbums = allAlbums.concat(albums);
+      if (albums.length < limit) break;
+      offset += limit;
+    }
+    return allAlbums;
+  },
+
+  /**
    * 关注/取消关注歌手
    * @param {string} id 歌手ID
    * @param {boolean} isFollow true为关注, false为取消关注

@@ -79,8 +79,8 @@ export default async (setting: LX.AppSetting) => {
       wyUserApi.getUid(cookie)
         .then(uid => Promise.all([
           wyUserApi.getLikedSongList(uid, cookie),
-          wyUserApi.getSublist(100, 0),
-          wyUserApi.getSubAlbumList(),
+          wyUserApi.getAllSublist(),
+          wyUserApi.getAllSubAlbumList(),
         ]))
         .then(([likedIds, followedArtists, subscribedAlbums]) => {
           setWyLikedSongs(likedIds);

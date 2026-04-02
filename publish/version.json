@@ -1,9 +1,9 @@
 {
-  "version": "1.8.81",
-  "desc": "修复通知栏，增加发送评论",
+  "version": "1.8.82",
+  "desc": "一些问题修复",
   "history": [
     {
-      "version": "1.8.80",
+      "version": "1.8.81",
       "desc": "修改较多，见github更新日志"
     },
     {

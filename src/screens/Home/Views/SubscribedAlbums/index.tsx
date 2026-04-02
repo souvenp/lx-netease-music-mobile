@@ -22,7 +22,7 @@ export default memo(() => {
       return
     }
     setLoading(true)
-    wyApi.getSubAlbumList()
+    wyApi.getAllSubAlbumList()
       .then(albums => {
         setWySubscribedAlbums(albums);
       })
