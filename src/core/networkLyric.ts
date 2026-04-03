@@ -33,8 +33,12 @@ const startLyricSocket = () => {
     });
 
     lyricSocket.bind(BROADCAST_PORT, () => {
-      lyricSocket?.setBroadcast(true);
-      console.log('>>>>> [网络歌词] UDP 歌词广播 Socket 初始化并监听成功');
+      try {
+        lyricSocket?.setBroadcast(true);
+        console.log('>>>>> [网络歌词] UDP 歌词广播 Socket 初始化并监听成功');
+      } catch (err) {
+        console.error('>>>>> [网络歌词] 设置广播模式失败, 可能是不支持或被占用:', err);
+      }
     });
 
     lyricSocket.on('error', (err) => {
