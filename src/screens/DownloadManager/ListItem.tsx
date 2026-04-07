@@ -7,7 +7,7 @@ import ProgressBar from '@/components/player/ProgressBar';
 import { useTheme } from '@/store/theme/hook';
 import { createStyle } from '@/utils/tools';
 import {dateFormat, sizeFormate} from '@/utils/common';
-import { retryTask } from '@/core/download';
+import { resumeTask, retryTask } from '@/core/download';
 
 export default memo(({ task: initialTask, onRemove }: { task: LX.Download.DownloadTask, onRemove: (id: string) => void }) => {
   const theme = useTheme();
@@ -52,6 +52,10 @@ export default memo(({ task: initialTask, onRemove }: { task: LX.Download.Downlo
     retryTask(task.id);
   }, [task.id]);
 
+  const handleResume = useCallback(() => {
+    void resumeTask(task.id);
+  }, [task.id]);
+
   const renderStatus = () => {
     switch(task.status) {
       case 'downloading':
@@ -73,7 +77,7 @@ export default memo(({ task: initialTask, onRemove }: { task: LX.Download.Downlo
       case 'error':
         return <Text size={12} color={theme['c-error']} numberOfLines={1}>{task.errorMsg || '下载失败'}</Text>;
       case 'paused':
-        return <Text size={12} color={theme['c-font-label']}>已暂停</Text>;
+        return <Text size={12} color={theme['c-font-label']}>已中断，可继续下载</Text>;
       case 'waiting':
         return <Text size={12} color={theme['c-font-label']}>等待中...</Text>;
       default:
@@ -122,9 +126,14 @@ export default memo(({ task: initialTask, onRemove }: { task: LX.Download.Downlo
         {task.status === 'completed' && renderMetadataStatus()}
       </View>
       <View style={styles.actionsContainer}>
+        { task.status === 'paused' && (
+          <TouchableOpacity onPress={handleResume} style={styles.actionButton}>
+            <Icon name="play-outline" size={18} color={theme['c-primary']} />
+          </TouchableOpacity>
+        ) }
         { (task.status === 'error' || (task.status === 'completed' && hasMetaError)) && (
           <TouchableOpacity onPress={handleRetry} style={styles.actionButton}>
-            <Icon name="available_updates" size={18} color={theme['c-primary-font-active']} />
+            <Icon name="available_updates" size={18} color={theme['c-primary']} />
           </TouchableOpacity>
         ) }
         <TouchableOpacity onPress={() => onRemove(task.id)} style={styles.actionButton}>

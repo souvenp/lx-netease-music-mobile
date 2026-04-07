@@ -279,6 +279,31 @@ export const retryTask = (taskId: string) => {
   }
 };
 
+export const resumeTask = async (taskId: string) => {
+  const task = downloadState.tasks.find(t => t.id === taskId);
+  if (!task) return;
+  if (task.status !== 'paused') return;
+
+  if (taskQueue.some(t => t.id === task.id)) {
+    return;
+  }
+
+  try {
+    await unlink(task.filePath);
+  } catch (error) {
+    // Ignore cleanup failures so we can still restart the download.
+  }
+
+  downloadActions.updateTask(task.id, {
+    status: 'waiting',
+    errorMsg: '',
+    progress: { percent: 0, speed: '', downloaded: 0, total: 0 },
+    metadataStatus: { cover: 'pending', lyric: 'pending', tags: 'pending' },
+  });
+  taskQueue.push(task);
+  processQueue();
+};
+
 export const addTask = (musicInfo: LX.Music.MusicInfo, quality: LX.Quality, isForceCookie: boolean = false) => {
   const extension = getFileExtension(quality);
 
@@ -332,6 +357,8 @@ export const removeTask = (id: string) => {
       }
       currentDownloadTask = null;
     })
+  } else if (taskToRemove && taskToRemove.status !== 'completed' && taskToRemove.filePath) {
+    void unlink(taskToRemove.filePath).catch(() => {});
   }
   // 从队列中移除
   const taskIndex = taskQueue.findIndex(t => t.id === id);
