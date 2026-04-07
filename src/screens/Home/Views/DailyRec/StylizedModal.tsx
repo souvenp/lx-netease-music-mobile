@@ -142,32 +142,38 @@ export default memo(({ visible, onClose, onConfirm }: StylizedModalProps) => {
           <View style={styles.content}>
             {/* 左侧分类 */}
             <View style={[styles.categoryList, { borderRightColor: theme['c-border-background'] }]}>
-              {Object.keys(CATEGORIES).map(name => {
-                const isSelected = selectedCategoryName === name
-                const isThemeSupported = Object.keys(theme).includes('c-button-background');
-                return (
-                  <TouchableOpacity
-                    key={name}
-                    style={[
-                      styles.categoryItem,
-                      isSelected && { backgroundColor: isThemeSupported ? theme['c-button-background'] : 'rgba(0,0,0,0.1)' }
-                    ]}
-                    onPress={() => handleSelectCategory(name as keyof typeof CATEGORIES)}
-                  >
-                    <Text
-                      size={14}
-                      color={isSelected ? theme['c-button-font'] : theme['c-font']}
-                      style={isSelected ? { fontWeight: 'bold' } : {}}
+              <ScrollView
+                style={styles.categoryScroll}
+                contentContainerStyle={styles.categoryListContent}
+                showsVerticalScrollIndicator
+              >
+                {Object.keys(CATEGORIES).map(name => {
+                  const isSelected = selectedCategoryName === name
+                  const isThemeSupported = Object.keys(theme).includes('c-button-background');
+                  return (
+                    <TouchableOpacity
+                      key={name}
+                      style={[
+                        styles.categoryItem,
+                        isSelected && { backgroundColor: isThemeSupported ? theme['c-button-background'] : 'rgba(0,0,0,0.1)' }
+                      ]}
+                      onPress={() => handleSelectCategory(name as keyof typeof CATEGORIES)}
                     >
-                      {name}
-                    </Text>
-                  </TouchableOpacity>
-                )
-              })}
+                      <Text
+                        size={14}
+                        color={isSelected ? theme['c-button-font'] : theme['c-font']}
+                        style={isSelected ? { fontWeight: 'bold' } : {}}
+                      >
+                        {name}
+                      </Text>
+                    </TouchableOpacity>
+                  )
+                })}
+              </ScrollView>
             </View>
             
             {/* 右侧标签 */}
-            <ScrollView style={styles.tagList}>
+            <ScrollView style={styles.tagList} contentContainerStyle={styles.tagListContent}>
               <Text size={12} color={theme['c-font-label']} style={{ marginBottom: 10 }}>
                 {selectedCategoryName === '情感' ? '最多可选择 1 个标签' : '最多可选择 5 个标签'}
               </Text>
@@ -249,6 +255,12 @@ const styles = createStyle({
     width: 100,
     borderRightWidth: 1,
   },
+  categoryScroll: {
+    flex: 1,
+  },
+  categoryListContent: {
+    paddingVertical: 4,
+  },
   categoryItem: {
     padding: 15,
     alignItems: 'center',
@@ -256,6 +268,9 @@ const styles = createStyle({
   tagList: {
     flex: 1,
     padding: 15,
+  },
+  tagListContent: {
+    paddingBottom: 10,
   },
   tagsContainer: {
     flexDirection: 'row',

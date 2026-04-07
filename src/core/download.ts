@@ -3,7 +3,7 @@ import {toMD5, toast, requestStoragePermission} from '@/utils/tools';
 import { getMusicUrl, getLyricInfo } from '@/core/music';
 import {getFileExtension, getFileExtensionFromUrl} from '@/screens/Home/Views/Mylist/MusicList/download/utils';
 import { mergeLyrics } from '@/screens/Home/Views/Mylist/MusicList/download/lrcTool';
-import {writeFile, downloadFile, unlink} from '@/utils/fs';
+import {writeFile, unlink} from '@/utils/fs';
 import { writeMetadata, writePic, writeLyric } from '@/utils/localMediaMetadata';
 import settingState from '@/store/setting/state';
 import downloadState from '@/store/download/state';
@@ -15,6 +15,10 @@ import wySdk from '@/utils/musicSdk/wy'
 
 const taskQueue: DownloadTask[] = [];
 let isProcessing = false;
+const DOWNLOAD_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Mobile Safari/537.36',
+  Referer: 'https://music.163.com/',
+};
 let currentDownloadTask: any | null = null;
 
 const processQueue = async () => {
@@ -68,50 +72,48 @@ const startDownload = async (task: DownloadTask) => {
   let lastWritten = 0;
   let lastTime = Date.now();
   try {
-      const downloadTask = RNFetchBlob.config({
-        path: task.filePath,
-        fileCache: true,
-      }).fetch('GET', url, {
-        'User-Agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Mobile Safari/537.36',
+    const downloadTask = RNFetchBlob.config({
+      path: task.filePath,
+      fileCache: true,
+    }).fetch('GET', url, DOWNLOAD_HEADERS);
+
+    currentDownloadTask = downloadTask;
+    downloadTask.progress({ interval: 500 }, (written, total) => {
+      const now = Date.now();
+      const deltaTime = now - lastTime;
+      if (deltaTime === 0) return;
+
+      const deltaBytes = written - lastWritten;
+      const speed = deltaBytes / (deltaTime / 1000);
+
+      lastWritten = written;
+      lastTime = now;
+      const percent = total > 0 ? written / total : 0;
+      downloadActions.updateTask(task.id, {
+        progress: {
+          ...task.progress,
+          percent,
+          downloaded: written,
+          total,
+          speed: `${sizeFormate(speed)}/s`,
+        },
       });
+    });
 
-      currentDownloadTask = downloadTask;
-      downloadTask.progress({ interval: 500 }, (written, total) => {
-        const now = Date.now();
-        const deltaTime = now - lastTime;
-        if (deltaTime === 0) return;
+    await downloadTask;
+    console.log('下载完成:', task.fileName);
+    await handleMetadata(task, task.filePath);
+    try {
+      await RNFetchBlob.fs.scanFile([{ path: task.filePath }]);
+      console.log(`[Download Manager] Media scan requested for: ${task.filePath}`);
+    } catch (scanError) {
+      console.error(`[Download Manager] Failed to request media scan for ${task.filePath}:`, scanError);
+    }
+    downloadActions.updateTask(task.id, { status: 'completed', progress: { ...task.progress, percent: 1 } });
 
-        const deltaBytes = written - lastWritten;
-        const speed = deltaBytes / (deltaTime / 1000);
-
-        lastWritten = written;
-        lastTime = now;
-        const percent = total > 0 ? written / total : 0;
-        downloadActions.updateTask(task.id, {
-          progress: {
-            ...task.progress,
-            percent,
-            downloaded: written,
-            total,
-            speed: `${sizeFormate(speed)}/s`,
-          },
-        });
-      });
-
-      await downloadTask;
-      console.log('下载完成:', task.fileName);
-      await handleMetadata(task, task.filePath);
-      try {
-        await RNFetchBlob.fs.scanFile([{ path: task.filePath }]);
-        console.log(`[Download Manager] Media scan requested for: ${task.filePath}`);
-      } catch (scanError) {
-        console.error(`[Download Manager] Failed to request media scan for ${task.filePath}:`, scanError);
-      }
-      downloadActions.updateTask(task.id, { status: 'completed', progress: { ...task.progress, percent: 1 } });
-
-      if (!task.isForceCookie) {
-        toast(`${task.fileName} 下载完成!`, 'short');
-      }
+    if (!task.isForceCookie) {
+      toast(`${task.fileName} 下载完成!`, 'short');
+    }
   } finally {
     currentDownloadTask = null;
   }

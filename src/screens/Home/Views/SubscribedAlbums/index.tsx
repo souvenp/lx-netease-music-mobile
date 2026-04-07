@@ -3,17 +3,19 @@ import { View, FlatList, RefreshControl, Keyboard } from 'react-native'
 import { useWySubscribedAlbums } from '@/store/user/hook'
 import wyApi from '@/utils/musicSdk/wy/user'
 import { setWySubscribedAlbums} from '@/store/user/action'
-import { toast } from '@/utils/tools'
+import { createStyle, toast } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
 import { useSettingValue } from '@/store/setting/hook'
 import Text from '@/components/common/Text'
 import ListItem from './ListItem'
+import { useHorizontalMode } from '@/utils/hooks'
 
 export default memo(() => {
   const subscribedAlbums = useWySubscribedAlbums()
   const [loading, setLoading] = useState(false)
   const theme = useTheme()
   const cookie = useSettingValue('common.wy_cookie')
+  const isHorizontal = useHorizontalMode()
 
   const onRefresh = useCallback(() => {
     if (!cookie) {
@@ -53,8 +55,15 @@ export default memo(() => {
       <FlatList
         onScrollBeginDrag={Keyboard.dismiss}
         data={subscribedAlbums}
-        renderItem={({ item }) => <ListItem item={item} showSubscribeButton={false} />}
+        key={isHorizontal ? 'horizontal' : 'vertical'}
+        numColumns={isHorizontal ? 2 : 1}
+        renderItem={({ item }) => (
+          <View style={isHorizontal ? styles.itemWrapper : null}>
+            <ListItem item={item} showSubscribeButton={false} />
+          </View>
+        )}
         keyExtractor={item => String(item.id)}
+        columnWrapperStyle={isHorizontal ? styles.columnWrapper : undefined}
         refreshControl={
           <RefreshControl
             colors={[theme['c-primary']]}
@@ -65,4 +74,14 @@ export default memo(() => {
       />
     </View>
   )
+})
+
+const styles = createStyle({
+  columnWrapper: {
+    paddingHorizontal: 8,
+  },
+  itemWrapper: {
+    flex: 1,
+    maxWidth: '50%',
+  },
 })

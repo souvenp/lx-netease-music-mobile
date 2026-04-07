@@ -4,13 +4,15 @@ import ListItem from './ListItem'
 import { useWyFollowedArtists } from '@/store/user/hook.ts'
 import wyApi from '@/utils/musicSdk/wy/user'
 import { setWyFollowedArtists } from '@/store/user/action'
-import { toast } from '@/utils/tools'
+import { createStyle, toast } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
+import { useHorizontalMode } from '@/utils/hooks'
 
 export default memo(() => {
   const followedArtists = useWyFollowedArtists()
   const [loading, setLoading] = useState(false)
   const theme = useTheme()
+  const isHorizontal = useHorizontalMode()
   const onRefresh = useCallback(() => {
     setLoading(true)
     wyApi.getAllSublist()
@@ -30,8 +32,15 @@ export default memo(() => {
       <FlatList
         onScrollBeginDrag={Keyboard.dismiss}
         data={followedArtists}
-        renderItem={({ item }) => <ListItem artist={item} />}
+        key={isHorizontal ? 'horizontal' : 'vertical'}
+        numColumns={isHorizontal ? 2 : 1}
+        renderItem={({ item }) => (
+          <View style={isHorizontal ? styles.itemWrapper : null}>
+            <ListItem artist={item} />
+          </View>
+        )}
         keyExtractor={item => String(item.id)}
+        columnWrapperStyle={isHorizontal ? styles.columnWrapper : undefined}
         refreshControl={
           <RefreshControl
             colors={[theme['c-primary']]}
@@ -42,4 +51,14 @@ export default memo(() => {
       />
     </View>
   )
+})
+
+const styles = createStyle({
+  columnWrapper: {
+    paddingHorizontal: 8,
+  },
+  itemWrapper: {
+    flex: 1,
+    maxWidth: '50%',
+  },
 })
