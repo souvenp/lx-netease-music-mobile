@@ -13,6 +13,7 @@ import android.net.Uri;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.app.UiModeManager;
+import android.media.AudioManager;
 import android.os.Build;
 import android.util.Log;
 import android.view.View;
@@ -396,6 +397,35 @@ public class UtilsModule extends ReactContextBaseJavaModule {
     } else {
       promise.resolve(1); // Configuration.UI_MODE_TYPE_NORMAL
     }
+  }
+
+  @ReactMethod
+  public void adjustSystemMediaVolume(String direction, Promise promise) {
+    AudioManager audioManager = (AudioManager) reactContext.getSystemService(Context.AUDIO_SERVICE);
+    if (audioManager == null) {
+      promise.reject("Utils", "AudioManager unavailable");
+      return;
+    }
+
+    int adjustDirection;
+    switch (direction) {
+      case "up":
+        adjustDirection = AudioManager.ADJUST_RAISE;
+        break;
+      case "down":
+        adjustDirection = AudioManager.ADJUST_LOWER;
+        break;
+      default:
+        promise.reject("Utils", "Invalid media volume direction: " + direction);
+        return;
+    }
+
+    audioManager.adjustStreamVolume(
+      AudioManager.STREAM_MUSIC,
+      adjustDirection,
+      AudioManager.FLAG_SHOW_UI
+    );
+    promise.resolve(null);
   }
 }
 

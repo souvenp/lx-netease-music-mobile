@@ -9,6 +9,10 @@ import settingState from '@/store/setting/state'
 const list: LX.Player.Track[] = []
 
 const defaultUserAgent = 'Mozilla/5.0 (Linux; Android 10; Pixel 3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Mobile Safari/537.36'
+const wyStreamHeaders = {
+  Referer: 'https://music.163.com/',
+  Origin: 'https://music.163.com',
+}
 const httpRxp = /^(https?:\/\/.+|\/.+)/
 
 export const state = {
@@ -32,11 +36,18 @@ const formatMusicInfo = (musicInfo: LX.Player.PlayMusic) => {
   }
 }
 
+const getTrackHeaders = (musicInfo: LX.Player.PlayMusic, url?: string) => {
+  if (!url || !/^https?:\/\//.test(url)) return undefined
+  const source = 'progress' in musicInfo ? musicInfo.metadata.musicInfo.source : musicInfo.source
+  return source === 'wy' ? wyStreamHeaders : undefined
+}
+
 const buildTracks = (musicInfo: LX.Player.PlayMusic, url?: LX.Player.Track['url'], duration?: LX.Player.Track['duration']): LX.Player.Track[] => {
   const mInfo = formatMusicInfo(musicInfo)
   const track = [] as LX.Player.Track[]
   const album = mInfo.album || undefined
   const artwork = mInfo.pic && httpRxp.test(mInfo.pic) ? mInfo.pic : undefined
+  const headers = typeof url === 'string' ? getTrackHeaders(musicInfo, url) : undefined
   if (url) {
     track.push({
       id: `${mInfo.id}__//${Math.random()}__//${url}`,
@@ -46,6 +57,7 @@ const buildTracks = (musicInfo: LX.Player.PlayMusic, url?: LX.Player.Track['url'
       album,
       artwork,
       userAgent: defaultUserAgent,
+      headers,
       musicId: mInfo.id,
       // original: { ...musicInfo },
       duration,

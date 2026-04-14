@@ -217,7 +217,7 @@
   "play_single_loop": "重複播放",
   "player__buffering": "緩衝中...",
   "player__end": "播放完畢",
-  "player__error": "音訊載入出錯，5 秒後切換下一首",
+  "player__error": "音訊載入出錯",
   "player__getting_url": "歌曲連結獲取中...",
   "player__getting_url_delay_retry": "伺服器繁忙，{time} 秒後重試...",
   "player__loading": "音樂載入中...",

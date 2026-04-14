@@ -216,7 +216,7 @@
   "play_heartbeat": "Heartbeat mode",
   "player__buffering": "Buffering...",
   "player__end": "Finished",
-  "player__error": "Error loading music. Switch to the next song after 5 seconds",
+  "player__error": "Error loading music",
   "player__getting_url": "Getting music link...",
   "player__getting_url_delay_retry": "The server is busy. Try again in {time} seconds...",
   "player__loading": "Music loading...",

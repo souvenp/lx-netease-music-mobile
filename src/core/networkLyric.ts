@@ -2,10 +2,16 @@ import dgram from 'react-native-udp';
 import { Buffer } from 'buffer';
 import playerState from '@/store/player/state';
 import { onLyricLinePlay, setSendLyricTextEvent } from '@/utils/nativeModules/lyricDesktop';
+import { adjustSystemMediaVolume } from '@/utils/nativeModules/utils';
 import { playNext, playPrev, togglePlay } from '@/core/player/player';
 
 const BROADCAST_PORT = 41234;
 const COMMAND_PORT = 41235;
+const COMMAND_NEXT = 'next';
+const COMMAND_PREV = 'prev';
+const COMMAND_TOGGLE = 'toggle';
+const COMMAND_VOLUME_UP = 'volume_up';
+const COMMAND_VOLUME_DOWN = 'volume_down';
 
 let targetIp: string | null = null;
 let ipClearTimeout: NodeJS.Timeout | null = null;
@@ -15,6 +21,12 @@ let commandSocket: dgram.Socket | null = null;
 
 let isLyricListenerActive = false;
 let unsubscribeLyricListener: (() => void) | null = null;
+
+const adjustMediaVolume = (direction: 'up' | 'down') => {
+  void adjustSystemMediaVolume(direction).catch((error) => {
+    console.error(`>>>>> [网络命令] 调整媒体音量失败(${direction}):`, error);
+  });
+};
 
 const startLyricSocket = () => {
   if (lyricSocket) return;
@@ -58,14 +70,20 @@ const startCommandListener = () => {
       const command = msg.toString();
       console.log(`>>>>> [网络命令] 收到命令: ${command}`);
       switch (command) {
-        case 'next':
+        case COMMAND_NEXT:
           void playNext();
           break;
-        case 'prev':
+        case COMMAND_PREV:
           void playPrev();
           break;
-        case 'toggle':
+        case COMMAND_TOGGLE:
           togglePlay();
+          break;
+        case COMMAND_VOLUME_UP:
+          adjustMediaVolume('up');
+          break;
+        case COMMAND_VOLUME_DOWN:
+          adjustMediaVolume('down');
           break;
       }
     });
