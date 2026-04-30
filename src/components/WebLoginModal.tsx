@@ -99,6 +99,69 @@ export default forwardRef<WebLoginModalType, {}>((props, ref) => {
     }
   };
 
+  const injectedJavaScriptBeforeContentLoaded = `
+    (function() {
+      if (window.__lxNeteaseLoginTouchPatch) return true;
+      window.__lxNeteaseLoginTouchPatch = true;
+
+      var originalAddEventListener = EventTarget.prototype.addEventListener;
+      EventTarget.prototype.addEventListener = function(type, listener, options) {
+        var isCapture = options === true || !!(options && options.capture);
+        var isBodyTouchMove = type === 'touchmove' && isCapture && (this === document || this === document.body);
+        if (isBodyTouchMove && typeof listener === 'function') {
+          var wrappedListener = function(event) {
+            var yidun = document.querySelector('.yidun');
+            if (yidun && !yidun.contains(event.target)) return;
+            return listener.call(this, event);
+          };
+          return originalAddEventListener.call(this, type, wrappedListener, options);
+        }
+        return originalAddEventListener.call(this, type, listener, options);
+      };
+
+      var touchStartX = 0;
+      var touchStartY = 0;
+
+      document.addEventListener('touchstart', function(event) {
+        if (!event.touches || event.touches.length !== 1) return;
+        touchStartX = event.touches[0].clientX;
+        touchStartY = event.touches[0].clientY;
+      }, true);
+
+      document.addEventListener('touchend', function(event) {
+        if (!event.changedTouches || event.changedTouches.length !== 1) return;
+        var touch = event.changedTouches[0];
+        if (Math.abs(touch.clientX - touchStartX) > 8 || Math.abs(touch.clientY - touchStartY) > 8) return;
+
+        var target = event.target;
+        if (!target || !target.closest) return;
+        if (target.closest('a[href*="official-terms"]')) return;
+
+        var clickable = target.closest('span,label');
+        if (!clickable) return;
+
+        var terms = clickable.parentElement;
+        if (
+          !terms ||
+          !terms.textContent ||
+          terms.textContent.indexOf('同意') === -1 ||
+          !terms.querySelector('a[href*="official-terms"]')
+        ) {
+          return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        clickable.dispatchEvent(new MouseEvent('click', {
+          bubbles: true,
+          cancelable: true,
+          view: window,
+        }));
+      }, true);
+
+      return true;
+    })();
+  `;
   const injectedJavaScript = `true;`;
 
   return (
@@ -109,6 +172,7 @@ export default forwardRef<WebLoginModalType, {}>((props, ref) => {
           ref={webViewRef}
           source={{ uri: LOGIN_URL }}
           onMessage={handleMessage}
+          injectedJavaScriptBeforeContentLoaded={injectedJavaScriptBeforeContentLoaded}
           injectedJavaScript={injectedJavaScript}
           onNavigationStateChange={handleNavigationStateChange}
           userAgent="Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
