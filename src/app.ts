@@ -8,6 +8,7 @@ import { exitApp } from './utils/nativeModules/utils'
 import { windowSizeTools } from './utils/windowSizeTools'
 import { listenLaunchEvent } from './navigation/regLaunchedEvent'
 import { tipDialog } from './utils/tools'
+import registerPlaybackService from '@/plugins/player/service'
 
 // --- START: CONSOLE LOG PATCH (v2) ---
 if (__DEV__) {
@@ -57,6 +58,10 @@ if (__DEV__) {
 // --- END: CONSOLE LOG PATCH (v2) ---
 
 console.log('starting app...')
+// 顶层注册 TrackPlayer 服务（headless 模式也会加载本模块顶层代码）。
+// 否则进程被系统媒体键/One UI 模式与日常程序拉起时，JS 侧没有注册
+// headless task 与事件监听器，remote-play 等事件到达 JS 后无人处理。
+registerPlaybackService()
 listenLaunchEvent()
 
 const getTimeGreeting = () => {
