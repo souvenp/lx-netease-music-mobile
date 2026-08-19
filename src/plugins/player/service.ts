@@ -6,6 +6,8 @@ import { isTempId, isEmpty } from './utils'
 import { exitApp } from '@/core/common'
 import { getCurrentTrackId } from './playList'
 import { pause, play, playNext, playPrev } from '@/core/player/player'
+import { reinitial } from '@/plugins/player'
+import { restoreAndPlay } from '@/core/init/player/playInfo'
 import { showDesktopLyric, hideDesktopLyric } from '@/core/desktopLyric'
 import { updateSetting } from '@/core/common'
 import settingState from '@/store/setting/state'
@@ -31,8 +33,33 @@ const registerPlaybackService = async () => {
 
   console.log('reg services...')
   TrackPlayer.addEventListener(TPEvent.RemotePlay, () => {
-    // console.log('remote-play')
-    play()
+    // 当系统/蓝牙/One UI「模式与日常程序」等触发「播放」时，
+    // 若当前没有选中曲目（playMusicInfo.musicInfo == null），play() 会直接 return，
+    // 导致「连蓝牙/到点自动播放」时 app 毫无反应。
+    // 这里改为：无曲目时先尝试恢复「上次播放」再播放，行为对齐网易云。
+    if (playerState.playMusicInfo.musicInfo == null) {
+      void (async () => {
+        try {
+          // headless 场景（进程被系统媒体键拉起）app 未完整初始化，
+          // i18n/setting 等未加载会导致 restoreAndPlay 内报错。
+          // init() 幂等：已初始化则直接返回，无副作用。
+          const { default: initApp } = await import('@/core/init')
+          await initApp()
+        } catch (e) {
+          console.log('app init error', e)
+        }
+        try {
+          // 系统触发时 TrackPlayer 服务可能已被回收（media session 已销毁），
+          // 先强制重新初始化（幂等），保证后续播放调用能重建 playback，避免空指针。
+          await reinitial()
+        } catch (e) {
+          console.log('reinitial error', e)
+        }
+        await restoreAndPlay(true)
+      })()
+    } else {
+      play()
+    }
   })
 
   TrackPlayer.addEventListener(TPEvent.RemotePause, () => {

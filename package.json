@@ -18,7 +18,7 @@
     "clear:full": "git clean -fdx -e android/keystore.properties -e android/app/*.keystore",
     "build:theme": "node src/theme/themes/createThemes.js",
     "publish": "node publish",
-    "postinstall": "node patchMediaLayout.js"
+    "postinstall": "node patchMediaLayout.js && node patchMusicService.js"
   },
   "engines": {
     "node": ">= 18",
