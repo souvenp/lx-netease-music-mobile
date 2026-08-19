@@ -45,4 +45,7 @@ export default () => {
 
   global.app_event.on('musicToggled', handleMusicToggled)
   global.state_event.on('playProgressChanged', handlePlayProgressChanged)
+  // The last played song is restored before these listeners are registered.
+  // Seed the tracker so the first song after startup can still enter history.
+  handleMusicToggled()
 }

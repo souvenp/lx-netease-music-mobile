@@ -2,14 +2,13 @@ import { View } from 'react-native'
 import { useState, useEffect, useRef, useImperativeHandle, forwardRef, useMemo } from 'react'
 import ConfirmAlert, { type ConfirmAlertType } from '@/components/common/ConfirmAlert'
 import Text from '@/components/common/Text'
-import { createStyle, toast } from '@/utils/tools'
+import { createStyle } from '@/utils/tools'
 import CheckBox from '@/components/common/CheckBox'
 import { handleDownload } from './listAction'
 import { getLastSelectQuality, saveLastSelectQuality } from '@/utils/data'
 import { addTask as addDownloadTask } from '@/core/download';
 import {fetchAndApplyDetailedQuality} from "@/utils/musicSdk/wy/musicDetail.js";
 import { useSettingValue } from '@/store/setting/hook'
-import { getValidOneDriveAuth } from '@/core/oneDrive/auth'
 
 interface TitleType {
   updateTitle: (musicInfo: LX.Music.MusicInfo) => void
@@ -145,14 +144,6 @@ export default forwardRef<MusicDownloadModalType, MusicDownloadModalProps>(
 
     const handleDownloadMusic = async() => {
       const target = showOneDriveDownload && selectedTarget === 'onedrive' ? 'onedrive' : 'local'
-      if (target === 'onedrive') {
-        try {
-          await getValidOneDriveAuth()
-        } catch (error: any) {
-          toast(`OneDrive 未登录或授权已过期，请重新登录：${error.message ?? String(error)}`, 'long')
-          return
-        }
-      }
       void saveLastSelectQuality(selectedQuality)
       alertRef.current?.setVisible(false)
       // handleDownload(selectedInfo.current, selectedQuality)

@@ -76,6 +76,17 @@ const setList = (datas: SearchResult, page: number, text: string): LX.Music.Musi
   return listInfo.list
 }
 
+const prependList = (
+  source: LX.OnlineSource,
+  list: LX.Music.MusicInfoOnline[]
+): LX.Music.MusicInfoOnline[] => {
+  const listInfo = state.listInfos[source]!
+  const normalizedList = list.map((item) => toNewMusicInfo(item) as LX.Music.MusicInfoOnline)
+  listInfo.list = deduplicationList([...normalizedList, ...listInfo.list])
+  listInfo.total = Math.max(listInfo.total, listInfo.list.length)
+  return listInfo.list
+}
+
 export default {
   setSource(source: InitState['source']) {
     state.source = source
@@ -89,6 +100,9 @@ export default {
     } else {
       return setList(result, page, text)
     }
+  },
+  prependListInfo(source: LX.OnlineSource, list: LX.Music.MusicInfoOnline[]) {
+    return prependList(source, list)
   },
   clearListInfo(sourceId: Source) {
     let listInfo = state.listInfos[sourceId]!

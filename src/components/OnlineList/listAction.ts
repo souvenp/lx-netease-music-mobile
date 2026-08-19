@@ -100,13 +100,14 @@ export const handlePlay = (musicInfo: LX.Music.MusicInfoOnline) => {
 export const handlePlayLater = (
   musicInfo: LX.Music.MusicInfoOnline,
   selectedList: LX.Music.MusicInfoOnline[],
-  onCancelSelect: () => void
+  onCancelSelect: () => void,
+  listId?: string
 ) => {
   if (selectedList.length) {
-    addTempPlayList(selectedList.map((s) => ({ listId: '', musicInfo: s })))
+    addTempPlayList(selectedList.map((s) => ({ listId: listId ?? null, musicInfo: s })))
     onCancelSelect()
   } else {
-    addTempPlayList([{ listId: '', musicInfo }])
+    addTempPlayList([{ listId: listId ?? null, musicInfo }])
   }
 }
 

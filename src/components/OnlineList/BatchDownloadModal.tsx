@@ -4,10 +4,9 @@ import ConfirmAlert, { type ConfirmAlertType } from '@/components/common/Confirm
 import Text from '@/components/common/Text'
 import CheckBox from '@/components/common/CheckBox'
 import { useSettingValue } from '@/store/setting/hook'
-import { createStyle, toast } from '@/utils/tools'
+import { createStyle } from '@/utils/tools'
 import { batchDownload } from '@/core/download'
 import { getLastSelectQuality, saveLastSelectQuality } from '@/utils/data'
-import { getValidOneDriveAuth } from '@/core/oneDrive/auth'
 
 export interface BatchDownloadModalType {
   show: (list: LX.Music.MusicInfo[]) => void
@@ -54,14 +53,6 @@ export default forwardRef<BatchDownloadModalType, { onConfirm?: () => void }>(
 
     const handleConfirm = async() => {
       const target = showOneDriveDownload && selectedTarget === 'onedrive' ? 'onedrive' : 'local'
-      if (target === 'onedrive') {
-        try {
-          await getValidOneDriveAuth()
-        } catch (error: any) {
-          toast(`OneDrive 未登录或授权已过期，请重新登录：${error.message ?? String(error)}`, 'long')
-          return
-        }
-      }
       alertRef.current?.setVisible(false)
       void saveLastSelectQuality(selectedQuality)
       void batchDownload(

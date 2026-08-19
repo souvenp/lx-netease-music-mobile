@@ -30,16 +30,6 @@ const getFirstSerpApiSongId = result => {
   return null
 }
 
-const uniqueListBySongId = list => {
-  const ids = new Set()
-  return list.filter(item => {
-    const id = String(item.songmid || item.meta?.songId || item.id || '')
-    if (!id || ids.has(id)) return false
-    ids.add(id)
-    return true
-  })
-}
-
 export default {
   limit: 30,
   total: 0,
@@ -262,20 +252,16 @@ export default {
     })
   },
 
-  search(str, page = 1, limit, retryNum = 0, options = {}) {
+  search(str, page = 1, limit, retryNum = 0) {
     if (++retryNum > 3) return Promise.reject(new Error('try max num'))
     if (limit == null) limit = this.limit
-    return this.musicSearch(str, page, limit).then(async(result) => {
+    return this.musicSearch(str, page, limit).then(result => {
       if (!result || result.code !== 200) {
         console.log('retry search:', retryNum)
-        return this.search(str, page, limit, retryNum, options)
+        return this.search(str, page, limit, retryNum)
       }
       let list = this.handleResult(result.data.resources || [])
-      if (!list) return this.search(str, page, limit, retryNum, options)
-      if (page === 1 && options.enableSerpApi) {
-        const serpList = await this.searchBySerpApi(str)
-        if (serpList.length) list = uniqueListBySongId([...serpList, ...list])
-      }
+      if (!list) return this.search(str, page, limit, retryNum)
 
       this.total = Math.max(result.data.totalCount || 0, list.length)
       this.page = page
@@ -290,7 +276,7 @@ export default {
       }
     }).catch(err => {
       console.log('搜索错误，准备重试:', err.message, '次数:', retryNum);
-      return this.search(str, page, limit, retryNum, options)
+      return this.search(str, page, limit, retryNum)
     });
   },
 

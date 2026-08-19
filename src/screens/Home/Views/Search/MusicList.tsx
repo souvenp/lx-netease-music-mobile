@@ -17,10 +17,49 @@ export default forwardRef<MusicListType, {}>((props, ref) => {
   const listRef = useRef<OnlineListType>(null)
   const searchInfoRef = useRef<{ text: string; source: Source }>({ text: '', source: 'kw' })
   const isUnmountedRef = useRef(false)
+  const requestIdRef = useRef(0)
+  const loadingQueryKeyRef = useRef<string | null>(null)
+
+  const isCurrentRequest = (requestId: number) => {
+    return !isUnmountedRef.current && requestId == requestIdRef.current
+  }
+
+  const updateList = (requestId: number, list: LX.Music.MusicInfoOnline[], page: number) => {
+    if (!isCurrentRequest(requestId)) return
+    const source = searchInfoRef.current.source
+    listRef.current?.setList(list, false, source == 'all')
+    listRef.current?.setStatus(
+      searchMusicState.listInfos[source]!.maxPage <= page ? 'end' : 'idle'
+    )
+  }
+
+  const updateSupplement = (
+    text: string,
+    source: Source,
+    list: LX.Music.MusicInfoOnline[]
+  ) => {
+    if (
+      isUnmountedRef.current ||
+      searchInfoRef.current.text != text ||
+      searchInfoRef.current.source != source
+    ) return
+    const page = searchMusicState.listInfos[source]!.page
+    listRef.current?.setList(list, false, source == 'all')
+    listRef.current?.setStatus(
+      searchMusicState.listInfos[source]!.maxPage <= page ? 'end' : 'idle'
+    )
+  }
+
   useImperativeHandle(
     ref,
     () => ({
       async loadList(text, source) {
+        const queryKey = `${source}__${text}`
+        if (loadingQueryKeyRef.current == queryKey) return
+        loadingQueryKeyRef.current = queryKey
+        const requestId = ++requestIdRef.current
+        searchInfoRef.current.text = text
+        searchInfoRef.current.source = source
         // const listDetailInfo = searchMusicState.listDetailInfo
         listRef.current?.setList([], false, source == 'all')
         if (
@@ -28,33 +67,30 @@ export default forwardRef<MusicListType, {}>((props, ref) => {
           searchMusicState.source == source &&
           searchMusicState.listInfos[searchMusicState.source]!.list.length
         ) {
+          loadingQueryKeyRef.current = null
           requestAnimationFrame(() => {
-            listRef.current?.setList(
+            updateList(
+              requestId,
               searchMusicState.listInfos[searchMusicState.source]!.list,
-              false,
-              source == 'all'
+              searchMusicState.listInfos[searchMusicState.source]!.page
             )
           })
         } else {
           listRef.current?.setStatus('loading')
           const page = 1
-          searchInfoRef.current.text = text
-          searchInfoRef.current.source = source
-          return search(text, page, source)
-            .then((list) => {
+          return search(text, page, source, (list) => {
+            updateSupplement(text, source, list)
+          })
+            .then(() => {
               // const result = setListInfo(listDetail, id, page)
-              if (isUnmountedRef.current) return
-              requestAnimationFrame(() => {
-                listRef.current?.setList(list, false, source == 'all')
-                listRef.current?.setStatus(
-                  searchMusicState.listInfos[searchMusicState.source]!.maxPage <= page
-                    ? 'end'
-                    : 'idle'
-                )
-              })
+              updateList(requestId, searchMusicState.listInfos[source]!.list, page)
             })
             .catch(() => {
+              if (!isCurrentRequest(requestId)) return
               listRef.current?.setStatus('error')
+            })
+            .finally(() => {
+              if (loadingQueryKeyRef.current == queryKey) loadingQueryKeyRef.current = null
             })
         }
       },
@@ -66,37 +102,52 @@ export default forwardRef<MusicListType, {}>((props, ref) => {
     isUnmountedRef.current = false
     return () => {
       isUnmountedRef.current = true
+      requestIdRef.current++
+      loadingQueryKeyRef.current = null
     }
   }, [])
 
   const handleRefresh: OnlineListProps['onRefresh'] = () => {
+    const requestId = ++requestIdRef.current
     const page = 1
+    const { text, source } = searchInfoRef.current
+    const queryKey = `${source}__${text}`
+    loadingQueryKeyRef.current = queryKey
     listRef.current?.setStatus('refreshing')
-    search(searchInfoRef.current.text, page, searchInfoRef.current.source)
-      .then((list) => {
+    search(
+      text,
+      page,
+      source,
+      (list) => {
+        updateSupplement(text, source, list)
+      }
+    )
+      .then(() => {
         // const result = setListInfo(listDetail, searchMusicState.listDetailInfo.id, page)
-        if (isUnmountedRef.current) return
-        listRef.current?.setList(list, false, searchInfoRef.current.source == 'all')
-        listRef.current?.setStatus(
-          searchMusicState.listInfos[searchInfoRef.current.source]!.maxPage <= page ? 'end' : 'idle'
-        )
+        updateList(requestId, searchMusicState.listInfos[source]!.list, page)
       })
       .catch(() => {
+        if (!isCurrentRequest(requestId)) return
         listRef.current?.setStatus('error')
+      })
+      .finally(() => {
+        if (loadingQueryKeyRef.current == queryKey) loadingQueryKeyRef.current = null
       })
   }
   const handleLoadMore: OnlineListProps['onLoadMore'] = () => {
+    const requestId = ++requestIdRef.current
     listRef.current?.setStatus('loading')
     const info = searchMusicState.listInfos[searchInfoRef.current.source]!
     const page = info?.list.length ? info.page + 1 : 1
     search(searchInfoRef.current.text, page, searchInfoRef.current.source)
       .then((list) => {
         // const result = setListInfo(listDetail, searchMusicState.listDetailInfo.id, page)
-        if (isUnmountedRef.current) return
+        if (!isCurrentRequest(requestId)) return
         listRef.current?.setList(list, true, searchInfoRef.current.source == 'all')
         listRef.current?.setStatus(info.maxPage <= page ? 'end' : 'idle')
       })
       .catch(() => {
+        if (!isCurrentRequest(requestId)) return
         listRef.current?.setStatus('error')
       })
   }

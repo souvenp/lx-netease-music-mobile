@@ -12,6 +12,10 @@ export const setListInfo: typeof searchMusicActions.setListInfo = (result, id, p
   return searchMusicActions.setListInfo(result, id, page)
 }
 
+export const prependListInfo: typeof searchMusicActions.prependListInfo = (source, list) => {
+  return searchMusicActions.prependListInfo(source, list)
+}
+
 export const clearListInfo: typeof searchMusicActions.clearListInfo = (source) => {
   searchMusicActions.clearListInfo(source)
 }
@@ -19,7 +23,8 @@ export const clearListInfo: typeof searchMusicActions.clearListInfo = (source) =
 export const search = async (
   text: string,
   page: number,
-  sourceId: Source
+  sourceId: Source,
+  onSupplement?: (list: LX.Music.MusicInfoOnline[]) => void
 ): Promise<LX.Music.MusicInfoOnline[]> => {
   const listInfo = searchMusicState.listInfos[sourceId]!
   if (!text) return []
@@ -34,9 +39,7 @@ export const search = async (
           (musicSdk[source]?.musicSearch.search(
             text,
             page,
-            searchMusicState.listInfos.all.limit,
-            0,
-            { enableSerpApi: false }
+            searchMusicState.listInfos.all.limit
           ) as Promise<SearchResult>) ?? Promise.reject(new Error('source not found: ' + source))
         ).catch((error: any) => {
           console.log(error)
@@ -58,16 +61,33 @@ export const search = async (
     })
   } else {
     if (listInfo?.key == key && listInfo?.list.length) return listInfo?.list
+    if (listInfo.key != key) clearListInfo(sourceId)
     listInfo.key = key
+    const supplementPromise = sourceId == 'wy' && page == 1
+      ? musicSdk.wy.musicSearch.searchBySerpApi(text)
+      : null
     return (
       musicSdk[sourceId]?.musicSearch
-        .search(text, page, listInfo.limit, 0, { enableSerpApi: sourceId == 'wy' })
+        .search(text, page, listInfo.limit)
         .then((data: SearchResult) => {
           if (key != listInfo.key) return []
-          return setListInfo(data, page, text)
+          setSearchText(text)
+          const list = setListInfo(data, page, text)
+          if (supplementPromise) {
+            void supplementPromise.then((supplementList: LX.Music.MusicInfoOnline[]) => {
+              if (
+                !supplementList.length ||
+                searchMusicState.searchText != text ||
+                searchMusicState.source != sourceId
+              ) return
+              const list = prependListInfo(sourceId, supplementList)
+              onSupplement?.(list)
+            })
+          }
+          return list
         }) ?? Promise.reject(new Error('source not found: ' + sourceId))
     ).catch((err: any) => {
-      if (listInfo.list.length && page == 1) clearListInfo(sourceId)
+      if (key == listInfo.key && listInfo.list.length && page == 1) clearListInfo(sourceId)
       throw err
     })
   }

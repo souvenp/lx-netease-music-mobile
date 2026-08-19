@@ -28,6 +28,7 @@ export default () => {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [selectedList, setSelectedList] = useState<ListInfoItem | null>(null)
   const selectedListRef = useRef(selectedList)
+  const hasOpenedDetailRef = useRef(false)
   selectedListRef.current = selectedList
 
   const [headerKey, setHeaderKey] = useState(Date.now())
@@ -57,16 +58,13 @@ export default () => {
   }, [])
 
   useEffect(() => {
-    if (!selectedList) {
-      setHeaderKey(Date.now())
-      if (searchState.searchText) {
-        listRef.current?.loadList(
-          searchState.searchText,
-          searchInfo.current.source,
-          searchInfo.current.searchType,
-        )
-      }
+    if (selectedList) {
+      hasOpenedDetailRef.current = true
+      return
     }
+    if (!hasOpenedDetailRef.current) return
+    hasOpenedDetailRef.current = false
+    setHeaderKey(Date.now())
   }, [selectedList])
 
   const handleSearch: HeaderBarProps['onSearch'] = useCallback((text) => {

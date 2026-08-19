@@ -23,6 +23,47 @@ const DOWNLOAD_HEADERS = {
 const WY_MEDIA_HEADERS = {
   'User-Agent': '',
 }
+const DOWNLOAD_OPTION_MAX_ATTEMPTS = 3;
+const DOWNLOAD_OPTION_RETRY_DELAY = 800;
+
+type MetadataStatusKey = keyof DownloadTask['metadataStatus'];
+
+const getErrorMessage = (error: unknown) => {
+  return error instanceof Error ? error.message : String(error);
+};
+
+const retryDownloadOption = async (label: string, handler: () => Promise<void>) => {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= DOWNLOAD_OPTION_MAX_ATTEMPTS; attempt++) {
+    try {
+      await handler();
+      return;
+    } catch (error) {
+      lastError = error;
+      console.warn(
+        `[Download Manager] ${label} failed (${attempt}/${DOWNLOAD_OPTION_MAX_ATTEMPTS}):`,
+        getErrorMessage(error)
+      );
+      if (attempt < DOWNLOAD_OPTION_MAX_ATTEMPTS) {
+        await new Promise(resolve => setTimeout(resolve, DOWNLOAD_OPTION_RETRY_DELAY * attempt));
+      }
+    }
+  }
+  throw new Error(
+    `${label}失败（已尝试 ${DOWNLOAD_OPTION_MAX_ATTEMPTS} 次）：${getErrorMessage(lastError)}`
+  );
+};
+
+const updateMetadataStatus = (
+  task: DownloadTask,
+  key: MetadataStatusKey,
+  status: DownloadTask['metadataStatus'][MetadataStatusKey]
+) => {
+  downloadActions.updateTask(task.id, {
+    metadataStatus: { ...task.metadataStatus, [key]: status },
+  });
+};
+
 const getDownloadHeaders = (task: DownloadTask) => {
   return task.musicInfo.source === 'wy' ? WY_MEDIA_HEADERS : DOWNLOAD_HEADERS
 }
@@ -77,9 +118,7 @@ const startDownload = async (task: DownloadTask) => {
       }
       url = result.url;
     } catch (error: any) {
-      toast(`${task.musicInfo.name} 下载失败: ${error.message}`, 'short');
-      removeTask(task.id);
-      return;
+      throw new Error(`获取下载地址失败：${error.message}`);
     }
   } else {
     url = await getMusicUrl({ musicInfo: task.musicInfo, quality: task.quality, isRefresh: true });
@@ -195,61 +234,70 @@ const handleMetadata = async (task: DownloadTask, filePath: string) => {
   // 写入标签
   if (settingState.setting['download.writeMetadata']) {
     try {
-      const title = settingState.setting['download.writeAlias'] && task.musicInfo.alias
-        ? `${task.musicInfo.name} (${task.musicInfo.alias})`
-        : task.musicInfo.name;
+      await retryDownloadOption('标签写入', async () => {
+        const title = settingState.setting['download.writeAlias'] && task.musicInfo.alias
+          ? `${task.musicInfo.name} (${task.musicInfo.alias})`
+          : task.musicInfo.name;
 
-      await writeMetadata(filePath, {
-        name: title,
-        singer: task.musicInfo.singer,
-        albumName: task.musicInfo.meta.albumName,
-      }, true);
-      downloadActions.updateTask(task.id, { metadataStatus: { ...task.metadataStatus, tags: 'success' } });
-    } catch (e) {
-      toast('标签信息写入失败', 'short');
-      downloadActions.updateTask(task.id, { metadataStatus: { ...task.metadataStatus, tags: 'fail' } });
+        await writeMetadata(filePath, {
+          name: title,
+          singer: task.musicInfo.singer,
+          albumName: task.musicInfo.meta.albumName,
+        }, true);
+      });
+      updateMetadataStatus(task, 'tags', 'success');
+    } catch (error) {
+      updateMetadataStatus(task, 'tags', 'fail');
+      throw error;
     }
   }
 
-  const downloadDir = getTaskTarget(task) === 'onedrive'
-    ? RNFetchBlob.fs.dirs.CacheDir
-    : settingState.setting['download.path'] || (RNFetchBlob.fs.dirs.MusicDir + '/LX-N Music')
   // 写入封面
   if (settingState.setting['download.writePicture']) {
     try {
-      const picUrl = await getPicUrl({ musicInfo: task.musicInfo });
-      const extension = getFileExtensionFromUrl(picUrl)
-      const picPath = `${downloadDir}/temp.${extension}`
-      await RNFetchBlob.config({ path: picPath }).fetch('GET', picUrl);
-      await writePic(filePath, picPath);
-      await unlink(picPath)
-      downloadActions.updateTask(task.id, { metadataStatus: { ...task.metadataStatus, cover: 'success' } });
-    } catch (e) {
-      console.log(e)
-      toast('封面写入失败', 'short');
-      downloadActions.updateTask(task.id, { metadataStatus: { ...task.metadataStatus, cover: 'fail' } });
+      await retryDownloadOption('封面写入', async () => {
+        let picPath = '';
+        try {
+          const picUrl = await getPicUrl({ musicInfo: task.musicInfo });
+          if (!picUrl) throw new Error('未获取到封面地址');
+          const extension = getFileExtensionFromUrl(picUrl);
+          picPath = `${RNFetchBlob.fs.dirs.CacheDir}/lx_download_cover_${task.id}.${extension}`;
+          await RNFetchBlob.config({ path: picPath }).fetch('GET', picUrl);
+          await writePic(filePath, picPath);
+        } finally {
+          if (picPath) await unlink(picPath).catch(() => {});
+        }
+      });
+      updateMetadataStatus(task, 'cover', 'success');
+    } catch (error) {
+      updateMetadataStatus(task, 'cover', 'fail');
+      throw error;
     }
   }
 
   // 写入歌词
   if (settingState.setting['download.writeLyric'] || settingState.setting['download.writeEmbedLyric']) {
     try {
-      const lyrics = await getLyricInfo({ musicInfo: task.musicInfo as LX.Music.MusicInfoOnline });
-      const baseFilePath = filePath.substring(0, filePath.lastIndexOf('.'));
-      const romaLyric = settingState.setting['download.writeRomaLyric'] ? lyrics.rlyric : null;
+      await retryDownloadOption('歌词写入', async () => {
+        const lyrics = await getLyricInfo({
+          musicInfo: task.musicInfo as LX.Music.MusicInfoOnline,
+        });
+        const baseFilePath = filePath.substring(0, filePath.lastIndexOf('.'));
+        const romaLyric = settingState.setting['download.writeRomaLyric'] ? lyrics.rlyric : null;
+        const lyricContent = mergeLyrics(lyrics.lyric, lyrics.tlyric, romaLyric);
+        if (!lyricContent) throw new Error('未获取到可写入的歌词');
 
-      if (settingState.setting['download.writeEmbedLyric']) {
-        const embedLyricContent = mergeLyrics(lyrics.lyric, lyrics.tlyric, romaLyric);
-        if (embedLyricContent) await writeLyric(filePath, embedLyricContent);
-      }
-      if (settingState.setting['download.writeLyric']) {
-        const finalLyricContent = mergeLyrics(lyrics.lyric, lyrics.tlyric, romaLyric);
-        if (finalLyricContent) await writeFile(`${baseFilePath}.lrc`, finalLyricContent);
-      }
-      downloadActions.updateTask(task.id, { metadataStatus: { ...task.metadataStatus, lyric: 'success' } });
-    } catch (e) {
-      toast('歌词写入失败', 'short');
-      downloadActions.updateTask(task.id, { metadataStatus: { ...task.metadataStatus, lyric: 'fail' } });
+        if (settingState.setting['download.writeEmbedLyric']) {
+          await writeLyric(filePath, lyricContent);
+        }
+        if (settingState.setting['download.writeLyric']) {
+          await writeFile(`${baseFilePath}.lrc`, lyricContent);
+        }
+      });
+      updateMetadataStatus(task, 'lyric', 'success');
+    } catch (error) {
+      updateMetadataStatus(task, 'lyric', 'fail');
+      throw error;
     }
   }
 };
@@ -336,15 +384,21 @@ export const retryTask = (taskId: string) => {
   const task = downloadState.tasks.find(t => t.id === taskId);
   if (!task) return;
 
-  // 如果歌曲文件下载失败，或者文件路径不存在，则重新下载整个文件
+  // 失败任务由用户手动触发后原地重新排队，避免删除任务造成状态和清理竞态。
   if (task.status === 'error' || !task.filePath) {
     toast('正在重新下载...');
-    // 通过先移除再添加的方式实现重新下载
-    removeTask(task.id);
-    // 延迟一下，确保状态更新
-    setTimeout(() => {
-      addTask(task.musicInfo, task.quality, task.isForceCookie, getTaskTarget(task));
-    }, 200);
+    void unlink(task.filePath).catch(() => {}).finally(() => {
+      downloadActions.updateTask(task.id, {
+        status: 'waiting',
+        errorMsg: '',
+        progress: { percent: 0, speed: '', downloaded: 0, total: 0 },
+        metadataStatus: { cover: 'pending', lyric: 'pending', tags: 'pending' },
+        remotePath: undefined,
+        remoteUrl: undefined,
+      });
+      if (!taskQueue.some(item => item.id === task.id)) taskQueue.push(task);
+      processQueue();
+    });
   }
   // 如果文件已存在，但元信息失败，则只重试元信息
   else if (Object.values(task.metadataStatus).includes('fail')) {

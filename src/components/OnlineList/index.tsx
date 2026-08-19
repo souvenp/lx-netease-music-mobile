@@ -248,7 +248,7 @@ export default forwardRef<OnlineListType, OnlineListProps>(
           }}
           onPlayLater={(info) => {
             hancelExitSelect()
-            handlePlayLater(info.musicInfo, info.selectedList, hancelExitSelect)
+            handlePlayLater(info.musicInfo, info.selectedList, hancelExitSelect, listId)
           }}
           onCopyName={(info) => {
             handleShare(info.musicInfo)
