@@ -9,7 +9,11 @@ import { createStyle } from '@/utils/tools';
 import {dateFormat, sizeFormate} from '@/utils/common';
 import { resumeTask, retryTask } from '@/core/download';
 
-export default memo(({ task: initialTask, onRemove }: { task: LX.Download.DownloadTask, onRemove: (id: string) => void }) => {
+// 多选时整行负责勾选，并隐藏单项操作，避免点击穿透。
+export default memo(({ task: initialTask, onRemove, selecting, selected, onSelect }: {
+  task: LX.Download.DownloadTask, onRemove: (id: string) => void,
+  selecting: boolean, selected: boolean, onSelect: (id: string) => void,
+}) => {
   const theme = useTheme();
   const [task, setTask] = useState(initialTask);
   const errorColor = theme['c-600'];
@@ -111,7 +115,7 @@ export default memo(({ task: initialTask, onRemove }: { task: LX.Download.Downlo
         <Icon name={task.metadataStatus.lyric === 'success' ? 'checkbox-marked' : (task.metadataStatus.lyric === 'fail' ? 'close' : 'checkbox-blank-outline')} color={task.metadataStatus.lyric === 'success' ? theme['c-primary'] : (task.metadataStatus.lyric === 'fail' ? errorColor : theme['c-font-label'])} size={12} />
         <Text size={10} color={theme['c-font-label']}>歌词</Text>
       </View>
-      {canRetryMetadata && hasMetaError && task.status === 'completed' && (
+      {!selecting && !task.isRemoteSynced && canRetryMetadata && hasMetaError && task.status === 'completed' && (
         <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
           <Icon name="available_updates" size={14} color={theme['c-primary-font-active']} />
         </TouchableOpacity>
@@ -120,7 +124,11 @@ export default memo(({ task: initialTask, onRemove }: { task: LX.Download.Downlo
   );
 
   return (
-    <View style={styles.container}>
+    <TouchableOpacity style={styles.container} activeOpacity={0.7}
+      onLongPress={() => { if (!selecting) onSelect(task.id); }}
+      onPress={() => { if (selecting) onSelect(task.id); }}
+      accessibilityRole={selecting ? 'checkbox' : 'button'} accessibilityState={{ checked: selected }}>
+      {selecting && <Icon name={selected ? 'checkbox-marked' : 'checkbox-blank-outline'} size={22} color={theme['c-primary']} />}
       <Image url={task.musicInfo.meta.picUrl} style={styles.artwork} />
       <View style={styles.info}>
         <Text numberOfLines={1}>
@@ -140,7 +148,7 @@ export default memo(({ task: initialTask, onRemove }: { task: LX.Download.Downlo
         {renderStatus()}
         {task.status === 'completed' && renderMetadataStatus()}
       </View>
-      <View style={styles.actionsContainer}>
+      {!selecting && <View style={styles.actionsContainer}>
         { !task.isRemoteSynced && task.status === 'paused' && (
           <TouchableOpacity onPress={handleResume} style={styles.actionButton}>
             <Icon name="play-outline" size={18} color={theme['c-primary']} />
@@ -154,8 +162,8 @@ export default memo(({ task: initialTask, onRemove }: { task: LX.Download.Downlo
         <TouchableOpacity onPress={() => onRemove(task.id)} style={styles.actionButton}>
           <Icon name="close" size={16} color={theme['c-font-label']} />
         </TouchableOpacity>
-      </View>
-    </View>
+      </View>}
+    </TouchableOpacity>
   );
 });
 

@@ -370,6 +370,8 @@ declare global {
        * 是否启用下载
        */
       'download.enable': boolean
+      /** 额外本地音乐扫描目录，以 JSON 字符串保存，兼容配置合并。 */
+      'localMusic.paths': string
 
       'download.path': string
       /**

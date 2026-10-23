@@ -10,9 +10,10 @@ import { HEADER_HEIGHT as _HEADER_HEIGHT } from '@/config/constant';
 
 const HEADER_HEIGHT = scaleSizeH(_HEADER_HEIGHT);
 
-export default memo(({ componentId }: { componentId: string }) => {
+// 多选时优先清空勾选，普通状态才返回上一页。
+export default memo(({ componentId, onBack }: { componentId: string, onBack?: () => void }) => {
   const statusBarHeight = useStatusbarHeight();
-  const back = () => { void pop(componentId); };
+  const back = () => { if (onBack) onBack(); else void pop(componentId); };
 
   return (
     <View style={{ height: HEADER_HEIGHT + statusBarHeight, paddingTop: statusBarHeight }}>

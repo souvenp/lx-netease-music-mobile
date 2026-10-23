@@ -1,6 +1,6 @@
 import * as webdav from '@/utils/webdav';
 import { overwriteListFull } from '@/core/list';
-import { filterSensitiveSettingsForSync, getAllDataForSync } from './syncHelpers';
+import { filterSensitiveSettingsForSync, getAllDataForSync, getSettingsForSync, getUserApisForSync } from './syncHelpers';
 import { confirmDialog, toast } from '@/utils/tools';
 import { updateSetting } from '@/core/common';
 import settingState from '@/store/setting/state';
@@ -73,7 +73,7 @@ function getRemoteUserApisFilePath(): string {
 
 async function uploadUserApis(path: string): Promise<number> {
   const timestamp = Date.now();
-  const { userApis } = await getAllDataForSync();
+  const userApis = await getUserApisForSync();
   const dataObject = {
     version: '2',
     lastModified: timestamp,
@@ -205,7 +205,7 @@ async function applyMergedExtraData(remoteData: ListsSyncFile) {
 
 async function uploadSettings(path: string): Promise<number> {
   const timestamp = Date.now();
-  const { settings } = await getAllDataForSync();
+  const settings = getSettingsForSync();
   const dataObject = {
     version: '2',
     lastModified: timestamp,

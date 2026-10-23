@@ -35,11 +35,14 @@ export default () => {
 
   let updateTimeout: number | null = null
   let isScreenOn = true
+  // 每次切歌递增，拦截上一轮播放尚未返回的原生查询（包括同一首重播）。
+  let musicRevision = 0
 
   const getCurrentTime = () => {
     let id = playerState.musicInfo.id
+    const revision = musicRevision
     void getPosition().then((position) => {
-      if (!position || id != playerState.musicInfo.id) return
+      if (!position || revision !== musicRevision || id != playerState.musicInfo.id) return
       setNowPlayTime(position)
       updateScrobblePlayTime(position) // 实时更新打点记录的播放时间
 
@@ -55,7 +58,10 @@ export default () => {
   }
 
   const getMaxTime = async () => {
+    const revision = musicRevision
+    const id = playerState.musicInfo.id
     const duration = await getDuration()
+    if (revision !== musicRevision || id !== playerState.musicInfo.id) return
     setMaxplayTime(duration)
     updateScrobbleTotalTime(duration)
 
@@ -85,8 +91,9 @@ export default () => {
   }
 
   const startUpdateTimeout = () => {
-    if (!isScreenOn) return
     clearUpdateTimeout()
+    // 历史记录依赖真实播放进度，熄屏时也必须采集；暂停时不启动轮询。
+    if (!playerState.isPlay) return
     updateTimeout = BackgroundTimer.setInterval(() => {
       getCurrentTime()
     }, 1000 / settingState.setting['player.playbackRate'])
@@ -135,6 +142,7 @@ export default () => {
   }
 
   const handleSetPlayInfo = () => {
+    musicRevision++
     // restorePlayTime = playProgress.nowPlayTime
     // void setCurrentTime(playerState.progress.nowPlayTime)
     // setMaxplayTime(playProgress.maxPlayTime)
@@ -185,9 +193,8 @@ export default () => {
 
   const handleScreenStateChanged: Parameters<typeof onScreenStateChange>[0] = (state) => {
     isScreenOn = state == 'ON'
-    if (isScreenOn) {
-      if (playerState.isPlay) startUpdateTimeout()
-    } else clearUpdateTimeout()
+    // 屏幕状态只影响播放位置的持久化，不中断后台历史记录所需的进度更新。
+    if (playerState.isPlay) startUpdateTimeout()
   }
 
   // 修复在某些设备上屏幕状态改变事件未触发导致的进度条未更新的问题

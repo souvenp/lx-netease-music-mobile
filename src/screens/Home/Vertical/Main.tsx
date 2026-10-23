@@ -22,6 +22,7 @@ import {useSettingValue} from "@/store/setting/hook.ts";
 import PlayHistory from '../Views/PlayHistory'
 import { useTheme } from '@/store/theme/hook'
 import OneDrive from '../Views/OneDrive'
+import LocalMusic from '../Views/LocalMusic'
 
 const hideKeys = ['list.isShowAlbumName', 'list.isShowInterval', 'theme.fontShadow'] as Readonly<
   Array<keyof LX.AppSetting>
@@ -473,6 +474,7 @@ const Main = () => {
       nav_subscribed_albums: <SubscribedAlbumsPage />,
       nav_my_playlist: <MyPlaylistPage />,
       nav_onedrive: <OneDrivePage />,
+      nav_local_music: <LocalMusic />,
       nav_setting: <SettingPage />,
     };
 

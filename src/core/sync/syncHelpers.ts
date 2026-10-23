@@ -22,8 +22,9 @@ export const filterSensitiveSettingsForSync = (settings: Partial<LX.AppSetting>)
 };
 
 const sanitizeOneDriveMusicInfoForSync = (musicInfo: LX.Music.MusicInfo): LX.Music.MusicInfo => {
-  const meta = musicInfo.meta as Partial<LX.OneDrive.MusicInfo['meta']>;
-  if (!meta.oneDrive) return musicInfo;
+  // 兼容旧记录缺少歌曲或元数据的情况，保留原始数据。
+  const meta = musicInfo?.meta as Partial<LX.OneDrive.MusicInfo['meta']> | undefined;
+  if (!meta?.oneDrive) return musicInfo;
 
   const nextMeta = { ...musicInfo.meta } as Partial<LX.OneDrive.MusicInfo['meta']>;
   delete nextMeta.webUrl;
@@ -60,6 +61,18 @@ const sanitizeDownloadTasksForSync = (tasks: LX.Download.DownloadTask[]) =>
     musicInfo: sanitizeOneDriveMusicInfoForSync(task.musicInfo),
   }));
 
+// 设置和音源独立读取，避免上传时被无关的歌曲数据阻断。
+export const getSettingsForSync = () => filterSensitiveSettingsForSync(settingState.setting);
+
+export const getUserApisForSync = async () => {
+  const userApiList = await getUserApiList();
+  const userApiScripts: Record<string, string> = {};
+  for (const api of userApiList) {
+    userApiScripts[api.id] = await getUserApiScript(api.id);
+  }
+  return { list: userApiList, scripts: userApiScripts };
+};
+
 export const getAllDataForSync = async () => {
   const defaultList = await getListMusics(listState.defaultList.id);
   const loveList = await getListMusics(listState.loveList.id);
@@ -71,17 +84,8 @@ export const getAllDataForSync = async () => {
   const lists = sanitizeListsForSync({ defaultList, loveList, userList, tempList });
   const playHistory = sanitizePlayHistoryForSync(await getPlayHistory());
   const downloadTasks = sanitizeDownloadTasksForSync(normalizeDownloadTasksForSync(downloadState.tasks));
-  const settings = filterSensitiveSettingsForSync(settingState.setting);
-
-  const userApiList = await getUserApiList();
-  const userApiScripts: Record<string, string> = {};
-  for (const api of userApiList) {
-    userApiScripts[api.id] = await getUserApiScript(api.id);
-  }
-  const userApis = {
-    list: userApiList,
-    scripts: userApiScripts,
-  };
+  const settings = getSettingsForSync();
+  const userApis = await getUserApisForSync();
 
   return { lists, playHistory, downloadTasks, settings, userApis };
 };

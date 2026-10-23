@@ -68,6 +68,10 @@ const getDownloadHeaders = (task: DownloadTask) => {
   return task.musicInfo.source === 'wy' ? WY_MEDIA_HEADERS : DOWNLOAD_HEADERS
 }
 let currentDownloadTask: any | null = null;
+// 记录真正占用队列的任务，移除其他项时不能释放下载锁。
+let activeTask: DownloadTask | null = null;
+// 重试准备过程与元信息修复共用去重锁，防止重复点击并发清理文件。
+const retryingTasks = new Set<string>();
 type DownloadTarget = 'local' | 'onedrive';
 
 const getTaskTarget = (task: DownloadTask): DownloadTarget => task.target ?? 'local'
@@ -85,15 +89,21 @@ const processQueue = async () => {
     isProcessing = false;
     return;
   }
+  activeTask = task;
 
   try {
     await startDownload(task);
   } catch (error: any) {
-    downloadActions.updateTask(task.id, { status: 'error', errorMsg: error.message });
+    if (downloadState.tasks.includes(task)) downloadActions.updateTask(task.id, { status: 'error', errorMsg: error.message });
     if (getTaskTarget(task) === 'onedrive') {
       toast(`OneDrive 下载失败：${error.message}`, 'long');
     }
   } finally {
+    // 已移除项在旧请求完全结束后清理，避免误删下一次下载的文件。
+    if (!downloadState.tasks.includes(task) && !task.isRemoteSynced && task.status !== 'completed') {
+      await unlink(task.filePath).catch(() => {});
+    }
+    activeTask = null;
     isProcessing = false;
     processQueue();
   }
@@ -125,6 +135,8 @@ const startDownload = async (task: DownloadTask) => {
   }
 
   if (target === 'local') await requestStoragePermission()
+  // 获取地址和权限期间可能已经移除任务，此时不再创建网络请求。
+  if (!downloadState.tasks.includes(task)) return;
 
   if (!task.isForceCookie) {
     toast(`${task.fileName} 正在下载...`, 'short');
@@ -161,8 +173,11 @@ const startDownload = async (task: DownloadTask) => {
     });
 
     await downloadTask;
+    // 请求结束后再次检查，避免已移除任务继续写入标签或上传。
+    if (!downloadState.tasks.includes(task)) return;
     console.log('下载完成:', task.fileName);
     await handleMetadata(task, task.filePath);
+    if (!downloadState.tasks.includes(task)) return;
     if (target === 'onedrive') {
       const config = await getOneDriveConfig();
       const downloadFolder = getOneDriveDownloadFolder(config);
@@ -382,12 +397,16 @@ export const retryMetadata = async (taskId: string) => {
 
 export const retryTask = (taskId: string) => {
   const task = downloadState.tasks.find(t => t.id === taskId);
-  if (!task) return;
+  if (!task || task.isRemoteSynced || retryingTasks.has(taskId) || activeTask === task) return;
 
   // 失败任务由用户手动触发后原地重新排队，避免删除任务造成状态和清理竞态。
-  if (task.status === 'error' || !task.filePath) {
-    toast('正在重新下载...');
+  if (task.status === 'error') {
+    retryingTasks.add(taskId);
+    // 立即切换到排队状态，让连续点击和筛选数量都反映最新状态。
+    downloadActions.updateTask(task.id, { status: 'waiting', errorMsg: '' });
     void unlink(task.filePath).catch(() => {}).finally(() => {
+      retryingTasks.delete(taskId);
+      if (!downloadState.tasks.includes(task)) return;
       downloadActions.updateTask(task.id, {
         status: 'waiting',
         errorMsg: '',
@@ -401,25 +420,31 @@ export const retryTask = (taskId: string) => {
     });
   }
   // 如果文件已存在，但元信息失败，则只重试元信息
-  else if (Object.values(task.metadataStatus).includes('fail')) {
-    void retryMetadata(task.id);
+  else if (task.status === 'completed' && task.target !== 'onedrive' && Object.values(task.metadataStatus).includes('fail')) {
+    retryingTasks.add(taskId);
+    void retryMetadata(task.id).finally(() => { retryingTasks.delete(taskId); });
   }
 };
 
 export const resumeTask = async (taskId: string) => {
   const task = downloadState.tasks.find(t => t.id === taskId);
-  if (!task) return;
+  if (!task || task.isRemoteSynced || retryingTasks.has(taskId) || activeTask === task) return;
   if (task.status !== 'paused') return;
 
   if (taskQueue.some(t => t.id === task.id)) {
     return;
   }
+  // 恢复也先锁定状态，避免批量继续与单项继续同时执行。
+  retryingTasks.add(taskId);
+  downloadActions.updateTask(task.id, { status: 'waiting' });
 
   try {
     await unlink(task.filePath);
   } catch (error) {
     // Ignore cleanup failures so we can still restart the download.
   }
+  retryingTasks.delete(taskId);
+  if (!downloadState.tasks.includes(task)) return;
 
   downloadActions.updateTask(task.id, {
     status: 'waiting',
@@ -470,7 +495,7 @@ export const addTask = (
     isForceCookie,
   };
 
-  if (downloadState.tasks.some(t => t.id === task.id)) {
+  if (downloadState.tasks.some(t => t.id === task.id) || activeTask?.id === id || retryingTasks.has(id)) {
     toast('任务已存在');
     return;
   }
@@ -482,29 +507,19 @@ export const addTask = (
 
 export const removeTask = (id: string) => {
   const taskToRemove = downloadState.tasks.find(t => t.id === id);
-  if (currentDownloadTask && taskToRemove && taskToRemove.status === 'downloading') {
-    currentDownloadTask.cancel(async () => {
-      try {
-        console.log(taskToRemove)
-        if (taskToRemove.filePath) {
-          await unlink(taskToRemove.filePath);
-          console.log(`[Download Manager] Canceled and deleted partial file: ${taskToRemove.filePath}`);
-        }
-      } catch (error) {
-        console.error(`[Download Manager] Failed to delete partial file on remove:`, error);
-      }
-      currentDownloadTask = null;
-    })
-  } else if (taskToRemove && taskToRemove.status !== 'completed' && taskToRemove.filePath) {
-    void unlink(taskToRemove.filePath).catch(() => {});
-  }
   // 从队列中移除
   const taskIndex = taskQueue.findIndex(t => t.id === id);
   if (taskIndex > -1) taskQueue.splice(taskIndex, 1);
   // 从store中移除
   downloadActions.removeTask(id);
-  isProcessing = false;
-  processQueue();
+  // 取消当前请求后由 processQueue 的 finally 统一清理并继续队列。
+  if (taskToRemove && activeTask === taskToRemove) {
+    currentDownloadTask?.cancel(() => {});
+  } else if (taskToRemove && !retryingTasks.has(id) && !taskToRemove.isRemoteSynced && taskToRemove.status !== 'completed' && taskToRemove.filePath) {
+    // 非活动项清理期间保留锁，防止同编号的新任务覆盖文件。
+    retryingTasks.add(id);
+    void unlink(taskToRemove.filePath).catch(() => {}).finally(() => { retryingTasks.delete(id); });
+  }
 };
 
 

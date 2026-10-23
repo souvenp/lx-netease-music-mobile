@@ -28,6 +28,9 @@ export default memo(({ componentId }: { componentId: string }) => {
   const similarSongsModalRef = useRef<SimilarSongsModalType>(null);
   const playMusicInfo = usePlayMusicInfo();
   const isOneDrive = isOneDriveMusicInfo(playMusicInfo.musicInfo);
+  // 本地文件不显示评论和歌曲更多菜单，OneDrive 保持原有操作。
+  const musicInfo = playMusicInfo.musicInfo;
+  const isLocal = !!musicInfo && !('progress' in musicInfo) && musicInfo.source === 'local' && !isOneDrive;
 
   // 监听歌曲变化，以便在菜单打开时能重新渲染以获取最新的“喜欢”状态
   useEffect(() => {
@@ -46,7 +49,7 @@ export default memo(({ componentId }: { componentId: string }) => {
 
   const handleShowMenu = useCallback(() => {
     const musicInfo = playerState.playMusicInfo.musicInfo;
-    if (!musicInfo) return;
+    if (!musicInfo || (!('progress' in musicInfo) && musicInfo.source === 'local' && !isOneDriveMusicInfo(musicInfo))) return;
 
     moreBtnRef.current?.measure((fx, fy, width, height, px, py) => {
       const position: Position = {
@@ -123,11 +126,11 @@ export default memo(({ componentId }: { componentId: string }) => {
         <DesktopLyricBtn />
         <MusicAddBtn />
         <PlayModeBtn />
-        {isOneDrive ? null : <CommentBtn />}
-        <Btn icon="dots-vertical" onPress={handleShowMenu} ref={moreBtnRef} />
+        {isOneDrive || isLocal ? null : <CommentBtn />}
+        {isLocal ? null : <Btn icon="dots-vertical" onPress={handleShowMenu} ref={moreBtnRef} />}
       </View>
 
-      <PlayDetailMenu
+      {!isLocal && <PlayDetailMenu
         ref={menuRef}
         onAdd={onAdd}
         onLike={onLike}
@@ -139,7 +142,7 @@ export default memo(({ componentId }: { componentId: string }) => {
         onMusicSourceDetail={onMusicSourceDetail}
         onDislikeMusic={onDislikeMusic}
         onPlayMv={onPlayMv}
-      />
+      />}
       <MusicAddModal ref={musicAddModalRef} />
       {settingState.setting['download.enable'] && <MusicDownloadModal ref={musicDownloadModalRef} onDownloadInfo={() => {}} />}
       <SimilarSongsModal ref={similarSongsModalRef} />

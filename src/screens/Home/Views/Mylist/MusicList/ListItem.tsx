@@ -14,9 +14,11 @@ import { useI18n } from '@/lang'
 
 export const ITEM_HEIGHT = scaleSizeH(LIST_ITEM_HEIGHT)
 
-const useQualityTag = (musicInfo: LX.Music.MusicInfoOnline) => {
+const useQualityTag = (musicInfo: LX.Music.MusicInfo) => {
   const t = useI18n()
   let info: { type: BadgeType | null; text: string } = { type: null, text: '' }
+  // 本地歌曲不读取在线音质字段，保持 Hook 调用顺序一致。
+  if (musicInfo.source === 'local') return info
   if (musicInfo.meta._qualitys.hires) {
     info.type = 'secondary'
     info.text = t('quality_lossless_24bit')
@@ -43,13 +45,16 @@ export default memo(
     isShowAlbumName,
     isShowInterval,
     showCover,
+    hideMenu = false,
+    showSource = true,
+    qualityTag,
   }: {
     item: LX.Music.MusicInfo
     index: number
     activeIndex: number
     onPress: (item: LX.Music.MusicInfo, index: number) => void
-    onLongPress: (item: LX.Music.MusicInfo, index: number) => void
-    onShowMenu: (
+    onLongPress?: (item: LX.Music.MusicInfo, index: number) => void
+    onShowMenu?: (
       item: LX.Music.MusicInfo,
       index: number,
       position: { x: number; y: number; w: number; h: number }
@@ -59,6 +64,10 @@ export default memo(
     isShowAlbumName: boolean
     isShowInterval: boolean
     showCover: boolean
+    // 本地音乐复用歌单行，只展示音质并隐藏操作入口。
+    hideMenu?: boolean
+    showSource?: boolean
+    qualityTag?: { type: BadgeType, text: string }
   }) => {
     const theme = useTheme()
     const isSelected = selectedList.includes(item)
@@ -68,12 +77,14 @@ export default memo(
     const isSupported = useAssertApiSupport(item.source)
     const moreButtonRef = useRef<TouchableOpacity>(null)
 
-    const tagInfo = item.source === 'local' ? { type: null, text: '' } : useQualityTag(item as LX.Music.MusicInfoOnline)
+    // 优先使用本地文件解析的音质，在线歌曲沿用原有标签。
+    const onlineTag = useQualityTag(item)
+    const tagInfo = qualityTag ?? onlineTag
 
     const handleShowMenu = () => {
       if (moreButtonRef.current?.measure) {
         moreButtonRef.current.measure((fx, fy, width, height, px, py) => {
-          onShowMenu(item, index, {
+          onShowMenu?.(item, index, {
             x: Math.ceil(px),
             y: Math.ceil(py),
             w: Math.ceil(width),
@@ -90,6 +101,8 @@ export default memo(
       <View
         style={{
           ...styles.listItem,
+          // 隐藏更多按钮后保留其 38px 占位，让时长与其他歌单对齐而不贴右边。
+          paddingRight: hideMenu ? 40 : 2,
           width: rowInfo.rowWidth,
           height: ITEM_HEIGHT,
           backgroundColor: isSelected ? selectedBackground : 'rgba(0,0,0,0)',
@@ -102,7 +115,7 @@ export default memo(
             onPress(item, index)
           }}
           onLongPress={() => {
-            onLongPress(item, index)
+            onLongPress?.(item, index)
           }}
         >
 
@@ -127,7 +140,7 @@ export default memo(
             </Text>
             {/* </View> */}
             <View style={styles.listItemSingle}>
-              <Badge>{item.source.toUpperCase()}</Badge>
+              {showSource ? <Badge>{item.source.toUpperCase()}</Badge> : null}
               {tagInfo.type ? <Badge type={tagInfo.type}>{tagInfo.text}</Badge> : null}
               {item.source !== 'local' && (item as LX.Music.MusicInfoOnline).meta.fee === 1 ? <Badge type="vip">VIP</Badge> : null}
               {item.source === 'wy' && (item as LX.Music.MusicInfoOnline).meta.originCoverType === 2 ? <Badge type="normal">cover</Badge> : null}
@@ -152,9 +165,9 @@ export default memo(
           ) : null}
         </TouchableOpacity>
         {/* <View style={styles.listItemRight}> */}
-        <TouchableOpacity onPress={handleShowMenu} ref={moreButtonRef} style={styles.moreButton}>
+        {!hideMenu && <TouchableOpacity onPress={handleShowMenu} ref={moreButtonRef} style={styles.moreButton}>
           <Icon name="dots-vertical" style={{ color: theme['c-350'] }} size={12} />
-        </TouchableOpacity>
+        </TouchableOpacity>}
         {/* </View> */}
       </View>
     )
@@ -162,6 +175,10 @@ export default memo(
   (prevProps, nextProps) => {
     return !!(
       prevProps.item === nextProps.item &&
+      prevProps.hideMenu === nextProps.hideMenu &&
+      prevProps.showSource === nextProps.showSource &&
+      prevProps.qualityTag === nextProps.qualityTag &&
+      prevProps.onPress === nextProps.onPress &&
       prevProps.index === nextProps.index &&
       prevProps.isShowAlbumName === nextProps.isShowAlbumName &&
       prevProps.isShowInterval === nextProps.isShowInterval &&

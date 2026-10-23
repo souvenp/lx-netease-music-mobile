@@ -118,6 +118,9 @@ public class LyricPlayer {
   final String t_rxp_2 = ":0+(\\d+)";
   final String t_rxp_3 = "\\.0+(\\d+)";
   private String formatTimeLabel(String label) {
+    // 统一小数位后再生成匹配键，区分 .05 和 .5，并让 .05 匹配 .050。
+    int dot = label.indexOf('.');
+    if (dot >= 0) label = label.substring(0, dot + 1) + padEnd(label.substring(dot + 1), 3, '0');
     return label.replaceAll(t_rxp_1, "$1")
       .replaceAll(t_rxp_2, ":$1")
       .replaceAll(t_rxp_3, ".$1");
@@ -144,6 +147,16 @@ public class LyricPlayer {
     }
   }
 
+  public static String padEnd(String str, int length, char padChar) {
+    if (str.length() >= length) {
+      return str;
+    }
+    // 兼容旧版 Android，避免依赖较新的 String.repeat API。
+    StringBuilder padded = new StringBuilder(str);
+    while (padded.length() < length) padded.append(padChar);
+    return padded.toString();
+  }
+
   private void initLines() {
     String[] linesStr = lyric.split("\r\n|\n|\r");
     lines = new ArrayList<>();
@@ -165,7 +178,8 @@ public class LyricPlayer {
               ((ArrayList<String>) ((HashMap) linesMap.get(timeStr)).get("extendedLyrics")).add(text);
               continue;
             }
-            String[] timeArr = timeStr.split(":");
+            // 用原始时间解析小数位，避免格式化去掉 .05 的前导零。
+            String[] timeArr = timeMatchResult.group().split(":");
             String hours;
             String minutes;
             String seconds;
@@ -192,7 +206,11 @@ public class LyricPlayer {
             if (seconds.contains(".")) {
               timeArr = seconds.split("\\.");
               seconds = timeArr[0];
-              if (timeArr.length > 1) milliseconds = timeArr[1];
+              if (timeArr.length > 1) {
+                String msStr = timeArr[1];
+                msStr = padEnd(msStr, 3, '0');
+                milliseconds = msStr;
+              }
             }
             HashMap<String, Object> lineInfo = new HashMap<>();
             int time = Integer.parseInt(hours) * 60 * 60 * 1000

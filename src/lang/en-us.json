@@ -180,6 +180,7 @@
   "nav_top": "Charts",
   "nav_daily_rec": "Daily Mix",
   "nav_onedrive": "OneDrive",
+  "nav_local_music": "Local music",
   "never_show": "Never show again",
   "no_item": "The list is empty...",
   "notifications_check_tip": "You have not allowed LX-N Music to show notifications, or the \"MusicService\" notification category in the LX-N Music notification settings is disabled, which prevents you from using the notification for actions such as pausing, switching songs, and so on. Do you want to enable it?",

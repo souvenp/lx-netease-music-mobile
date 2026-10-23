@@ -94,6 +94,9 @@ export default memo(() => {
   const popupRef = useRef<SettingPopupType>(null)
   const playMusicInfo = usePlayMusicInfo()
   const isOneDrive = isOneDriveMusicInfo(playMusicInfo.musicInfo)
+  // 横屏同样隐藏本地文件的评论入口。
+  const musicInfo = playMusicInfo.musicInfo
+  const isLocal = !!musicInfo && !('progress' in musicInfo) && musicInfo.source === 'local'
   const back = () => {
     void pop(commonState.componentIds[commonState.componentIds.length - 1]?.id!)
   }
@@ -108,7 +111,7 @@ export default memo(() => {
         </TouchableOpacity>
         <Title />
         <DesktopLyricBtn />
-        {isOneDrive ? null : <CommentBtn />}
+        {isOneDrive || isLocal ? null : <CommentBtn />}
         <Btn icon="slider" onPress={showSetting} />
       </View>
       <SettingPopup ref={popupRef} position="left" direction="horizontal" />
