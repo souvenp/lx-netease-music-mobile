@@ -19,6 +19,7 @@ import WebLoginManager from "@/components/WebLoginManager.tsx";
 import DownloadBall from "@/components/DownloadBall";
 import YouTubeLoginManager from "@/components/YouTubeLoginManager.tsx";
 import VideoPlayerManager from "@/components/VideoPlayerManager.tsx";
+import GlobalSearchSuggestions from '@/components/GlobalSearchSuggestions';
 interface Props {
   componentId: string
 }
@@ -76,12 +77,12 @@ export default ({ componentId }: Props) => {
   )
 
   return (
-    <>
+    <GlobalSearchSuggestions>
       <PageContent>{isHorizontalMode ? <Horizontal componentId={componentId} /> : <Vertical componentId={componentId} />}</PageContent>
       <ArtistSelectorManager />
       <WebLoginManager />
       {/*<YouTubeLoginManager />*/}
       <VideoPlayerManager />
       <DownloadBall />
-    </>
+    </GlobalSearchSuggestions>
   )}

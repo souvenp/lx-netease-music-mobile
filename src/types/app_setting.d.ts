@@ -219,6 +219,8 @@ declare global {
       'playDetail.style.align': 'center' | 'left' | 'right'
 
       'playDetail.isCoverSpin': boolean
+      /** 所有歌曲共用的详情页停留位置 */
+      'playDetail.lastPage': 0 | 1
       /**
        * 竖屏歌词字体大小
        */
@@ -359,7 +361,6 @@ declare global {
       'menu.playMV': boolean
       'menu.songDetail': boolean
       'menu.dislike': boolean
-      'menu.downloadOneDrive': boolean
 
       'menu.moveTo': boolean
       'menu.changePosition': boolean
@@ -372,6 +373,7 @@ declare global {
       'download.enable': boolean
       /** 额外本地音乐扫描目录，以 JSON 字符串保存，兼容配置合并。 */
       'localMusic.paths': string
+      'download.webdavPath': string
 
       'download.path': string
       /**

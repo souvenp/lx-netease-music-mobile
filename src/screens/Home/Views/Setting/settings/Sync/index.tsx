@@ -6,6 +6,7 @@ import InputItem from '../../components/InputItem';
 import Button from '../../components/Button';
 import CheckBoxItem from '../../components/CheckBoxItem';
 import History from './History';
+import WebDAVPath from './WebDAVPath';
 import { useI18n } from '@/lang';
 import { useSettingValue } from '@/store/setting/hook';
 import { updateSetting } from '@/core/common';
@@ -123,7 +124,7 @@ export default memo(() => {
   return (
     <Section title={t('setting_sync')}>
       {/* WebDAV 设置部分 */}
-      <SubTitle title="WebDAV 同步">
+      <SubTitle title="WebDAV 连接与同步">
         <CheckBoxItem
           check={isEnableWebdav}
           label="启用 WebDAV 同步"
@@ -138,20 +139,18 @@ export default memo(() => {
           />
         </View>
 
-        <View style={{ opacity: isEnableWebdav ? 1 : 0.5 }}>
+        <View>
           <InputItem
             label="服务器地址"
             value={webdavUrl}
             onChanged={handleWebdavSettingChanged('sync.webdav.url')}
             placeholder="https://example.com/webdav"
-            editable={isEnableWebdav}
           />
           <InputItem
             label="用户名"
             value={webdavUsername}
             onChanged={handleWebdavSettingChanged('sync.webdav.username')}
             placeholder="请输入用户名"
-            editable={isEnableWebdav}
           />
           <InputItem
             label="密码"
@@ -159,7 +158,6 @@ export default memo(() => {
             onChanged={handleWebdavSettingChanged('sync.webdav.password')}
             placeholder="请输入密码"
             secureTextEntry
-            editable={isEnableWebdav}
           />
           <InputItem
             label="同步路径"
@@ -168,9 +166,10 @@ export default memo(() => {
             placeholder="例如: /LX_Music/"
             editable={isEnableWebdav && !isSyncing}
           />
+          <WebDAVPath />
 
           <View style={styles.btnRow}>
-            <Button onPress={handleTestConnection} disabled={!isEnableWebdav || isTesting}>
+            <Button onPress={handleTestConnection} disabled={isTesting}>
               {isTesting ? '测试中...' : '测试连接'}
             </Button>
             <Button onPress={handleSyncNow} disabled={!isEnableWebdav || isSyncing}>

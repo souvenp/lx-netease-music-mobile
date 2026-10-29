@@ -145,6 +145,7 @@ const getRemoteDownloadTasksForLocal = (remoteTasks: LX.Download.DownloadTask[])
     .map(task => {
       const localTask = localTaskMap.get(task.id);
       if (!localTask) return task;
+      if (localTask.target === 'webdav') return localTask;
       return {
         ...task,
         status: localTask.status,

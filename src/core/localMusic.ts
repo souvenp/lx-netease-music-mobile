@@ -9,6 +9,18 @@ export interface LocalMusicEntry {
   bitrate: number
 }
 
+// 缓存当前会话的扫描结果，页面卸载重建后仍可复用；手动扫描始终绕过缓存。
+export const localMusicCache: { key: string, entries: LocalMusicEntry[], errors: string[] } = {
+  key: '', entries: [], errors: [],
+}
+
+// 目录和本机下载文件变化才使缓存失效，远程记录和下载进度不触发全盘扫描。
+export const getLocalMusicScanKey = (paths: string[], tasks: LX.Download.DownloadTask[]) => JSON.stringify([
+  paths,
+  tasks.filter(task => !task.isRemoteSynced && (task.target ?? 'local') === 'local')
+    .map(task => [normalizeLocalPath(task.filePath), task.status === 'completed']).sort(),
+])
+
 // 保留 URI 原样；普通路径统一末尾分隔符，避免重复扫描同一目录。
 export const normalizeLocalPath = (path: string) => path.startsWith('content://') ? path : path.replace(/\/+$/, '') || '/'
 

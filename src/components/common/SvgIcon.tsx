@@ -67,6 +67,15 @@ const AlbumDiscIcon = ({ size, color }: { size: number; color: string }) => (
   </Svg>
 )
 
+// 本地音乐使用手机轮廓，与导航栏现有线性图标保持一致。
+const PhoneIcon = ({ size, color }: { size: number; color: string }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Rect x="5.5" y="1.5" width="13" height="21" rx="2.5" stroke={color} strokeWidth="1.6" />
+    <Line x1="10" y1="4.5" x2="14" y2="4.5" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
+    <Circle cx="12" cy="19.5" r="0.9" fill={color} />
+  </Svg>
+)
+
 const OneDriveIcon = ({ size, color }: { size: number; color: string }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path
@@ -109,6 +118,8 @@ export const SvgIcon = memo(({ name, size = 15, rawSize, color = '#000' }: SvgIc
       return <AlbumDiscIcon size={finalSize} color={color} />
     case 'onedrive':
       return <OneDriveIcon size={finalSize} color={color} />
+    case 'phone':
+      return <PhoneIcon size={finalSize} color={color} />
     case 'heartbeat':
       return <HeartbeatIcon size={finalSize} color={color} />
     default:

@@ -27,7 +27,7 @@ export default memo(({ task: initialTask, onRemove, selecting, selected, onSelec
 
     const handleStatusUpdate = ({ id, status, errorMsg }: { id: string, status: LX.Download.DownloadTask['status'], errorMsg?: string }) => {
       if (id === task.id) {
-        setTask(prevTask => ({ ...prevTask, status, errorMsg }));
+        setTask({ ...initialTask, status, errorMsg });
       }
     };
     const handleMetadataUpdate = ({ id, metadataStatus }: { id: string, metadataStatus: LX.Download.DownloadTask['metadataStatus'] }) => {
@@ -52,7 +52,7 @@ export default memo(({ task: initialTask, onRemove, selecting, selected, onSelec
 
 
   const hasMetaError = useMemo(() => Object.values(task.metadataStatus).includes('fail'), [task.metadataStatus]);
-  const canRetryMetadata = task.target !== 'onedrive';
+  const canRetryMetadata = (task.target ?? 'local') === 'local';
 
   const handleRetry = useCallback(() => {
     retryTask(task.id);
@@ -87,7 +87,7 @@ export default memo(({ task: initialTask, onRemove, selecting, selected, onSelec
           <Text size={12} color={theme['c-primary']} numberOfLines={1}>
             {task.target === 'onedrive'
               ? `已上传到 OneDrive${task.remotePath ? `：${task.remotePath}` : ''}`
-              : '已完成'}
+              : task.target === 'webdav' ? `已上传到 WebDAV${task.remotePath ? `：${task.remotePath}` : ''}` : '已完成'}
           </Text>
         );
       case 'error':
@@ -140,6 +140,7 @@ export default memo(({ task: initialTask, onRemove, selecting, selected, onSelec
           {task.target === 'onedrive' &&
             <Text size={11} color={theme['c-font-label']}> • OneDrive</Text>
           }
+          {task.target === 'webdav' && <Text size={11} color={theme['c-font-label']}> • WebDAV</Text>}
           {task.status === 'completed' && task.progress.total > 0 &&
             <Text size={11} color={theme['c-font-label']}> • {sizeFormate(task.progress.total)}</Text>
           }

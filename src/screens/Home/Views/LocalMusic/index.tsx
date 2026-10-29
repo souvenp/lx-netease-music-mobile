@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { AppState, FlatList, PermissionsAndroid, Platform, ScrollView, View } from 'react-native'
+import { FlatList, PermissionsAndroid, Platform, ScrollView, View } from 'react-native'
 import RNFetchBlob from 'rn-fetch-blob'
 import Text from '@/components/common/Text'
 import FileSelect, { type FileSelectType } from '@/components/common/FileSelect'
@@ -9,7 +9,7 @@ import { useTheme } from '@/store/theme/hook'
 import commonState from '@/store/common/state'
 import downloadState from '@/store/download/state'
 import { updateSetting } from '@/core/common'
-import { normalizeLocalPath, parseLocalPaths, scanLocalMusic, type LocalMusicEntry } from '@/core/localMusic'
+import { getLocalMusicScanKey, localMusicCache, normalizeLocalPath, parseLocalPaths, scanLocalMusic, type LocalMusicEntry } from '@/core/localMusic'
 import { overwriteListMusics, setActiveList } from '@/core/list'
 import listAction from '@/store/list/action'
 import { playList } from '@/core/player/player'
@@ -52,6 +52,7 @@ export default memo(() => {
 
   const scan = useCallback(async () => {
     const current = ++generation.current
+    const cacheKey = getLocalMusicScanKey(paths, downloadState.tasks)
     const cancelled = () => current !== generation.current
     setLoading(true)
     try {
@@ -67,9 +68,10 @@ export default memo(() => {
         }
       }
       if (cancelled()) return
-      const excluded = new Set(downloadState.tasks.filter(task => !task.isRemoteSynced && task.target !== 'onedrive' && task.status !== 'completed').map(task => normalizeLocalPath(task.filePath)))
+      const excluded = new Set(downloadState.tasks.filter(task => !task.isRemoteSynced && (task.target ?? 'local') === 'local' && task.status !== 'completed').map(task => normalizeLocalPath(task.filePath)))
       const result = await scanLocalMusic(paths, excluded, cancelled)
       if (cancelled()) return
+      Object.assign(localMusicCache, { key: cacheKey, entries: result.entries, errors: result.errors })
       setEntries(result.entries)
       setErrors(result.errors)
     } catch (error) {
@@ -90,18 +92,26 @@ export default memo(() => {
 
   useEffect(() => {
     if (!active) return
-    void scan()
-    const onStatus = ({ status }: { status: LX.Download.DownloadTask['status'] }) => {
-      if (status === 'completed') void scan()
+    if (localMusicCache.key === getLocalMusicScanKey(paths, downloadState.tasks)) {
+      setEntries(localMusicCache.entries)
+      setErrors(localMusicCache.errors)
+      setLoading(false)
+    } else void scan()
+    // 下载完成通知合并后再刷新；返回前台不再触发扫描。
+    let refreshTimer: ReturnType<typeof setTimeout> | undefined
+    const onStatus = ({ id, status }: { id: string, status: LX.Download.DownloadTask['status'] }) => {
+      const task = downloadState.tasks.find(item => item.id === id)
+      if (status !== 'completed' || !task || task.isRemoteSynced || (task.target ?? 'local') !== 'local') return
+      clearTimeout(refreshTimer)
+      refreshTimer = setTimeout(() => { void scan() }, 1000)
     }
-    const subscription = AppState.addEventListener('change', state => { if (state === 'active') void scan() })
     global.app_event.on('download_status_update', onStatus)
     return () => {
       generation.current++
-      subscription.remove()
+      clearTimeout(refreshTimer)
       global.app_event.off('download_status_update', onStatus)
     }
-  }, [active, scan])
+  }, [active, scan, paths])
 
   const addPath = () => fileSelect.current?.show({ title: '添加本地音乐扫描目录', dirOnly: true }, path => {
     if (!path) return

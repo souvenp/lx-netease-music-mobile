@@ -12,6 +12,8 @@ import Lyric from './Lyric'
 import { screenkeepAwake, screenUnkeepAwake } from '@/utils/nativeModules/utils'
 import commonState, { type InitState as CommonState } from '@/store/common/state'
 import { createStyle } from '@/utils/tools'
+import settingState from '@/store/setting/state'
+import { updateSetting } from '@/core/common'
 // import { useTheme } from '@/store/theme/hook'
 
 const LyricPage = ({ activeIndex }: { activeIndex: number }) => {
@@ -31,12 +33,17 @@ const LyricPage = ({ activeIndex }: { activeIndex: number }) => {
 // global.iskeep = false
 export default memo(({ componentId }: { componentId: string }) => {
   // const theme = useTheme()
-  const [pageIndex, setPageIndex] = useState(0)
+  // 所有歌曲共用上次停留的页面，启动时也从持久化设置恢复。
+  const initialPage = useRef(settingState.setting['playDetail.lastPage'] === 1 ? 1 : 0)
+  const [pageIndex, setPageIndex] = useState(initialPage.current)
   const pagerViewRef = useRef<PagerView>(null);
-  const showLyricRef = useRef(false)
+  const showLyricRef = useRef(initialPage.current === 1)
 
   const onPageSelected = ({ nativeEvent }: PagerViewOnPageSelectedEvent) => {
     setPageIndex(nativeEvent.position)
+    if (nativeEvent.position === 0 || nativeEvent.position === 1) {
+      updateSetting({ 'playDetail.lastPage': nativeEvent.position })
+    }
     showLyricRef.current = nativeEvent.position == 1
     if (showLyricRef.current) {
       screenkeepAwake()
@@ -50,6 +57,7 @@ export default memo(({ componentId }: { componentId: string }) => {
   }, []);
 
   useEffect(() => {
+    if (showLyricRef.current) screenkeepAwake()
     let appstateListener = AppState.addEventListener('change', (state) => {
       switch (state) {
         case 'active':
@@ -63,7 +71,7 @@ export default memo(({ componentId }: { componentId: string }) => {
 
     const handleComponentIdsChange = (ids: CommonState['componentIds']) => {
       if (ids.comment) screenUnkeepAwake()
-      else if (AppState.currentState == 'active') screenkeepAwake()
+      else if (showLyricRef.current && AppState.currentState == 'active') screenkeepAwake()
     }
 
     global.state_event.on('componentIdsUpdated', handleComponentIdsChange)
@@ -80,6 +88,7 @@ export default memo(({ componentId }: { componentId: string }) => {
       <Header />
       <View style={styles.container}>
         <PagerView
+          initialPage={initialPage.current}
           onPageSelected={onPageSelected}
           // onPageScrollStateChanged={onPageScrollStateChanged}
           style={styles.pagerView}

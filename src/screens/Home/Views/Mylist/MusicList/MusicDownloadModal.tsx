@@ -8,7 +8,7 @@ import { handleDownload } from './listAction'
 import { getLastSelectQuality, saveLastSelectQuality } from '@/utils/data'
 import { addTask as addDownloadTask } from '@/core/download';
 import {fetchAndApplyDetailedQuality} from "@/utils/musicSdk/wy/musicDetail.js";
-import { useSettingValue } from '@/store/setting/hook'
+import DownloadTargetSelector from '@/components/DownloadTargetSelector'
 
 interface TitleType {
   updateTitle: (musicInfo: LX.Music.MusicInfo) => void
@@ -56,10 +56,9 @@ export default forwardRef<MusicDownloadModalType, MusicDownloadModalProps>(
     const titleRef = useRef<TitleType>(null)
     const selectedInfo = useRef<LX.Music.MusicInfo>(initSelectInfo as LX.Music.MusicInfo)
     const [selectedQuality, setSelectedQuality] = useState<LX.Quality>('128k')
-    const [selectedTarget, setSelectedTarget] = useState<'local' | 'onedrive'>('local')
+    const [selectedTarget, setSelectedTarget] = useState<NonNullable<LX.Download.DownloadTask['target']>>('local')
     const [playQualityList, setPlayQualityList] = useState<MusicOption[]>([])
     const [visible, setVisible] = useState(false)
-    const showOneDriveDownload = useSettingValue('menu.downloadOneDrive')
 
     interface QualityMap {
       [key: string]: MusicOption
@@ -143,7 +142,7 @@ export default forwardRef<MusicDownloadModalType, MusicDownloadModalProps>(
     }, [visible])
 
     const handleDownloadMusic = async() => {
-      const target = showOneDriveDownload && selectedTarget === 'onedrive' ? 'onedrive' : 'local'
+      const target = selectedTarget
       void saveLastSelectQuality(selectedQuality)
       alertRef.current?.setVisible(false)
       // handleDownload(selectedInfo.current, selectedQuality)
@@ -194,24 +193,7 @@ export default forwardRef<MusicDownloadModalType, MusicDownloadModalProps>(
       >
         <View style={styles.content}>
           <Title ref={titleRef} />
-          {showOneDriveDownload ? (
-            <View style={styles.targetList}>
-              <CheckBox
-                marginRight={8}
-                check={selectedTarget === 'local'}
-                label="下载到本地"
-                onChange={() => setSelectedTarget('local')}
-                need
-              />
-              <CheckBox
-                marginRight={8}
-                check={selectedTarget === 'onedrive'}
-                label="下载到 OneDrive"
-                onChange={() => setSelectedTarget('onedrive')}
-                need
-              />
-            </View>
-          ) : null}
+          <DownloadTargetSelector value={selectedTarget} onChange={setSelectedTarget} />
           <View style={styles.list}>
             {playQualityList.map((item) => (
               <Item name={item.name + (item.size ? ` (${item.size})` : '')} id={item.id} key={item.key} />

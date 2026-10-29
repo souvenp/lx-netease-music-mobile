@@ -57,6 +57,10 @@
           <action android:name="com.cyanogenmod.eleven.AUDIO_PLAYER"/>
           <category android:name="android.intent.category.DEFAULT"/>
         </intent-filter>
+        <intent-filter>
+          <action android:name="com.lxnetease.music.mobile.action.PLAYER_CONTROL" />
+          <category android:name="android.intent.category.DEFAULT" />
+        </intent-filter>
 
         <intent-filter android:priority="80">
           <!-- <action android:name="android.intent.action.PICK"/> -->

@@ -5,6 +5,7 @@ import {
   play,
   playNext,
   playPrev,
+  stop,
   togglePlay,
   uncollectMusic,
 } from '@/core/player/player'
@@ -12,6 +13,11 @@ import {
 export type PlayerAction =
   | 'play'
   | 'pause'
+  | 'stop'
+  | 'next'
+  | 'previous'
+  | 'prev'
+  | 'toggle'
   | 'skipNext'
   | 'skipPrev'
   | 'togglePlay'
@@ -22,29 +28,37 @@ export type PlayerAction =
 export const handlePlayerAction = async (action: PlayerAction) => {
   switch (action) {
     case 'play':
-      play()
+      await play()
       break
     case 'pause':
-      void pause()
+      await pause()
       break
+    case 'stop':
+      await stop()
+      break
+    case 'next':
     case 'skipNext':
-      void playNext()
+      await playNext()
       break
+    case 'previous':
+    case 'prev':
     case 'skipPrev':
-      void playPrev()
+      await playPrev()
       break
+    case 'toggle':
     case 'togglePlay':
-      togglePlay()
+      await togglePlay()
       break
     case 'collect':
-      collectMusic()
+      await collectMusic()
       break
     case 'uncollect':
-      uncollectMusic()
+      await uncollectMusic()
       break
     case 'dislike':
-      void dislikeMusic()
+      await dislikeMusic()
       break
-    // default: throw new Error('Unknown action: ' + (action as any ?? ''))
+    default:
+      throw new Error('Unknown player action: ' + action)
   }
 }

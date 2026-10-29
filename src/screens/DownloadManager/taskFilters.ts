@@ -3,7 +3,7 @@ export type TaskFilter = 'all' | 'downloading' | 'pending' | 'error' | 'complete
 
 // 元信息写入失败的本地任务也归入失败，便于统一修复。
 export const isFailedTask = (task: LX.Download.DownloadTask) => task.status === 'error' || (
-  task.status === 'completed' && task.target !== 'onedrive' && Object.values(task.metadataStatus).includes('fail')
+  task.status === 'completed' && (task.target ?? 'local') === 'local' && Object.values(task.metadataStatus).includes('fail')
 )
 
 // 每个任务只属于一个状态分组，避免完成和失败数量重复。

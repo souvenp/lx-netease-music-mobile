@@ -249,7 +249,7 @@ export const getPlayQuality = (
 ): LX.Quality => {
   console.log('Preferred quality:', preferredQuality);
   // 获取这首歌实际支持的所有音质
-  const availableQualities = musicInfo.meta._qualitys;
+  const availableQualities = musicInfo.meta._qualitys ?? {};
 
   // 找到用户偏好音质在排行榜中的位置
   const startIndex = QUALITY_RANK.indexOf(preferredQuality);
@@ -298,7 +298,7 @@ export const getOnlineOtherSourceMusicUrl = async ({
     retryedSource.push(musicInfo.source)
     if (!assertApiSupport(musicInfo.source)) continue
     itemQuality = quality ?? getPlayQuality(settingState.setting['player.playQuality'], musicInfo)
-    if (!musicInfo.meta._qualitys[itemQuality]) continue
+    if (!musicInfo.meta._qualitys?.[itemQuality]) continue
 
     console.log(
       'try toggle to: ',

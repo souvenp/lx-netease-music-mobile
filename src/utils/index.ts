@@ -53,8 +53,9 @@ export const toNewMusicInfo = (oldMusicInfo: any): LX.Music.MusicInfo => {
     if (oldMusicInfo.originCoverType || oldMusicInfo.meta?.originCoverType) {
       meta.originCoverType = oldMusicInfo.originCoverType || oldMusicInfo.meta.originCoverType;
     }
-    meta.qualitys = oldMusicInfo.types
-    meta._qualitys = oldMusicInfo._types
+    // 兼容同步数据缺少音质的情况，未知音质不伪造可用等级。
+    meta.qualitys = Array.isArray(oldMusicInfo.types) ? oldMusicInfo.types : []
+    meta._qualitys = oldMusicInfo._types ?? {}
     meta.albumId = oldMusicInfo.albumId
     if (meta._qualitys.flac32bit && !meta._qualitys.hires) {
       meta._qualitys.hires = meta._qualitys.flac32bit
@@ -168,6 +169,10 @@ export const toOldMusicInfo = (minfo: LX.Music.MusicInfo): any => {
  */
 export const fixNewMusicInfoQuality = (musicInfo: LX.Music.MusicInfo) => {
   if (musicInfo.source == 'local') return musicInfo
+
+  // 在旧音质迁移前补齐容器，覆盖导入、同步和历史记录的缺失字段。
+  musicInfo.meta._qualitys ??= {}
+  if (!Array.isArray(musicInfo.meta.qualitys)) musicInfo.meta.qualitys = []
 
   // @ts-expect-error
   if (musicInfo.meta._qualitys.flac32bit && !musicInfo.meta._qualitys.hires) {

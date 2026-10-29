@@ -13,7 +13,6 @@ type MenuSettingKey =
   | 'menu.playMV'
   | 'menu.songDetail'
   | 'menu.dislike'
-  | 'menu.downloadOneDrive'
 
 const SettingItem = ({ settingKey, label }: { settingKey: MenuSettingKey; label: string }) => {
   const value = useSettingValue(settingKey);
@@ -40,7 +39,6 @@ export default memo(() => {
         <SettingItem settingKey="menu.playMV" label={'播放MV'} />
         <SettingItem settingKey="menu.songDetail" label={t('music_source_detail')} />
         <SettingItem settingKey="menu.dislike" label={t('dislike')} />
-        <SettingItem settingKey="menu.downloadOneDrive" label="下载到 OneDrive" />
       </View>
     </SubTitle>
   );

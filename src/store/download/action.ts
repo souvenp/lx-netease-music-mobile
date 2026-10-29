@@ -14,6 +14,10 @@ const shouldSyncTaskChange = (updatedFields: Partial<DownloadTask>) => {
     'status',
     'errorMsg',
     'metadataStatus',
+    'webdavReady',
+    'webdavAudioUploaded',
+    'webdavLyricUploaded',
+    'webdavLyricPath',
   ];
   return Object.keys(updatedFields).some(key => !ignoredSyncKeys.includes(key as keyof DownloadTask));
 };

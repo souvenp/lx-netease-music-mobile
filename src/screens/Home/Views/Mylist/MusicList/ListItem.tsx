@@ -19,13 +19,15 @@ const useQualityTag = (musicInfo: LX.Music.MusicInfo) => {
   let info: { type: BadgeType | null; text: string } = { type: null, text: '' }
   // 本地歌曲不读取在线音质字段，保持 Hook 调用顺序一致。
   if (musicInfo.source === 'local') return info
-  if (musicInfo.meta._qualitys.hires) {
+  // 同步和旧版记录可能没有音质信息，不能因此阻断歌单渲染。
+  const qualitys = musicInfo.meta._qualitys ?? {}
+  if (qualitys.hires) {
     info.type = 'secondary'
     info.text = t('quality_lossless_24bit')
-  } else if (musicInfo.meta._qualitys.flac) {
+  } else if (qualitys.flac) {
     info.type = 'sq'
     info.text = t('quality_lossless')
-  } else if (musicInfo.meta._qualitys['320k']) {
+  } else if (qualitys['320k']) {
     info.type = 'hq'
     info.text = t('quality_high_quality')
   }

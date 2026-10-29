@@ -3,21 +3,25 @@ import settingState from '@/store/setting/state';
 import { log } from '@/utils/log';
 
 let client: any = null;
+let clientKey = '';
+
+// 同步与音乐上传共用连接信息，开关仅控制同步。
+export function getWebDAVConnection() {
+  const settings = settingState.setting;
+  const url = settings['sync.webdav.url'].trim().replace(/\/+$/, '');
+  const username = settings['sync.webdav.username'].trim();
+  const password = settings['sync.webdav.password'];
+  if (!url || !username) throw new Error('请先在同步设置中填写 WebDAV 地址和用户名');
+  if (!/^https?:\/\/[^/?#@\s]+(?:\/[^?#\s]*)?$/i.test(url)) throw new Error('WebDAV 地址应为 HTTP/HTTPS 地址，账号请填写在用户名和密码栏');
+  return { url, username, password };
+}
 
 function getClient() {
-  if (client) return client;
-
-  const settings = settingState.setting;
-  const url = settings['sync.webdav.url'];
-  const username = settings['sync.webdav.username'];
-  const password = settings['sync.webdav.password'];
-
-  if (!url || !username) {
-    log.warn('WebDAV 未配置: URL 或用户名为空');
-    return null;
-  }
-
+  const { url, username, password } = getWebDAVConnection();
+  const key = JSON.stringify([url, username, password]);
+  if (client && clientKey === key) return client;
   client = createClient(url, { username, password });
+  clientKey = key;
   return client;
 }
 

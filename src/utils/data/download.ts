@@ -21,6 +21,10 @@ export const normalizeDownloadTasksForSync = (tasks: LX.Download.DownloadTask[])
     status: 'paused',
     errorMsg: '',
     isRemoteSynced: false,
+    webdavReady: undefined,
+    webdavAudioUploaded: undefined,
+    webdavLyricUploaded: undefined,
+    webdavLyricPath: undefined,
     progress: {
       ...task.progress,
       percent: 0,

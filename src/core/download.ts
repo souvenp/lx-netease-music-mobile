@@ -14,6 +14,8 @@ import { getOneDriveConfig, getOneDriveDownloadFolder, uploadOneDriveFile } from
 import { getValidOneDriveAuth } from '@/core/oneDrive/auth'
 import DownloadTask = LX.Download.DownloadTask
 import wySdk from '@/utils/musicSdk/wy'
+import { createWebDAVUploader, getWebDAVDownloadDestination } from './webdavDownload'
+import { saveDownloadTasks } from '@/utils/data/download'
 
 const taskQueue: DownloadTask[] = [];
 let isProcessing = false;
@@ -72,13 +74,59 @@ let currentDownloadTask: any | null = null;
 let activeTask: DownloadTask | null = null;
 // 重试准备过程与元信息修复共用去重锁，防止重复点击并发清理文件。
 const retryingTasks = new Set<string>();
-type DownloadTarget = 'local' | 'onedrive';
+type DownloadTarget = NonNullable<DownloadTask['target']>;
 
 const getTaskTarget = (task: DownloadTask): DownloadTarget => task.target ?? 'local'
 
 const getTaskAudioFileName = (task: DownloadTask) => {
   return `${task.fileName}.${getFileExtension(task.quality)}`
 }
+
+// 清理当前任务的音频及歌词缓存。
+const cleanupWebDAVCache = async (task: DownloadTask) => {
+  await unlink(task.filePath).catch(() => {});
+  await unlink(task.filePath.substring(0, task.filePath.lastIndexOf('.')) + '.lrc').catch(() => {});
+};
+
+// 分别保存音频和歌词的上传进度，供重启后继续。
+const uploadWebDAVTask = async (task: DownloadTask) => {
+  if (!task.webdavDestination) throw new Error('任务缺少 WebDAV 目标，请重新创建下载任务');
+  const upload = createWebDAVUploader(task.webdavDestination);
+  const isCancelled = () => !downloadState.tasks.includes(task);
+  const uploadFile = (localPath: string, fileName: string) => upload({
+    localPath, fileName, isCancelled,
+    onRequest: request => { currentDownloadTask = request; },
+    onProgress: (downloaded, total) => {
+      if (isCancelled()) return;
+      downloadActions.updateTask(task.id, { progress: {
+        percent: total > 0 ? downloaded / total : 0, downloaded, total, speed: 'WebDAV 上传',
+      } });
+    },
+  });
+  downloadActions.updateTask(task.id, { progress: { percent: 0, downloaded: 0, total: 0, speed: 'WebDAV 上传' } });
+  try {
+    if (!task.webdavAudioUploaded) {
+      const result = await uploadFile(task.filePath, getTaskAudioFileName(task));
+      if (isCancelled()) return;
+      downloadActions.updateTask(task.id, { webdavAudioUploaded: true, remotePath: result.remotePath });
+      await saveDownloadTasks(downloadState.tasks);
+    }
+    if (isCancelled()) return;
+    if (task.webdavLyricPath && !task.webdavLyricUploaded) {
+      await uploadFile(task.webdavLyricPath, `${task.fileName}.lrc`);
+      if (isCancelled()) return;
+      downloadActions.updateTask(task.id, { webdavLyricUploaded: true });
+      await saveDownloadTasks(downloadState.tasks);
+    }
+    if (isCancelled()) return;
+    downloadActions.updateTask(task.id, { status: 'completed', errorMsg: '', progress: { ...task.progress, percent: 1, speed: '' } });
+    await saveDownloadTasks(downloadState.tasks);
+    await cleanupWebDAVCache(task);
+    toast(`${task.fileName} 已上传到 WebDAV`, 'short');
+  } finally {
+    currentDownloadTask = null;
+  }
+};
 
 const processQueue = async () => {
   if (isProcessing || taskQueue.length === 0) return;
@@ -101,7 +149,8 @@ const processQueue = async () => {
   } finally {
     // 已移除项在旧请求完全结束后清理，避免误删下一次下载的文件。
     if (!downloadState.tasks.includes(task) && !task.isRemoteSynced && task.status !== 'completed') {
-      await unlink(task.filePath).catch(() => {});
+      if (task.target === 'webdav') await cleanupWebDAVCache(task);
+      else await unlink(task.filePath).catch(() => {});
     }
     activeTask = null;
     isProcessing = false;
@@ -114,6 +163,13 @@ const startDownload = async (task: DownloadTask) => {
   const target = getTaskTarget(task);
   if (target === 'onedrive') {
     await getValidOneDriveAuth();
+  }
+  if (target === 'webdav' && task.webdavReady) {
+    if (task.webdavAudioUploaded || await RNFetchBlob.fs.exists(task.filePath)) {
+      await uploadWebDAVTask(task);
+      return;
+    }
+    downloadActions.updateTask(task.id, { webdavReady: false });
   }
 
   let url: string;
@@ -172,12 +228,23 @@ const startDownload = async (task: DownloadTask) => {
       });
     });
 
-    await downloadTask;
+    const response = await downloadTask;
+    // 文件写入成功不代表 HTTP 请求成功，错误页不能标记为音乐下载完成。
+    const status = response.info().status;
+    if (status < 200 || status >= 300) throw new Error(`下载失败：HTTP ${status}`);
     // 请求结束后再次检查，避免已移除任务继续写入标签或上传。
     if (!downloadState.tasks.includes(task)) return;
     console.log('下载完成:', task.fileName);
     await handleMetadata(task, task.filePath);
     if (!downloadState.tasks.includes(task)) return;
+    if (target === 'webdav') {
+      const lyricPath = task.filePath.substring(0, task.filePath.lastIndexOf('.')) + '.lrc';
+      const hasLyric = settingState.setting['download.writeLyric'] && await RNFetchBlob.fs.exists(lyricPath);
+      downloadActions.updateTask(task.id, { webdavReady: true, webdavLyricPath: hasLyric ? lyricPath : undefined });
+      await saveDownloadTasks(downloadState.tasks);
+      if (downloadState.tasks.includes(task)) await uploadWebDAVTask(task);
+      return;
+    }
     if (target === 'onedrive') {
       const config = await getOneDriveConfig();
       const downloadFolder = getOneDriveDownloadFolder(config);
@@ -395,7 +462,7 @@ export const retryMetadata = async (taskId: string) => {
   }
 };
 
-export const retryTask = (taskId: string) => {
+export const retryTask = async (taskId: string) => {
   const task = downloadState.tasks.find(t => t.id === taskId);
   if (!task || task.isRemoteSynced || retryingTasks.has(taskId) || activeTask === task) return;
 
@@ -404,15 +471,16 @@ export const retryTask = (taskId: string) => {
     retryingTasks.add(taskId);
     // 立即切换到排队状态，让连续点击和筛选数量都反映最新状态。
     downloadActions.updateTask(task.id, { status: 'waiting', errorMsg: '' });
-    void unlink(task.filePath).catch(() => {}).finally(() => {
+    const cleanup = task.target === 'webdav' && task.webdavReady ? Promise.resolve() : unlink(task.filePath).catch(() => {});
+    await cleanup.finally(() => {
       retryingTasks.delete(taskId);
       if (!downloadState.tasks.includes(task)) return;
       downloadActions.updateTask(task.id, {
         status: 'waiting',
         errorMsg: '',
         progress: { percent: 0, speed: '', downloaded: 0, total: 0 },
-        metadataStatus: { cover: 'pending', lyric: 'pending', tags: 'pending' },
-        remotePath: undefined,
+        metadataStatus: task.webdavReady ? task.metadataStatus : { cover: 'pending', lyric: 'pending', tags: 'pending' },
+        remotePath: task.webdavReady ? task.remotePath : undefined,
         remoteUrl: undefined,
       });
       if (!taskQueue.some(item => item.id === task.id)) taskQueue.push(task);
@@ -420,9 +488,33 @@ export const retryTask = (taskId: string) => {
     });
   }
   // 如果文件已存在，但元信息失败，则只重试元信息
-  else if (task.status === 'completed' && task.target !== 'onedrive' && Object.values(task.metadataStatus).includes('fail')) {
+  else if (task.status === 'completed' && (task.target ?? 'local') === 'local' && Object.values(task.metadataStatus).includes('fail')) {
     retryingTasks.add(taskId);
-    void retryMetadata(task.id).finally(() => { retryingTasks.delete(taskId); });
+    await retryMetadata(task.id).finally(() => { retryingTasks.delete(taskId); });
+  }
+};
+
+// 同一时间只接受一轮批量重试，并逐项等待准备工作，限制原生文件操作并发。
+let bulkRetryRunning = false;
+export const retryTasks = async (taskIds: string[]) => {
+  if (bulkRetryRunning) return 0;
+  bulkRetryRunning = true;
+  let count = 0;
+  try {
+    for (const id of new Set(taskIds)) {
+      const task = downloadState.tasks.find(item => item.id === id);
+      if (!task || task.isRemoteSynced) continue;
+      const metadataFailed = task.status === 'completed' && (task.target ?? 'local') === 'local' && Object.values(task.metadataStatus).includes('fail');
+      if (!['error', 'paused'].includes(task.status) && !metadataFailed) continue;
+      if (task.status === 'paused') await resumeTask(id);
+      else await retryTask(id);
+      count++;
+      // 让出 JS 线程处理点击和返回事件，不能只等待微任务队列。
+      if (count % 10 === 0) await new Promise(resolve => setTimeout(resolve, 16));
+    }
+    return count;
+  } finally {
+    bulkRetryRunning = false;
   }
 };
 
@@ -439,7 +531,7 @@ export const resumeTask = async (taskId: string) => {
   downloadActions.updateTask(task.id, { status: 'waiting' });
 
   try {
-    await unlink(task.filePath);
+    if (!(task.target === 'webdav' && task.webdavReady)) await unlink(task.filePath);
   } catch (error) {
     // Ignore cleanup failures so we can still restart the download.
   }
@@ -450,7 +542,7 @@ export const resumeTask = async (taskId: string) => {
     status: 'waiting',
     errorMsg: '',
     progress: { percent: 0, speed: '', downloaded: 0, total: 0 },
-    metadataStatus: { cover: 'pending', lyric: 'pending', tags: 'pending' },
+    metadataStatus: task.webdavReady ? task.metadataStatus : { cover: 'pending', lyric: 'pending', tags: 'pending' },
   });
   taskQueue.push(task);
   processQueue();
@@ -462,6 +554,13 @@ export const addTask = (
   isForceCookie: boolean = false,
   target: DownloadTarget = 'local'
 ) => {
+  let webdavDestination: DownloadTask['webdavDestination'];
+  if (target === 'webdav') {
+    try { webdavDestination = getWebDAVDownloadDestination(); } catch (error) {
+      toast(getErrorMessage(error), 'long');
+      return;
+    }
+  }
   const extension = getFileExtension(quality);
 
   let finalSingerString = musicInfo.singer;
@@ -474,11 +573,11 @@ export const addTask = (
     .replace('歌手', finalSingerString);
   fileName = filterFileName(fileName);
   const id = toMD5(`${musicInfo.id}-${quality}-${target}`);
-  const downloadDir = target === 'onedrive'
+  const downloadDir = target !== 'local'
     ? RNFetchBlob.fs.dirs.CacheDir
     : settingState.setting['download.path'] || (RNFetchBlob.fs.dirs.MusicDir + '/LX-N Music');
-  const filePath = target === 'onedrive'
-    ? `${downloadDir}/lx_onedrive_${id}.${extension}`
+  const filePath = target !== 'local'
+    ? `${downloadDir}/lx_${target}_${id}.${extension}`
     : `${downloadDir}/${fileName}.${extension}`;
 
   const task: DownloadTask = {
@@ -489,6 +588,7 @@ export const addTask = (
     filePath,
     fileName,
     target,
+    webdavDestination,
     progress: { percent: 0, speed: '', downloaded: 0, total: 0 },
     metadataStatus: { cover: 'pending', lyric: 'pending', tags: 'pending' },
     createdAt: Date.now(),
@@ -518,7 +618,8 @@ export const removeTask = (id: string) => {
   } else if (taskToRemove && !retryingTasks.has(id) && !taskToRemove.isRemoteSynced && taskToRemove.status !== 'completed' && taskToRemove.filePath) {
     // 非活动项清理期间保留锁，防止同编号的新任务覆盖文件。
     retryingTasks.add(id);
-    void unlink(taskToRemove.filePath).catch(() => {}).finally(() => { retryingTasks.delete(id); });
+    const cleanup = taskToRemove.target === 'webdav' ? cleanupWebDAVCache(taskToRemove) : unlink(taskToRemove.filePath).catch(() => {});
+    void cleanup.finally(() => { retryingTasks.delete(id); });
   }
 };
 
@@ -532,6 +633,12 @@ export const batchDownload = async (
   quality: LX.Quality,
   target: DownloadTarget = 'local'
 ) => {
+  if (target === 'webdav') {
+    try { getWebDAVDownloadDestination(); } catch (error) {
+      toast(getErrorMessage(error), 'long');
+      return;
+    }
+  }
   const cookie = settingState.setting['common.wy_cookie'];
   if (!cookie) {
     toast('请先在设置中配置网易云 Cookie');

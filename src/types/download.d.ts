@@ -20,7 +20,12 @@ declare namespace LX {
       createdAt: number;
       filePath: string;
       fileName: string;
-      target?: 'local' | 'onedrive';
+      target?: 'local' | 'onedrive' | 'webdav';
+      webdavDestination?: { url: string; username: string; directory: string };
+      webdavReady?: boolean;
+      webdavAudioUploaded?: boolean;
+      webdavLyricUploaded?: boolean;
+      webdavLyricPath?: string;
       remotePath?: string;
       remoteUrl?: string;
       isForceCookie?: boolean;

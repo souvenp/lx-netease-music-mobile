@@ -3,10 +3,10 @@ import { View } from 'react-native'
 import ConfirmAlert, { type ConfirmAlertType } from '@/components/common/ConfirmAlert'
 import Text from '@/components/common/Text'
 import CheckBox from '@/components/common/CheckBox'
-import { useSettingValue } from '@/store/setting/hook'
 import { createStyle } from '@/utils/tools'
 import { batchDownload } from '@/core/download'
 import { getLastSelectQuality, saveLastSelectQuality } from '@/utils/data'
+import DownloadTargetSelector from '@/components/DownloadTargetSelector'
 
 export interface BatchDownloadModalType {
   show: (list: LX.Music.MusicInfo[]) => void
@@ -26,10 +26,9 @@ export default forwardRef<BatchDownloadModalType, { onConfirm?: () => void }>(
   ({ onConfirm }, ref) => {
     const alertRef = useRef<ConfirmAlertType>(null)
     const selectedListRef = useRef<LX.Music.MusicInfo[]>([])
-    const showOneDriveDownload = useSettingValue('menu.downloadOneDrive')
     const [visible, setVisible] = useState(false)
     const [selectedQuality, setSelectedQuality] = useState<LX.Quality>('128k')
-    const [selectedTarget, setSelectedTarget] = useState<'local' | 'onedrive'>('local')
+    const [selectedTarget, setSelectedTarget] = useState<NonNullable<LX.Download.DownloadTask['target']>>('local')
 
     useImperativeHandle(ref, () => ({
       show(list) {
@@ -52,7 +51,7 @@ export default forwardRef<BatchDownloadModalType, { onConfirm?: () => void }>(
     }, [visible])
 
     const handleConfirm = async() => {
-      const target = showOneDriveDownload && selectedTarget === 'onedrive' ? 'onedrive' : 'local'
+      const target = selectedTarget
       alertRef.current?.setVisible(false)
       void saveLastSelectQuality(selectedQuality)
       void batchDownload(
@@ -71,24 +70,7 @@ export default forwardRef<BatchDownloadModalType, { onConfirm?: () => void }>(
       >
         <View style={styles.content}>
           <Text style={styles.title}>{title}</Text>
-          {showOneDriveDownload ? (
-            <View style={styles.group}>
-              <CheckBox
-                marginRight={8}
-                check={selectedTarget === 'local'}
-                label="下载到本地"
-                onChange={() => setSelectedTarget('local')}
-                need
-              />
-              <CheckBox
-                marginRight={8}
-                check={selectedTarget === 'onedrive'}
-                label="下载到 OneDrive"
-                onChange={() => setSelectedTarget('onedrive')}
-                need
-              />
-            </View>
-          ) : null}
+          <DownloadTargetSelector value={selectedTarget} onChange={setSelectedTarget} />
           <View style={styles.group}>
             {qualityList.map(item => (
               <CheckBox

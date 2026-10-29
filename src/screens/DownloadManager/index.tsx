@@ -6,7 +6,7 @@ import ListItem from './ListItem';
 import { useDownloadTasks } from '@/store/download/hook';
 import { confirmDialog, createStyle, toast } from '@/utils/tools';
 import { setComponentId } from '@/core/common';
-import { removeTask, resumeTask, retryTask } from '@/core/download';
+import { removeTask, retryTasks as retryDownloadTasks } from '@/core/download';
 import Text from '@/components/common/Text';
 import Button from '@/screens/Home/Views/Setting/components/Button';
 import { isFailedTask, matchesTaskFilter, type TaskFilter } from './taskFilters';
@@ -30,6 +30,7 @@ export default memo(({ componentId }: { componentId: string }) => {
   // 多选仅作用于当前筛选，切换类别时清空，避免误操作隐藏项。
   const [filter, setFilter] = useState<TaskFilter>('all');
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [retrying, setRetrying] = useState(false);
   // 没有勾选项时自动退出多选，无需额外的进出按钮。
   const selecting = selected.size > 0;
   const visibleTasks = useMemo(() => tasks.filter(task => matchesTaskFilter(task, filter)), [tasks, filter]);
@@ -66,14 +67,19 @@ export default memo(({ componentId }: { componentId: string }) => {
   }, []);
 
   // 批量恢复仅处理失败或中断项，跳过其他设备同步的记录。
-  const retryTasks = (items: LX.Download.DownloadTask[]) => {
+  const retryTasks = async (items: LX.Download.DownloadTask[]) => {
+    if (retrying) return;
     const retryable = items.filter(task => !task.isRemoteSynced && (isFailedTask(task) || task.status === 'paused'));
-    for (const task of retryable) {
-      if (task.status === 'paused') void resumeTask(task.id);
-      else retryTask(task.id);
-    }
-    toast(`已提交 ${retryable.length} 个任务重试`);
+    setRetrying(true);
     setSelected(new Set());
+    try {
+      const count = await retryDownloadTasks(retryable.map(task => task.id));
+      toast(`已提交 ${count} 个任务重试`);
+    } catch (error) {
+      toast(error instanceof Error ? error.message : '批量重试失败');
+    } finally {
+      setRetrying(false);
+    }
   };
 
   // 删除任务记录前提示未完成文件的清理行为，完成的音乐文件保留。
@@ -107,10 +113,10 @@ export default memo(({ componentId }: { componentId: string }) => {
           {selecting ? <>
             <Text>已选 {selectedTasks.length}</Text>
             <Button onPress={() => setSelected(selectedTasks.length === visibleTasks.length ? new Set() : new Set(visibleTasks.map(task => task.id)))}>全选/取消</Button>
-            <Button disabled={!selectedTasks.some(task => !task.isRemoteSynced && (isFailedTask(task) || task.status === 'paused'))} onPress={() => retryTasks(selectedTasks)}>重试/继续</Button>
+            <Button disabled={retrying || !selectedTasks.some(task => !task.isRemoteSynced && (isFailedTask(task) || task.status === 'paused'))} onPress={() => { void retryTasks(selectedTasks); }}>重试/继续</Button>
             <Button disabled={!selectedTasks.length} onPress={() => { void removeSelected(); }}>移除任务</Button>
           </> : <>
-            <Button disabled={!failedTasks.length} onPress={() => retryTasks(failedTasks)}>一键重试失败 ({failedTasks.length})</Button>
+            <Button disabled={retrying || !failedTasks.length} onPress={() => { void retryTasks(failedTasks); }}>{retrying ? '正在提交重试…' : `一键重试失败 (${failedTasks.length})`}</Button>
           </>}
         </View>
         <FlatList

@@ -31,6 +31,7 @@ const defaultSetting: LX.AppSetting = {
   },
 
   'localMusic.paths': '[]',
+  'download.webdavPath': '/Music',
   'player.startupAutoPlay': false,
   'player.startupPushPlayDetailScreen': false,
   'player.togglePlayMethod': 'listLoop',
@@ -51,6 +52,8 @@ const defaultSetting: LX.AppSetting = {
   'player.isShowBluetoothLyric': false,
 
   'playDetail.isCoverSpin': true,
+  // 详情页停留位置对所有歌曲生效：0 封面，1 歌词。
+  'playDetail.lastPage': 0,
   'playDetail.style.align': 'center',
   'playDetail.vertical.style.lrcFontSize': 200,
   'playDetail.horizontal.style.lrcFontSize': 220,
@@ -91,7 +94,6 @@ const defaultSetting: LX.AppSetting = {
   'menu.playMV': true,
   'menu.songDetail': true,
   'menu.dislike': true,
-  'menu.downloadOneDrive': true,
 
   'menu.moveTo': true,
   'menu.changePosition': true,
