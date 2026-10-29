@@ -1,9 +1,23 @@
-### 1.8.86
+### 1.8.87
 #### 修复、优化
 - 同步上游代码
 - 下载管理优化
+- 搜索建议非搜索页也会显示了
 #### 新增
 - 本地音乐
+- webdav远程下载
+- intent支持 Intent → Activity：
+  Action	com.lxnetease.music.mobile.action.PLAYER_CONTROL
+  包名	com.lxnetease.music.mobile
+  键：command，值见下表
+  参数值	功能
+  play	继续播放
+  pause	暂停
+  stop	停止
+  next	下一首
+  previous	上一首
+  toggle	播放／暂停切换
+---
 ---
 ### 1.8.85
 #### 修复、优化
