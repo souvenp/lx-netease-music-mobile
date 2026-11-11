@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { FlatList, PermissionsAndroid, Platform, ScrollView, View } from 'react-native'
+import { AppState, FlatList, PermissionsAndroid, Platform, ScrollView, View } from 'react-native'
 import RNFetchBlob from 'rn-fetch-blob'
 import Text from '@/components/common/Text'
 import FileSelect, { type FileSelectType } from '@/components/common/FileSelect'
@@ -9,7 +9,9 @@ import { useTheme } from '@/store/theme/hook'
 import commonState from '@/store/common/state'
 import downloadState from '@/store/download/state'
 import { updateSetting } from '@/core/common'
-import { getLocalMusicScanKey, localMusicCache, normalizeLocalPath, parseLocalPaths, scanLocalMusic, type LocalMusicEntry } from '@/core/localMusic'
+import { normalizeLocalPath, parseLocalPaths, type LocalMusicEntry } from '@/core/localMusic'
+// 首屏恢复磁盘缓存，媒体索引和文件差异检查在后台完成。
+import { getCachedLocalMusic, refreshLocalMusicCache, restoreLocalMusicCache } from '@/core/localMusicCache'
 import { overwriteListMusics, setActiveList } from '@/core/list'
 import listAction from '@/store/list/action'
 import { playList } from '@/core/player/player'
@@ -43,35 +45,50 @@ export default memo(() => {
   const paths = useMemo(() => [...new Set([defaultPath, ...extraPaths])], [defaultPath, extraPaths])
   const fileSelect = useRef<FileSelectType>(null)
   const generation = useRef(0)
+  // 自动触发合并到当前检查之后，防止大目录扫描被重复取消而无法完成。
+  const scanning = useRef(false)
+  const checkAgain = useRef(false)
+  // 自动检查被拒绝权限后不反复弹窗，用户手动扫描时仍可再次申请。
+  const askedPermission = useRef(false)
   const [active, setActive] = useState(commonState.navActiveId === 'nav_local_music')
-  const [entries, setEntries] = useState<LocalMusicEntry[]>([])
+  const [entries, setEntries] = useState<LocalMusicEntry[]>(() => getCachedLocalMusic(paths, downloadState.tasks)?.entries ?? [])
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<string[]>([])
   const [managePaths, setManagePaths] = useState(false)
   const [playing, setPlaying] = useState(false)
 
-  const scan = useCallback(async () => {
+  // 手动刷新强制读取；自动检查保持旧列表可用，仅更新有变化的结果。
+  const scan = useCallback(async (force = false): Promise<void> => {
+    if (scanning.current && !force) { checkAgain.current = true; return }
+    scanning.current = true
     const current = ++generation.current
-    const cacheKey = getLocalMusicScanKey(paths, downloadState.tasks)
     const cancelled = () => current !== generation.current
     setLoading(true)
     try {
+      // 恢复缓存先于权限申请和 MediaStore 查询，不让网络或原生查询阻塞展示。
+      await restoreLocalMusicCache()
+      if (cancelled()) return
+      const cached = getCachedLocalMusic(paths, downloadState.tasks)
+      setEntries(cached?.entries ?? [])
+      setErrors(cached?.errors ?? [])
       // 系统授权目录由文件选择器负责；普通路径按 Android 版本申请读取权限。
       if (Platform.OS === 'android' && paths.some(path => !path.startsWith('content://'))) {
         const legacyPermission = PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE
         // 当前应用目标版本仍使用旧存储权限，升级目标版本后回退到媒体权限。
-        if (!await PermissionsAndroid.check(legacyPermission)) {
+        const hasPermission = await PermissionsAndroid.check(legacyPermission) ||
+          (Number(Platform.Version) >= 33 && await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.READ_MEDIA_AUDIO))
+        if (cancelled()) return
+        if (!hasPermission && (force || !askedPermission.current)) {
+          askedPermission.current = true
           const result = await PermissionsAndroid.request(legacyPermission)
-          if (result !== PermissionsAndroid.RESULTS.GRANTED && Number(Platform.Version) >= 33) {
+          if (!cancelled() && result !== PermissionsAndroid.RESULTS.GRANTED && Number(Platform.Version) >= 33) {
             await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.READ_MEDIA_AUDIO)
           }
         }
       }
       if (cancelled()) return
-      const excluded = new Set(downloadState.tasks.filter(task => !task.isRemoteSynced && (task.target ?? 'local') === 'local' && task.status !== 'completed').map(task => normalizeLocalPath(task.filePath)))
-      const result = await scanLocalMusic(paths, excluded, cancelled)
-      if (cancelled()) return
-      Object.assign(localMusicCache, { key: cacheKey, entries: result.entries, errors: result.errors })
+      const result = await refreshLocalMusicCache(paths, downloadState.tasks, force, cancelled)
+      if (cancelled() || !result) return
       setEntries(result.entries)
       setErrors(result.errors)
     } catch (error) {
@@ -80,7 +97,11 @@ export default memo(() => {
         toast(error instanceof Error ? error.message : '本地音乐扫描失败')
       }
     } finally {
-      if (!cancelled()) setLoading(false)
+      if (!cancelled()) {
+        scanning.current = false
+        setLoading(false)
+        if (checkAgain.current) { checkAgain.current = false; void scan() }
+      }
     }
   }, [paths])
 
@@ -92,12 +113,8 @@ export default memo(() => {
 
   useEffect(() => {
     if (!active) return
-    if (localMusicCache.key === getLocalMusicScanKey(paths, downloadState.tasks)) {
-      setEntries(localMusicCache.entries)
-      setErrors(localMusicCache.errors)
-      setLoading(false)
-    } else void scan()
-    // 下载完成通知合并后再刷新；返回前台不再触发扫描。
+    void scan()
+    // 下载完成通知合并后检查；前台恢复与定时触发只做增量检查。
     let refreshTimer: ReturnType<typeof setTimeout> | undefined
     const onStatus = ({ id, status }: { id: string, status: LX.Download.DownloadTask['status'] }) => {
       const task = downloadState.tasks.find(item => item.id === id)
@@ -106,9 +123,20 @@ export default memo(() => {
       refreshTimer = setTimeout(() => { void scan() }, 1000)
     }
     global.app_event.on('download_status_update', onStatus)
+    // 页面保持打开时也能发现其他应用对系统媒体库的变更。
+    const appStateListener = AppState.addEventListener('change', state => {
+      if (state === 'active') void scan()
+    })
+    const mediaTimer = setInterval(() => {
+      if (AppState.currentState === 'active') void scan()
+    }, 60 * 1000)
     return () => {
       generation.current++
+      scanning.current = false
+      checkAgain.current = false
       clearTimeout(refreshTimer)
+      clearInterval(mediaTimer)
+      appStateListener.remove()
       global.app_event.off('download_status_update', onStatus)
     }
   }, [active, scan, paths])
@@ -140,7 +168,7 @@ export default memo(() => {
   return <View style={styles.container}>
     <View style={styles.toolbar}>
       <Text>本地音乐 · {entries.length} 首</Text>
-      <Button disabled={loading} onPress={() => { void scan() }}>{loading ? '扫描中…' : '重新扫描'}</Button>
+      <Button disabled={loading} onPress={() => { void scan(true) }}>{loading ? (entries.length ? '检查更新中…' : '扫描中…') : '重新扫描'}</Button>
       <Button onPress={() => setManagePaths(!managePaths)}>{managePaths ? '收起目录' : `管理目录 (${paths.length})`}</Button>
     </View>
     {managePaths && <ScrollView style={styles.paths}>
@@ -155,7 +183,7 @@ export default memo(() => {
       {errors.length} 个目录无法读取，请检查路径或存储权限：{errors.join('；')}
     </Text>}
     <FlatList data={entries} keyExtractor={entry => entry.musicInfo.id}
-      refreshing={loading} onRefresh={() => { void scan() }}
+      refreshing={loading} onRefresh={() => { void scan(true) }}
       ListEmptyComponent={<Text style={styles.empty}>{loading ? '正在扫描本地音乐…' : '暂无本地音乐，可在管理目录中添加音乐文件夹'}</Text>}
       renderItem={({ item, index }) => <MusicListItem
         item={item.musicInfo} index={index}

@@ -81,9 +81,11 @@ export default memo(
     hideMenu?: boolean
   }) => {
     const theme = useTheme()
+    // 展示换源结果，但播放、菜单和多选仍定位原列表条目。
+    const displayInfo = item.meta.toggleMusicInfo ?? item
     const isPlaying = playingId === item.id;
     const isSelected = selectedList.includes(item)
-    const isLiked = useIsWyLiked(item.meta.songId)
+    const isLiked = useIsWyLiked(displayInfo.meta.songId)
     const selectedBackground = theme.isDark
       ? theme['c-primary-alpha-600']
       : theme['c-primary-background-active']
@@ -102,15 +104,15 @@ export default memo(
       }
     }
 
-    const showLikeButton = item.source === 'wy'
+    const showLikeButton = displayInfo.source === 'wy'
 
     const handleLike = () => {
-      handleLikeMusic(item)
+      handleLikeMusic(displayInfo)
     }
 
-    const tagInfo = useQualityTag(item)
+    const tagInfo = useQualityTag(displayInfo)
     const historySource = (item as LX.Music.MusicInfoOnline & { playHistorySource?: LX.Player.PlayHistorySource }).playHistorySource
-    const singer = `${item.singer}${isShowAlbumName && item.meta.albumName ? `·${item.meta.albumName}` : ''}`
+    const singer = `${displayInfo.singer}${isShowAlbumName && displayInfo.meta.albumName ? `·${displayInfo.meta.albumName}` : ''}`
 
     return (
       <View
@@ -134,7 +136,7 @@ export default memo(
 
           <View style={showCover ? styles.sn : styles.snIndex}>
             {showCover ? (
-              <Image url={item.meta.picUrl} style={styles.albumArt} />
+              <Image url={displayInfo.meta.picUrl} style={styles.albumArt} />
             ) : isPlaying ? (
               <PlayingIcon />
             ) : (
@@ -145,14 +147,14 @@ export default memo(
           </View>
           <View style={styles.itemInfo}>
             <Text numberOfLines={1} color={isPlaying ? theme['c-primary-font'] : theme['c-font']}>
-              {item.name}
-              {item.alias ? <Text color={theme['c-font-label']}> ({item.alias})</Text> : null}
+              {displayInfo.name}
+              {displayInfo.alias ? <Text color={theme['c-font-label']}> ({displayInfo.alias})</Text> : null}
             </Text>
             <View style={styles.listItemSingle}>
-              {showSource ? <Badge type="tertiary">{item.source.toUpperCase()}</Badge> : null}
+              {showSource ? <Badge type="tertiary">{displayInfo.source.toUpperCase()}</Badge> : null}
               {tagInfo.type ? <Badge type={tagInfo.type}>{tagInfo.text}</Badge> : null}
-              {item.meta.fee === 1 ? <Badge type="vip">VIP</Badge> : null}
-              {item.source === 'wy' && item.meta.originCoverType === 2 ? <Badge type="normal">cover</Badge> : null}
+              {displayInfo.meta.fee === 1 ? <Badge type="vip">VIP</Badge> : null}
+              {displayInfo.source === 'wy' && displayInfo.meta.originCoverType === 2 ? <Badge type="normal">cover</Badge> : null}
               {historySource ? <Badge type="normal">{historySource}</Badge> : null}
               <Text
                 style={styles.listItemSingleText}
@@ -166,7 +168,7 @@ export default memo(
           </View>
           {isShowInterval ? (
             <Text size={11} color={isPlaying ? theme['c-primary-alpha-200'] : theme['c-500']} numberOfLines={1}>
-              {item.interval}
+              {displayInfo.interval}
             </Text>
           ) : null}
         </TouchableOpacity>

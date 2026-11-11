@@ -146,16 +146,18 @@ export default {
   //     }
   //   })
   // },
-  // async getSongListDetailByGlobalSpecialId(id, page, limit = 100, retry = 0) {
-  //   if (++retry > 2) throw new Error('failed')
-  //   console.log(id)
-  //   const params = `specialid=0&need_sort=1&module=CloudMusic&clientver=11409&pagesize=${limit}&global_collection_id=${id}&userid=0&page=${page}&type=1&area_code=1&appid=1005`
-  //   return httpFetch(`http://pubsongscdn.tx.kugou.com/v2/get_other_list_file?${params}&signature=${signatureParams(params)}`).promise.then(({ body }) => {
-  //     // console.log(body)
-  //     if (body.data?.info == null) return this.getSongListDetailByGlobalSpecialId(id, page, limit, retry)
-  //     return body.data.info
-  //   })
-  // },
+  // 同步上游 e6be258：通过全局歌单接口读取歌曲，避免旧 song_v2 接口无法打开歌单。
+  async getSongListDetailByGlobalSpecialId(id, page, limit = 100, retry = 0) {
+    if (++retry > 2) throw new Error('failed')
+    const params = `specialid=0&need_sort=1&module=CloudMusic&clientver=11409&pagesize=${limit}&global_collection_id=${id}&userid=0&page=${page}&type=1&area_code=1&appid=1005`
+    return httpFetch(`http://pubsongscdn.tx.kugou.com/v2/get_other_list_file?${params}&signature=${signatureParams(params)}`, {
+      cache: 'default',
+    }).promise.then(({ body }) => {
+      // 缺少列表字段时最多尝试两次；空数组是合法的空歌单。
+      if (body.data?.info == null) return this.getSongListDetailByGlobalSpecialId(id, page, limit, retry)
+      return body.data.info
+    })
+  },
   parseHtmlDesc(html) {
     const prefix = '<div class="pc_specail_text pc_singer_tab_content" id="specailIntroduceWrap">'
     let index = html.indexOf(prefix)
@@ -545,36 +547,12 @@ export default {
   createGetListDetail2Task(id, total) {
     let tasks = []
     let page = 0
-    while (total) {
-      const limit = total > 300 ? 300 : total
+    // 每页数量保持一致，最后一页也不能缩小，否则服务端分页偏移会错位。
+    const limit = total > 300 ? 300 : total
+    while (total > 0) {
       total -= limit
       page += 1
-      const params =
-        'appid=1058&global_specialid=' +
-        id +
-        '&specialid=0&plat=0&version=8000&page=' +
-        page +
-        '&pagesize=' +
-        limit +
-        '&srcappid=2919&clientver=20000&clienttime=1586163263991&mid=1586163263991&uuid=1586163263991&dfid=-'
-      tasks.push(
-        this.createHttp(
-          `https://mobiles.kugou.com/api/v5/special/song_v2?${params}&signature=${signatureParams(
-            params,
-            'web'
-          )}`,
-          {
-            headers: {
-              mid: '1586163263991',
-              Referer: 'https://m3ws.kugou.com/share/index.php',
-              'User-Agent':
-                'Mozilla/5.0 (iPhone; CPU iPhone OS 11_0 like Mac OS X) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Mobile/15A372 Safari/604.1',
-              dfid: '-',
-              clienttime: '1586163263991',
-            },
-          }
-        ).then((data) => data.info)
-      )
+      tasks.push(this.getSongListDetailByGlobalSpecialId(id, page, limit))
     }
     return Promise.all(tasks).then(([...datas]) => datas.flat())
   },

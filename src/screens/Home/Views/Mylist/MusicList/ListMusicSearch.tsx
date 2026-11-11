@@ -99,6 +99,7 @@ export default forwardRef<ListMusicSearchType, ListMusicSearchProps>(({ onScroll
   }, [])
 
   const renderItem = ({ item, index }: { item: LX.Music.MusicInfo; index: number }) => {
+    const displayInfo = item.meta.toggleMusicInfo ?? item
     return (
       <Button
         style={styles.item}
@@ -108,13 +109,13 @@ export default forwardRef<ListMusicSearchType, ListMusicSearchProps>(({ onScroll
         key={index}
       >
         <View style={styles.itemName}>
-          <Text numberOfLines={1}>{item.name}</Text>
+          <Text numberOfLines={1}>{displayInfo.name}</Text>
           <Text style={styles.subName} numberOfLines={1} size={12} color={theme['c-font-label']}>
-            {item.singer} ({item.meta.albumName})
+            {displayInfo.singer} ({displayInfo.meta.albumName})
           </Text>
         </View>
         <Text style={styles.itemSource} size={12} color={theme['c-font-label']}>
-          {item.source}
+          {displayInfo.source}
         </Text>
       </Button>
     )

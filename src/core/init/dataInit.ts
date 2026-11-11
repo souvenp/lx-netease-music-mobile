@@ -19,6 +19,9 @@ import {
 } from '@/store/user/action.ts'
 import {getDownloadTasks} from "@/utils/data/download.ts";
 import downloadActions from '@/store/download/action';
+// 账户数据请求等待首次续期检查，但不阻塞其他启动任务。
+import { refreshWySession } from '@/core/wySession'
+import settingState from '@/store/setting/state'
 // const initPrevPlayInfo = async(appSetting: LX.AppSetting) => {
 //   const info = await getPlayInfo()
 //   global.lx.restorePlayInfo = null
@@ -48,39 +51,44 @@ export default async (appSetting: LX.AppSetting) => {
   bootLog('Download tasks inited.');
 
   // 获取网易云喜欢列表
-  const wy_cookie = appSetting['common.wy_cookie']
-  if (wy_cookie) {
+  if (appSetting['common.wy_cookie']) {
     bootLog('Wy like list init...')
-    wyUserApi.getUid(wy_cookie)
-      .then(uid =>
-      {
-        setWyUid(uid)
-        wyUserApi.getLikedSongList(uid, wy_cookie).then(ids => {
-          setWyLikedSongs(ids)
-          bootLog('Wy like list inited.')
-        })
-        wyUserApi.getAllSublist().then(artists => {
-          setWyFollowedArtists(artists)
-          bootLog('Wy followed artists inited.')
-        }).catch(err => {
-          bootLog(`Wy followed artists init failed: ${err.message}`)
-        })
-        wyUserApi.getAllSubAlbumList().then(albums => {
-          setWySubscribedAlbums(albums)
-          bootLog('Wy liked albums inited.')
-        }).catch(err => {
-          bootLog(`Wy liked albums init failed: ${err.message}`)
-        })
-        wyUserApi.getUserPlaylists(uid, wy_cookie).then(playlists => {
-          setWySubscribedPlaylists(playlists)
-          bootLog('Wy subscribed playlists inited.')
-        }).catch(err => {
-          bootLog(`Wy subscribed playlists init failed: ${err.message}`)
-        })
-      })
-      .catch(err => {
+    void refreshWySession().then(async () => {
+      // 续期后读取最新凭据；期间退出账号则停止加载。
+      const wy_cookie = settingState.setting['common.wy_cookie']
+      if (!wy_cookie) return
+      // 等待账户校验后再加载各列表，防止使用续期前的旧凭据。
+      const uid = await wyUserApi.getUid(wy_cookie)
+      if (settingState.setting['common.wy_cookie'] !== wy_cookie) return
+      setWyUid(uid)
+      void wyUserApi.getLikedSongList(uid, wy_cookie).then((ids: (string | number)[]) => {
+        setWyLikedSongs(ids)
+        bootLog('Wy like list inited.')
+      }).catch((err: Error) => {
+        // 启动期间获取失败也必须处理，避免未捕获的异步异常。
         bootLog(`Wy like list init failed: ${err.message}`)
       })
+      void wyUserApi.getAllSublist().then(artists => {
+        setWyFollowedArtists(artists)
+        bootLog('Wy followed artists inited.')
+      }).catch(err => {
+        bootLog(`Wy followed artists init failed: ${err.message}`)
+      })
+      void wyUserApi.getAllSubAlbumList().then(albums => {
+        setWySubscribedAlbums(albums)
+        bootLog('Wy liked albums inited.')
+      }).catch(err => {
+        bootLog(`Wy liked albums init failed: ${err.message}`)
+      })
+      void wyUserApi.getUserPlaylists(uid, wy_cookie).then((playlists: Parameters<typeof setWySubscribedPlaylists>[0]) => {
+        setWySubscribedPlaylists(playlists)
+        bootLog('Wy subscribed playlists inited.')
+      }).catch((err: Error) => {
+        bootLog(`Wy subscribed playlists init failed: ${err.message}`)
+      })
+    }).catch((err: Error) => {
+      bootLog(`Wy like list init failed: ${err.message}`)
+    })
   }
 
   setNavActiveId((await getViewPrevState()).id)

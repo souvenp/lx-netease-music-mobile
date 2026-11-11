@@ -2,7 +2,8 @@ import '@/utils/errorHandle'
 import { init as initLog } from '@/utils/log'
 import { bootLog, getBootLog } from '@/utils/bootLog'
 import '@/config/globalData'
-import { toast } from '@/utils/tools'
+// 开屏问候语使用可穿透的应用内提示，避免原生 Toast 遮挡输入法。
+import { showStartupGreeting } from '@/core/startupGreeting'
 import { getFontSize } from '@/utils/data'
 import { exitApp } from './utils/nativeModules/utils'
 import { windowSizeTools } from './utils/windowSizeTools'
@@ -99,7 +100,7 @@ void Promise.all([getFontSize(), windowSizeTools.init()])
       const { default: init } = await import('@/core/init')
       try {
         handlePushedHomeScreen = await init()
-        toast(getTimeGreeting(), 'long')
+        showStartupGreeting(getTimeGreeting())
       } catch (err: any) {
         void tipDialog({
           title: '初始化失败 (Init Failed)',

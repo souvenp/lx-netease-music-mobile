@@ -20,6 +20,7 @@ import DownloadBall from "@/components/DownloadBall";
 import YouTubeLoginManager from "@/components/YouTubeLoginManager.tsx";
 import VideoPlayerManager from "@/components/VideoPlayerManager.tsx";
 import GlobalSearchSuggestions from '@/components/GlobalSearchSuggestions';
+import StartupGreeting from '@/components/StartupGreeting';
 interface Props {
   componentId: string
 }
@@ -84,5 +85,7 @@ export default ({ componentId }: Props) => {
       {/*<YouTubeLoginManager />*/}
       <VideoPlayerManager />
       <DownloadBall />
+      {/* 问候语仍在底部显示，整层允许点击穿透。 */}
+      <StartupGreeting />
     </GlobalSearchSuggestions>
   )}

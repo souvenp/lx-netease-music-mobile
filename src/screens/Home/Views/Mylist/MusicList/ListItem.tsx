@@ -72,15 +72,17 @@ export default memo(
     qualityTag?: { type: BadgeType, text: string }
   }) => {
     const theme = useTheme()
+    // 换源只改变展示信息，列表操作仍使用原条目及其 ID。
+    const displayInfo = item.meta.toggleMusicInfo ?? item
     const isSelected = selectedList.includes(item)
     const selectedBackground = theme.isDark
       ? theme['c-primary-alpha-600']
       : theme['c-primary-background-active']
-    const isSupported = useAssertApiSupport(item.source)
+    const isSupported = useAssertApiSupport(displayInfo.source)
     const moreButtonRef = useRef<TouchableOpacity>(null)
 
     // 优先使用本地文件解析的音质，在线歌曲沿用原有标签。
-    const onlineTag = useQualityTag(item)
+    const onlineTag = useQualityTag(displayInfo)
     const tagInfo = qualityTag ?? onlineTag
 
     const handleShowMenu = () => {
@@ -97,7 +99,7 @@ export default memo(
     }
 
     const active = activeIndex == index
-    const singer = `${item.singer}${isShowAlbumName && item.meta.albumName ? `·${item.meta.albumName}` : ''}`
+    const singer = `${displayInfo.singer}${isShowAlbumName && displayInfo.meta.albumName ? `·${displayInfo.meta.albumName}` : ''}`
 
     return (
       <View
@@ -125,7 +127,7 @@ export default memo(
 
           <View style={showCover ? styles.sn : styles.snIndex}>
             {showCover ? (
-              <Image url={item.meta.picUrl} style={styles.albumArt} />
+              <Image url={displayInfo.meta.picUrl} style={styles.albumArt} />
             ) : active ? (
               <PlayingIcon />
             ) : (
@@ -137,15 +139,15 @@ export default memo(
           <View style={styles.itemInfo}>
             {/* <View style={styles.listItemTitle}> */}
             <Text color={active ? theme['c-primary-font'] : theme['c-font']} numberOfLines={1}>
-              {item.name}
-              {item.alias ? <Text color={theme['c-font-label']}> ({item.alias})</Text> : null}
+              {displayInfo.name}
+              {displayInfo.alias ? <Text color={theme['c-font-label']}> ({displayInfo.alias})</Text> : null}
             </Text>
             {/* </View> */}
             <View style={styles.listItemSingle}>
-              {showSource ? <Badge>{item.source.toUpperCase()}</Badge> : null}
+              {showSource ? <Badge>{displayInfo.source.toUpperCase()}</Badge> : null}
               {tagInfo.type ? <Badge type={tagInfo.type}>{tagInfo.text}</Badge> : null}
-              {item.source !== 'local' && (item as LX.Music.MusicInfoOnline).meta.fee === 1 ? <Badge type="vip">VIP</Badge> : null}
-              {item.source === 'wy' && (item as LX.Music.MusicInfoOnline).meta.originCoverType === 2 ? <Badge type="normal">cover</Badge> : null}
+              {displayInfo.source !== 'local' && displayInfo.meta.fee === 1 ? <Badge type="vip">VIP</Badge> : null}
+              {displayInfo.source === 'wy' && displayInfo.meta.originCoverType === 2 ? <Badge type="normal">cover</Badge> : null}
               <Text
                 style={styles.listItemSingleText}
                 size={11}
@@ -162,7 +164,7 @@ export default memo(
               color={active ? theme['c-primary-alpha-400'] : theme['c-250']}
               numberOfLines={1}
             >
-              {item.interval}
+              {displayInfo.interval}
             </Text>
           ) : null}
         </TouchableOpacity>

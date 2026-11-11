@@ -16,6 +16,8 @@ import { checkUpdate } from '@/core/version'
 import { bootLog } from '@/utils/bootLog'
 import { cheatTip } from '@/utils/tools'
 import * as networkLyric from '@/core/networkLyric'
+// 设置就绪后启用网易云会话的前台续期监听。
+import { initWySession } from '@/core/wySession'
 
 let isFirstPush = true
 const handlePushedHomeScreen = async () => {
@@ -51,6 +53,7 @@ export default async () => {
   bootLog('Font size changed.')
   const setting = await initSetting()
   bootLog('Setting inited.')
+  initWySession()
   // console.log(setting)
 
   // 将没有相互依赖的初始化任务并行化

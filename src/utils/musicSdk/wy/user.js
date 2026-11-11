@@ -4,16 +4,32 @@ import { getWyUidCache, saveWyUidCache } from '@/utils/data'
 import { toast, toMD5 } from '@/utils/tools'
 import settingState from "@/store/setting/state";
 import { setWyVipType } from "@/store/user/action";
+// 续期时合并服务器返回的登录凭据。
+import { mergeLoginCookies } from './loginCookie'
 
 export default {
-  async getUid(cookie, retryNum = 0) {
+  // 在凭据到期前请求续期，仅在响应明确成功且返回新凭据时更新。
+  async refreshLogin(cookie) {
+    // CSRF 必须与本次请求使用的 Cookie 属于同一个会话。
+    const csrfToken = (cookie.match(/(?:^|;\s*)__csrf=([^;]*)/) || [])[1] || ''
+    const { body, statusCode, headers } = await httpFetch('https://music.163.com/weapi/login/token/refresh', {
+      method: 'post',
+      headers: { cookie, Referer: 'https://music.163.com', origin: 'https://music.163.com' },
+      form: weapi({ csrf_token: csrfToken }),
+    }).promise
+    if (statusCode !== 200 || body?.code !== 200) throw new Error('网易云登录续期失败')
+    return mergeLoginCookies(cookie, headers)
+  },
+
+  // 网页登录验证可跳过 UID 缓存，避免把旧缓存误认为有效登录。
+  async getUid(cookie, retryNum = 0, bypassCache = false) {
     if (!cookie) throw new Error('Cookie is required to get UID');
     const maxRetries = 3;
     const retryDelay = 200;
 
     try {
       const hashedCookie = toMD5(cookie);
-      const cachedData = await getWyUidCache(hashedCookie);
+      const cachedData = bypassCache ? null : await getWyUidCache(hashedCookie);
       if (cachedData) {
         setWyVipType(cachedData.vipType);
         return cachedData.uid;
@@ -48,7 +64,7 @@ export default {
     } catch (error) {
       if (retryNum < maxRetries) {
         await new Promise(resolve => setTimeout(resolve, retryDelay));
-        return this.getUid(cookie, retryNum + 1);
+        return this.getUid(cookie, retryNum + 1, bypassCache);
       } else {
         console.error('获取UID失败 (重试次数已达上限)', error);
         throw error;

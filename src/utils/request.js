@@ -111,7 +111,9 @@ const handleRequestData = async (
     },
     headers
   )
-  if (url.includes('music.163.com')) {
+  // 仅为网易云站点补充默认凭据；登录校验和续期显式传入的 Cookie 必须保留。
+  if (/^https?:\/\/(?:[\w-]+\.)*music\.163\.com(?::\d+)?(?:\/|$)/i.test(url) &&
+    !Object.keys(headers).some(name => name.toLowerCase() === 'cookie')) {
     headers.cookie = settingState.setting['common.wy_cookie']
   }
   options.cache = cache

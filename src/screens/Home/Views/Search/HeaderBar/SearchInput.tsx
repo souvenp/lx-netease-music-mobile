@@ -1,6 +1,7 @@
 import { useCallback, useRef, forwardRef, useImperativeHandle, useState } from 'react'
 // import { StyleSheet } from 'react-native'
 import Input, { type InputType, type InputProps } from '@/components/common/Input'
+import { hideStartupGreeting } from '@/core/startupGreeting'
 
 export interface SearchInputProps {
   onChangeText: (text: string) => void
@@ -61,6 +62,8 @@ export default forwardRef<SearchInputType, SearchInputProps>(
         placeholder="Search for something..."
         value={text}
         onChangeText={handleChangeText}
+        // 搜索页输入框与首页搜索框一致，聚焦即隐藏开屏提示。
+        onFocus={hideStartupGreeting}
         // style={{ ...styles.input, backgroundColor: theme['c-primary-input-background'] }}
         onBlur={onBlur}
         onSubmitEditing={handleSubmit}

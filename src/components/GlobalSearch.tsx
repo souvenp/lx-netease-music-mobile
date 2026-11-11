@@ -6,6 +6,7 @@ import { createStyle } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
 import { useNavActiveId } from '@/store/common/hook'
 import { useGlobalSearchSuggestions } from './GlobalSearchSuggestions'
+import { hideStartupGreeting } from '@/core/startupGreeting'
 
 const GlobalSearch = () => {
   const theme = useTheme()
@@ -48,7 +49,11 @@ const GlobalSearch = () => {
         placeholder="搜索..."
         value={text}
         onChangeText={setText}
-        onFocus={() => setFocused(true)}
+        onFocus={() => {
+          // 在键盘弹出前立即隐藏问候语，避免等待系统键盘通知。
+          hideStartupGreeting()
+          setFocused(true)
+        }}
         onBlur={dismiss}
         onSubmitEditing={() => handleSearch(text)}
         style={{ ...styles.input, backgroundColor: theme['c-primary-input-background'] }}

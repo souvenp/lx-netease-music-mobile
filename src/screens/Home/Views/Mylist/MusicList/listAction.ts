@@ -117,11 +117,12 @@ export const searchListMusic = (list: LX.Music.MusicInfo[], text: string) => {
   const fullMathAlbumResults = new Set<LX.Music.MusicInfo>()
   const textLower = text.toLowerCase()
   for (const mInfo of list) {
-    if (mInfo.name?.toLowerCase().includes(textLower)) {
+    const displayInfo = mInfo.meta.toggleMusicInfo ?? mInfo
+    if (displayInfo.name?.toLowerCase().includes(textLower)) {
       fullMathNameResults.add(mInfo)
-    } else if (mInfo.singer?.toLowerCase().includes(textLower)) {
+    } else if (displayInfo.singer?.toLowerCase().includes(textLower)) {
       fullMathSingerResults.add(mInfo)
-    } else if (mInfo.meta.albumName?.toLowerCase().includes(textLower)) {
+    } else if (displayInfo.meta.albumName?.toLowerCase().includes(textLower)) {
       fullMathAlbumResults.add(mInfo)
     }
   }
@@ -136,17 +137,19 @@ export const searchListMusic = (list: LX.Music.MusicInfo[], text: string) => {
   for (const mInfo of list) {
     if (fullMathNameResults.has(mInfo) || fullMathSingerResults.has(mInfo) || fullMathAlbumResults.has(mInfo)) continue
 
-    const str = `${mInfo.name}${mInfo.singer}${mInfo.meta.albumName ? mInfo.meta.albumName : ''}`
+    const displayInfo = mInfo.meta.toggleMusicInfo ?? mInfo
+    const str = `${displayInfo.name}${displayInfo.singer}${displayInfo.meta.albumName ?? ''}`
     if (rxp.test(str)) result.push(mInfo)
   }
 
   const sortedList: Array<{ num: number; data: LX.Music.MusicInfo }> = []
 
   for (const mInfo of result) {
+    const displayInfo = mInfo.meta.toggleMusicInfo ?? mInfo
     sortInsert(sortedList, {
       num: similar(
         text,
-        `${mInfo.name}${mInfo.singer}${mInfo.meta.albumName ? mInfo.meta.albumName : ''}`
+        `${displayInfo.name}${displayInfo.singer}${displayInfo.meta.albumName ?? ''}`
       ),
       data: mInfo,
     })

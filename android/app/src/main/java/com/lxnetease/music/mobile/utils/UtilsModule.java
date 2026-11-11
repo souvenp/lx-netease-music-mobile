@@ -31,6 +31,8 @@ import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
+// 音频索引查询接收用户已选的扫描目录。
+import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.UiThreadUtil;
 import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableMap;
@@ -65,6 +67,12 @@ public class UtilsModule extends ReactContextBaseJavaModule {
   @Override
   public String getName() {
     return "UtilsModule";
+  }
+
+  // 为本地音乐缓存提供 MediaStore 变化检查，不触发系统重新扫描。
+  @ReactMethod
+  public void getLocalAudioIndex(ReadableArray paths, Promise promise) {
+    LocalMediaIndex.query(reactContext, paths, promise);
   }
 
   @ReactMethod
