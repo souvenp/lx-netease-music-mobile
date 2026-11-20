@@ -26,6 +26,7 @@ import {
 import { LIST_IDS } from '@/config/constant'
 import { addListMusics, removeListMusics } from '@/core/list'
 import { addDislikeInfo } from '@/core/dislikeList'
+import { beginPlaybackTransition, endPlaybackTransition } from '@/plugins/player/transition'
 
 // import { checkMusicFileAvailable } from '@renderer/utils/music'
 
@@ -86,7 +87,7 @@ const delayRetry = async (
   return new Promise<string | null>((resolve, reject) => {
     const time = getRandom(2, 6)
     setStatusText(global.i18n.t('player__getting_url_delay_retry', { time }))
-    const tiemout = setTimeout(() => {
+    const tiemout = BackgroundTimer.setTimeout(() => {
       getMusicPlayUrl(musicInfo, isRefresh, true)
         .then((result) => {
           cancelDelayRetry = null
@@ -98,7 +99,7 @@ const delayRetry = async (
         })
     }, time * 1000)
     cancelDelayRetry = () => {
-      clearTimeout(tiemout)
+      BackgroundTimer.clearTimeout(tiemout)
       cancelDelayRetry = null
       resolve(null)
     }
@@ -166,7 +167,12 @@ export const setMusicUrl = (
   if (!diffCurrentMusicInfo(musicInfo)) return
   if (cancelDelayRetry) cancelDelayRetry()
   global.lx.gettingUrlId = createGettingUrlId(musicInfo)
-  void getMusicPlayUrl(musicInfo, isRefresh)
+  void beginPlaybackTransition().then(() => {
+    if (global.lx.isPlayedStop ||
+      createGettingUrlId(musicInfo) !== global.lx.gettingUrlId ||
+      musicInfo.id !== playerState.playMusicInfo.musicInfo?.id) return null
+    return getMusicPlayUrl(musicInfo, isRefresh)
+  })
     .then((url) => {
       if (!url) return
       setResource(musicInfo, url, playerState.progress.nowPlayTime)
@@ -298,6 +304,8 @@ export const handlePlay = async () => {
 
   if (!musicInfo) return
 
+  // Acquire before stopping the old track releases its own playback wake lock.
+  await beginPlaybackTransition()
   await setStop()
   global.app_event.pause()
 
@@ -660,14 +668,22 @@ export const play = () => {
  * 暂停播放
  */
 export const pause = async () => {
-  await setPause()
+  try {
+    await setPause()
+  } finally {
+    await endPlaybackTransition()
+  }
 }
 
 /**
  * 停止播放
  */
 export const stop = async () => {
-  await setStop()
+  try {
+    await setStop()
+  } finally {
+    await endPlaybackTransition()
+  }
   setTimeout(() => {
     global.app_event.stop()
   })

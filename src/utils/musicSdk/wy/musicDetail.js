@@ -1,4 +1,5 @@
 import { httpFetch } from '../../request'
+import BackgroundTimer from 'react-native-background-timer'
 import { weapi } from './utils/crypto'
 import {dateFormat, formatPlayTime, sizeFormate} from '../../index'
 import { getBatchMusicQualityInfo } from './quality_detail'
@@ -115,7 +116,7 @@ export const fetchAndApplyDetailedQuality = async(musicInfo, retryNum = 0) => {
 
     const delay = 200
     console.log(`Retrying fetch details for ${musicInfo.name} in ${delay}ms... (Attempt ${retryNum})`)
-    await new Promise(resolve => setTimeout(resolve, delay))
+    await new Promise(resolve => BackgroundTimer.setTimeout(resolve, delay))
 
     return fetchAndApplyDetailedQuality(musicInfo, retryNum)
   }

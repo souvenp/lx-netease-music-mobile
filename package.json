@@ -1,6 +1,6 @@
 {
   "name": "lx-netease-music-mobile",
-  "version": "1.8.87",
+  "version": "1.8.88",
   "versionCode": 70,
   "private": true,
   "scripts": {
@@ -18,7 +18,7 @@
     "clear:full": "git clean -fdx -e android/keystore.properties -e android/app/*.keystore",
     "build:theme": "node src/theme/themes/createThemes.js",
     "publish": "node publish",
-    "postinstall": "node patchMediaLayout.js && node patchRnFetchBlob.cjs"
+    "postinstall": "node patchMediaLayout.js && node patchRnFetchBlob.cjs && node patchPlaybackWakeLock.cjs"
   },
   "engines": {
     "node": ">= 18",
