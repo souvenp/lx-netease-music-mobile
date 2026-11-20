@@ -146,8 +146,8 @@ export default forwardRef<WebLoginModalType, {}>((props, ref) => {
     const session = loginSessionRef.current;
     const pageVersion = pageVersionRef.current;
     try {
-      // 使用 getUid 接口验证 Cookie 有效性
-      await wyApi.getUid(cookie, 0, true);
+      // 登录过程中旧 Cookie 失效是正常状态，轮询及其重试均不弹出过期提示。
+      await wyApi.getUid(cookie, 0, true, { silent: true });
       if (!session || loginSessionRef.current !== session || pageVersionRef.current !== pageVersion) return;
 
       // 验证成功

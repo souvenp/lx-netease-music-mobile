@@ -22,7 +22,7 @@ export default {
   },
 
   // 网页登录验证可跳过 UID 缓存，避免把旧缓存误认为有效登录。
-  async getUid(cookie, retryNum = 0, bypassCache = false) {
+  async getUid(cookie, retryNum = 0, bypassCache = false, { silent = false } = {}) {
     if (!cookie) throw new Error('Cookie is required to get UID');
     const maxRetries = 3;
     const retryDelay = 200;
@@ -53,7 +53,7 @@ export default {
 
       if (statusCode !== 200 || body.code !== 200) throw new Error('获取UID失败');
       if (!body.account) {
-        toast('登录已过期或Cookie无效', 'long');
+        if (!silent) toast('登录已过期或Cookie无效', 'long');
         throw new Error('登录已过期或Cookie无效');
       }
 
@@ -64,7 +64,7 @@ export default {
     } catch (error) {
       if (retryNum < maxRetries) {
         await new Promise(resolve => setTimeout(resolve, retryDelay));
-        return this.getUid(cookie, retryNum + 1, bypassCache);
+        return this.getUid(cookie, retryNum + 1, bypassCache, { silent });
       } else {
         console.error('获取UID失败 (重试次数已达上限)', error);
         throw error;

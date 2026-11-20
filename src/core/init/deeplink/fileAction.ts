@@ -3,10 +3,10 @@ import { handleImportList } from '@/screens/Home/Views/Setting/settings/Backup/a
 import { handleImportLocalFile } from '@/screens/Home/Views/Setting/settings/Basic/UserApiEditModal/action'
 import { type FileType } from '@/utils/fs'
 import { confirmDialog } from '@/utils/tools'
-import playerState from '@/store/player/state'
-import { addTempPlayList } from '@/core/player/tempPlayList'
+import { addListMusics, setActiveList } from '@/core/list'
+import { getList } from '@/core/player/playInfo'
 import { LIST_IDS } from '@/config/constant'
-import { playNext } from '@/core/player/player'
+import { playList } from '@/core/player/player'
 import {
   buildLocalMusicInfo,
   buildLocalMusicInfoByFilePath,
@@ -25,13 +25,15 @@ export const handleFileLXMCAction = async (file: FileType) => {
 
 export const handleFileMusicAction = async (file: FileType) => {
   const info = await readMetadata(file.path)
-  const isPlaying = !!playerState.playMusicInfo.musicInfo
   const musicInfo = info
     ? buildLocalMusicInfo(file.path, info)
     : buildLocalMusicInfoByFilePath(file)
-  console.log(musicInfo)
-  addTempPlayList([{ listId: LIST_IDS.PLAY_LATER, musicInfo, isTop: true }])
-  if (isPlaying) void playNext()
+  // 外部打开的音频属于试听列表，不能用播放一次即出队的“稍后播放”。
+  await addListMusics(LIST_IDS.DEFAULT, [musicInfo])
+  const index = getList(LIST_IDS.DEFAULT).findIndex(item => item.id === musicInfo.id)
+  if (index < 0) throw new Error('音频未能加入试听列表')
+  setActiveList(LIST_IDS.DEFAULT)
+  await playList(LIST_IDS.DEFAULT, index)
 }
 
 export const handleFileJSAction = async (file: FileType) => {
